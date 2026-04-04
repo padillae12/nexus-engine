@@ -1,0 +1,17 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (¡NUNCA subir al repositorio!)
+.env
+
+# Sesión de WhatsApp guardada localmente
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

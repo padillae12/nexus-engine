@@ -1,0 +1,21 @@
+{
+  "name": "nexus-engine",
+  "version": "1.0.0",
+  "description": "Nexus-Flow — Motor de agendamiento de citas por WhatsApp (sin IA, basado en reglas)",
+  "main": "src/bot/index.js",
+  "scripts": {
+    "start": "node src/bot/index.js",
+    "dev": "node --watch src/bot/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.9.7",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Nexus-Flow",
+  "license": "UNLICENSED"
+}
