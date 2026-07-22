@@ -2,25 +2,40 @@
 // ══════════════════════════════════════════════════════════════════
 //  NEXUS-ENGINE — Punto de entrada (whatsapp-web.js)
 //
-//  Usa la librería whatsapp-web.js (Puppeteer) para conectarse a
-//  WhatsApp Web como si fuera un cliente real. Al escanear el
-//  código QR, el número queda vinculado y el bot responde mensajes.
-//
-//  Flujo:
-//    Cliente envía mensaje → evento 'message' → handleMessage(FSM)
-//                                              → msg.reply(respuesta)
+//  Estrategia de sesión:
+//    · Ctrl+C / SIGTERM  → destroy() sin logout → sesión OK en disco
+//                          → próximo arranque NO pide QR
+//    · LOGOUT (desvinculación manual) → limpia sesión en disco + exit(1)
+//                          → PM2 reinicia → muestra QR nuevo
+//    · Desconexión de red  → exit(1) → PM2 reinicia → restaura sesión
 // ══════════════════════════════════════════════════════════════════
 
 require('dotenv').config();
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode                = require('qrcode-terminal');
+const fs                    = require('fs');
+const path                  = require('path');
 const { handleMessage }     = require('./fsm');
 
 // ─────────────────────────────────────────────────────────────────
+//  Ruta de la sesión guardada por LocalAuth
+// ─────────────────────────────────────────────────────────────────
+const AUTH_DIR = path.join(process.cwd(), '.wwebjs_auth');
+
+function limpiarSesion() {
+  try {
+    if (fs.existsSync(AUTH_DIR)) {
+      fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+      console.log('🧹 Sesión anterior eliminada.');
+    }
+  } catch (e) {
+    console.warn('⚠️  No se pudo limpiar la sesión:', e.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  CLIENTE DE WHATSAPP
-//  LocalAuth guarda la sesión en .wwebjs_auth para no tener que
-//  escanear el QR cada vez que se reinicia el proceso.
 // ─────────────────────────────────────────────────────────────────
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -35,64 +50,83 @@ const client = new Client({
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  QR — solo aparece la primera vez (o si expira la sesión)
+//  QR — solo cuando no hay sesión guardada
 // ─────────────────────────────────────────────────────────────────
 client.on('qr', (qr) => {
-  console.log('📱 Escanea el código QR con WhatsApp:');
+  console.log('\n📱 Escanea el código QR con WhatsApp para vincular el número:');
   qrcode.generate(qr, { small: true });
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  LISTO — sesión restaurada o QR escaneado
+//  LISTO
 // ─────────────────────────────────────────────────────────────────
 client.on('ready', () => {
   console.log('✅ Nexus-Engine conectado a WhatsApp.');
-  console.log('🤖 Bot activo y escuchando mensajes...');
+  console.log('🤖 Bot activo y escuchando mensajes...\n');
 });
 
 // ─────────────────────────────────────────────────────────────────
 //  MENSAJE ENTRANTE
-//  Solo procesamos mensajes de texto que NO vengan del propio bot.
 // ─────────────────────────────────────────────────────────────────
 client.on('message', async (msg) => {
-  // Ignorar mensajes propios o de grupos
   if (msg.fromMe) return;
-  if (msg.from.endsWith('@g.us')) return; // grupos
+  if (msg.from.endsWith('@g.us')) return;
 
   const texto    = msg.body?.trim();
-  const telefono = msg.from; // Ej: "5216861234567@c.us"
-
+  const telefono = msg.from;
   if (!texto) return;
 
   console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono}: ${texto}`);
 
   try {
     const respuesta = await handleMessage(telefono, texto);
-
     if (respuesta) {
       await msg.reply(respuesta);
       console.log(`📤 Respuesta enviada a ${telefono}`);
     }
   } catch (error) {
     console.error(`❌ Error procesando mensaje de ${telefono}:`, error);
-
     await msg.reply(
-      '😔 Ocurrió un error inesperado. Por favor intenta de nuevo en un momento.\n\n' +
-      'Si el problema persiste, escribe *"reiniciar"*.'
+      '😔 Ocurrió un error inesperado. Intenta de nuevo.\n\nEscribe *"reiniciar"* si el problema persiste.'
     ).catch(() => {});
   }
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  DESCONEXIÓN — registrar y salir para que PM2 lo reinicie
+//  DESCONEXIÓN
 // ─────────────────────────────────────────────────────────────────
 client.on('disconnected', (reason) => {
-  console.warn('⚠️  WhatsApp desconectado:', reason);
-  process.exit(1); // PM2 lo reiniciará automáticamente
+  console.warn(`\n⚠️  WhatsApp desconectado. Razón: ${reason}`);
+
+  if (reason === 'LOGOUT') {
+    // Número desvinculado manualmente → limpiar sesión corrupta
+    // PM2 reiniciará el proceso y mostrará QR nuevo
+    console.log('🔄 Sesión cerrada por el usuario. Limpiando y reiniciando para mostrar QR nuevo...');
+    limpiarSesion();
+  } else {
+    console.log('🔁 Desconexión inesperada. Reiniciando...');
+  }
+
+  process.exit(1); // PM2 lo reinicia automáticamente
 });
+
+// ─────────────────────────────────────────────────────────────────
+//  CIERRE GRACEFUL — Ctrl+C o señal de PM2 stop
+//  Cierra Puppeteer SIN hacer logout → sesión se conserva en disco
+// ─────────────────────────────────────────────────────────────────
+async function shutdown(signal) {
+  console.log(`\n⏹  Señal ${signal} recibida. Cerrando sin hacer logout...`);
+  try {
+    await client.destroy();
+  } catch {}
+  process.exit(0);
+}
+
+process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // ─────────────────────────────────────────────────────────────────
 //  ARRANQUE
 // ─────────────────────────────────────────────────────────────────
-client.initialize();
 console.log('🚀 Nexus-Engine iniciando...');
+client.initialize();
