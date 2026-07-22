@@ -25,29 +25,49 @@ async function handleServiceMenu(sesion, msg) {
     .join('\n');
 
   return {
-    respuesta: `🛎️ *¿Qué servicio necesitas?*\n\n${lista}\n\n_Responde con el número._`,
+    respuesta:
+      `¡Perfecto! ¿Qué servicio necesitas? 🛎️\n\n${lista}\n\n` +
+      `_Puedes escribir el número o el nombre del servicio._`,
     nuevoEstado: 'SERVICE_SELECT',
   };
 }
 
 /**
  * Captura la elección del servicio y avanza al estado de fecha.
+ * Acepta: número de opción (1, 2, 3...) o nombre del servicio.
  */
 async function handleServiceSelect(sesion, msg) {
-  const opcion = extraerNumeroOpcion(msg);
   const catalogo = sesion.catalogoServicios || [];
+  let servicioElegido = null;
 
-  if (!opcion || opcion < 1 || opcion > catalogo.length) {
+  // ── Intentar por número ──────────────────────────────────────────
+  const opcion = extraerNumeroOpcion(msg);
+  if (opcion && opcion >= 1 && opcion <= catalogo.length) {
+    servicioElegido = catalogo[opcion - 1];
+  }
+
+  // ── Intentar por nombre (búsqueda parcial, case-insensitive) ─────
+  if (!servicioElegido) {
+    const msgLower = msg.toLowerCase().trim();
+    servicioElegido = catalogo.find(s =>
+      s.nombre.toLowerCase().includes(msgLower) ||
+      msgLower.includes(s.nombre.toLowerCase())
+    );
+  }
+
+  // ── No se reconoció la opción ────────────────────────────────────
+  if (!servicioElegido) {
     const lista = catalogo
       .map((s, i) => `*${i + 1}.* ${s.nombre}`)
       .join('\n');
     return {
-      respuesta: `❓ No entendí la opción. Por favor elige un número del 1 al ${catalogo.length}:\n\n${lista}`,
+      respuesta:
+        `No entendí cuál servicio quieres 🤔\n\n` +
+        `Puedes escribir el número o el nombre:\n\n${lista}`,
       nuevoEstado: 'SERVICE_SELECT',
     };
   }
 
-  const servicioElegido = catalogo[opcion - 1];
   sesion.servicioId     = servicioElegido.id;
   sesion.servicioNombre = servicioElegido.nombre;
   sesion.duracionMin    = servicioElegido.duracion_min;
@@ -56,7 +76,7 @@ async function handleServiceSelect(sesion, msg) {
     respuesta:
       `✅ *${servicioElegido.nombre}* seleccionado _(${servicioElegido.duracion_min} min)_.\n\n` +
       `📅 ¿Para qué día quieres tu cita?\n\n` +
-      `Puedes escribir algo como:\n` +
+      `Puedes decirme algo como:\n` +
       `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_`,
     nuevoEstado: 'DATE_SELECT',
   };

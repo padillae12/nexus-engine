@@ -9,10 +9,6 @@ const config = require('../../config');
  * Maneja el estado WELCOME.
  * - Si el cliente no tiene nombre: pide el nombre.
  * - Si ya tiene nombre: muestra el menú principal.
- *
- * @param {object} sesion  - La sesión actual del usuario
- * @param {string} msg     - Texto recibido del usuario
- * @returns {{ respuesta: string, nuevoEstado: string }}
  */
 async function handleWelcome(sesion, msg) {
   const { nombre } = sesion;
@@ -20,7 +16,10 @@ async function handleWelcome(sesion, msg) {
   // Primera vez que escribe: pedir nombre
   if (!nombre) {
     return {
-      respuesta: `👋 ¡Hola! Bienvenido/a a *${config.business.name}*.\n\nSoy tu asistente virtual para citas. 😊\n\n¿Me podrías decir tu nombre, por favor?`,
+      respuesta:
+        `👋 ¡Hola! Bienvenido/a a *${config.business.name}*.\n\n` +
+        `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas. 😊\n\n` +
+        `¿Me podrías decir tu nombre, por favor?`,
       nuevoEstado: 'WAITING_NAME',
     };
   }
@@ -57,11 +56,11 @@ async function handleWaitingName(sesion, msg) {
 
 function buildMenuPrincipal(nombre) {
   return (
-    `¿Qué necesitas hoy, *${nombre}*?\n\n` +
-    `📅 *1.* Agendar una cita\n` +
-    `📋 *2.* Ver mis citas\n` +
-    `❌ *3.* Cancelar una cita\n\n` +
-    `_Responde con el número de la opción._`
+    `¿En qué te puedo ayudar hoy, *${nombre}*? 😊\n\n` +
+    `📅 *Agendar* una cita\n` +
+    `📋 *Ver* mis citas\n` +
+    `❌ *Cancelar* una cita\n\n` +
+    `_Solo dime qué necesitas o escribe el número de la opción (1, 2 o 3)._`
   );
 }
 
