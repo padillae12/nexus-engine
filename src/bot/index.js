@@ -1,8 +1,17 @@
 // src/bot/index.js
 // ══════════════════════════════════════════════════════════════════
-//  NEXUS-ENGINE — Punto de entrada
-//  Inicializa whatsapp-web.js, muestra el QR y conecta con la FSM.
+//  NEXUS-ENGINE — Punto de entrada (whatsapp-web.js)
+//
+//  Usa la librería whatsapp-web.js (Puppeteer) para conectarse a
+//  WhatsApp Web como si fuera un cliente real. Al escanear el
+//  código QR, el número queda vinculado y el bot responde mensajes.
+//
+//  Flujo:
+//    Cliente envía mensaje → evento 'message' → handleMessage(FSM)
+//                                              → msg.reply(respuesta)
 // ══════════════════════════════════════════════════════════════════
+
+require('dotenv').config();
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode                = require('qrcode-terminal');
@@ -10,96 +19,80 @@ const { handleMessage }     = require('./fsm');
 
 // ─────────────────────────────────────────────────────────────────
 //  CLIENTE DE WHATSAPP
-//  LocalAuth guarda la sesión en disco → no necesitas escanear el
-//  QR cada vez que reinicias el bot.
+//  LocalAuth guarda la sesión en .wwebjs_auth para no tener que
+//  escanear el QR cada vez que se reinicia el proceso.
 // ─────────────────────────────────────────────────────────────────
 const client = new Client({
-  authStrategy: new LocalAuth({
-    dataPath: './.wwebjs_auth', // carpeta donde se guarda la sesión
-  }),
+  authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',   // importante en VPS con poca RAM
-      '--disable-gpu',
+      '--disable-dev-shm-usage',
     ],
   },
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  EVENTOS
+//  QR — solo aparece la primera vez (o si expira la sesión)
 // ─────────────────────────────────────────────────────────────────
-
-/** Se dispara cuando WhatsApp pide autenticación → muestra QR en terminal */
 client.on('qr', (qr) => {
-  console.log('\n══════════════════════════════════════');
-  console.log('  📱 ESCANEA ESTE QR CON WHATSAPP');
-  console.log('══════════════════════════════════════\n');
+  console.log('📱 Escanea el código QR con WhatsApp:');
   qrcode.generate(qr, { small: true });
 });
 
-/** Se dispara cuando la autenticación fue exitosa */
-client.on('authenticated', () => {
-  console.log('🔐 WhatsApp autenticado correctamente.');
-});
-
-/** Se dispara cuando el cliente está listo para recibir mensajes */
+// ─────────────────────────────────────────────────────────────────
+//  LISTO — sesión restaurada o QR escaneado
+// ─────────────────────────────────────────────────────────────────
 client.on('ready', () => {
-  console.log('✅ Nexus-Engine conectado y escuchando mensajes...\n');
-});
-
-/** Se dispara cuando hay un error de autenticación */
-client.on('auth_failure', (msg) => {
-  console.error('❌ Error de autenticación:', msg);
-  process.exit(1);
-});
-
-/** Se dispara cuando el cliente se desconecta */
-client.on('disconnected', (reason) => {
-  console.warn('⚠️  WhatsApp desconectado:', reason);
-  // PM2 reiniciará el proceso automáticamente en el VPS
+  console.log('✅ Nexus-Engine conectado a WhatsApp.');
+  console.log('🤖 Bot activo y escuchando mensajes...');
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  PROCESAMIENTO DE MENSAJES ENTRANTES
+//  MENSAJE ENTRANTE
+//  Solo procesamos mensajes de texto que NO vengan del propio bot.
 // ─────────────────────────────────────────────────────────────────
+client.on('message', async (msg) => {
+  // Ignorar mensajes propios o de grupos
+  if (msg.fromMe) return;
+  if (msg.from.endsWith('@g.us')) return; // grupos
 
-client.on('message', async (message) => {
-  // Ignorar mensajes de grupos, estados y del propio bot
-  if (message.from.endsWith('@g.us'))  return; // grupo
-  if (message.from.endsWith('@broadcast')) return; // broadcast
-  if (message.isStatus)               return; // estado de WhatsApp
-  if (!message.body || message.body.trim() === '') return; // vacío
+  const texto    = msg.body?.trim();
+  const telefono = msg.from; // Ej: "5216861234567@c.us"
 
-  const telefono = message.from; // ej: "526789012345@c.us"
-  const texto    = message.body.trim();
+  if (!texto) return;
 
   console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono}: ${texto}`);
 
   try {
-    // Pasar el mensaje a la FSM y obtener la respuesta
     const respuesta = await handleMessage(telefono, texto);
 
     if (respuesta) {
-      await message.reply(respuesta);
+      await msg.reply(respuesta);
       console.log(`📤 Respuesta enviada a ${telefono}`);
     }
   } catch (error) {
     console.error(`❌ Error procesando mensaje de ${telefono}:`, error);
 
-    // Mensaje genérico de error al usuario para no romper la experiencia
-    await message.reply(
+    await msg.reply(
       '😔 Ocurrió un error inesperado. Por favor intenta de nuevo en un momento.\n\n' +
       'Si el problema persiste, escribe *"reiniciar"*.'
-    );
+    ).catch(() => {});
   }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  DESCONEXIÓN — registrar y salir para que PM2 lo reinicie
+// ─────────────────────────────────────────────────────────────────
+client.on('disconnected', (reason) => {
+  console.warn('⚠️  WhatsApp desconectado:', reason);
+  process.exit(1); // PM2 lo reiniciará automáticamente
 });
 
 // ─────────────────────────────────────────────────────────────────
 //  ARRANQUE
 // ─────────────────────────────────────────────────────────────────
-
-console.log('🚀 Iniciando Nexus-Engine...');
 client.initialize();
+console.log('🚀 Nexus-Engine iniciando...');

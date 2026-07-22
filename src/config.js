@@ -13,4 +13,5 @@ module.exports = {
   business: {
     name: process.env.BUSINESS_NAME || 'Nuestro Negocio',
   },
+  API_PORT:    Number(process.env.API_PORT) || 3001,
 };

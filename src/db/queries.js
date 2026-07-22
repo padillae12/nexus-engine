@@ -1,8 +1,19 @@
 // src/db/queries.js
 // Todas las consultas SQL del motor de citas.
 // Centralizar aquí hace que sea fácil ajustar queries sin tocar la lógica del bot.
+//
+// ── Modo mock ───────────────────────────────────────────────────
+// Si USE_MOCK_DB=true en .env, se usa queries.mock.js (sin VPS).
+// El resto del proyecto no necesita cambiar nada.
+
+require('dotenv').config();
+if (process.env.USE_MOCK_DB === 'true') {
+  module.exports = require('./queries.mock');
+  return;
+}
 
 const pool = require('./pool');
+
 
 // ─────────────────────────────────────────────────────────────────
 //  CLIENTES
@@ -49,7 +60,7 @@ async function updateClienteNombre(clienteId, nombre) {
  */
 async function getServicios() {
   const [rows] = await pool.execute(
-    'SELECT id, nombre, descripcion, duracion_min FROM servicios WHERE activo = 1 ORDER BY id'
+    'SELECT id, nombre, descripcion, precio, mostrar_precio, duracion_min FROM servicios WHERE activo = 1 ORDER BY id'
   );
   return rows;
 }
@@ -60,7 +71,7 @@ async function getServicios() {
  */
 async function getServicioById(id) {
   const [rows] = await pool.execute(
-    'SELECT id, nombre, descripcion, duracion_min FROM servicios WHERE id = ? AND activo = 1',
+    'SELECT id, nombre, descripcion, precio, mostrar_precio, duracion_min FROM servicios WHERE id = ? AND activo = 1',
     [id]
   );
   return rows[0] || null;
@@ -128,14 +139,34 @@ async function getSlotOcupados(fecha, empleadoId = null) {
  * @returns {Promise<boolean>}
  */
 async function isBloqueado(fechaHora, empleadoId = null) {
-  const [rows] = await pool.execute(
+  // Primero verifica bloqueos puntuales (recurrente = 0)
+  const [puntuales] = await pool.execute(
     `SELECT id FROM bloqueos
-     WHERE ? BETWEEN fecha_inicio AND fecha_fin
+     WHERE recurrente = 0
+       AND ? BETWEEN fecha_inicio AND fecha_fin
        AND (empleado_id = ? OR empleado_id IS NULL)
      LIMIT 1`,
     [fechaHora, empleadoId]
   );
-  return rows.length > 0;
+  if (puntuales.length > 0) return true;
+
+  // Luego verifica bloqueos recurrentes activos ese día y hora
+  const dt = new Date(fechaHora);
+  const diaSemana = dt.getDay();           // 0=Dom … 6=Sáb
+  const horaActual = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:00`;
+
+  const [recurrentes] = await pool.execute(
+    `SELECT id FROM bloqueos
+     WHERE recurrente = 1
+       AND ? BETWEEN fecha_inicio AND fecha_fin
+       AND FIND_IN_SET(?, dias_semana) > 0
+       AND hora_inicio_hora <= ?
+       AND hora_fin_hora > ?
+       AND (empleado_id = ? OR empleado_id IS NULL)
+     LIMIT 1`,
+    [fechaHora, diaSemana, horaActual, horaActual, empleadoId]
+  );
+  return recurrentes.length > 0;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -205,7 +236,221 @@ async function getCitasActivasCliente(clienteId) {
   return rows;
 }
 
+// ─────────────────────────────────────────────────────────────────
+//  CITAS — Queries para la API REST (Nexus-App)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna todas las citas de un día específico, con info de cliente,
+ * servicio y empleado. Usada por GET /api/citas/hoy.
+ * @param {string} fecha - Formato 'YYYY-MM-DD'
+ * @returns {Promise<Array>}
+ */
+async function getCitasPorFecha(fecha) {
+  const [rows] = await pool.execute(
+    `SELECT
+       c.id,
+       TIME_FORMAT(c.fecha_inicio, '%H:%i')  AS hora,
+       TIME_FORMAT(c.fecha_fin,   '%H:%i')  AS hora_fin,
+       c.estado,
+       cl.nombre   AS cliente,
+       cl.telefono,
+       s.nombre    AS servicio,
+       s.duracion_min,
+       u.nombre    AS empleado
+     FROM citas c
+     JOIN clientes  cl ON c.cliente_id  = cl.id
+     JOIN servicios  s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     WHERE DATE(c.fecha_inicio) = ?
+     ORDER BY c.fecha_inicio ASC`,
+    [fecha]
+  );
+  return rows;
+}
+
+/**
+ * Retorna citas con filtros opcionales: fecha, estado, empleadoId.
+ * Usada por GET /api/citas.
+ * @param {object} filtros - { fecha?, estado?, empleadoId? }
+ * @returns {Promise<Array>}
+ */
+async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
+  const condiciones = [];
+  const params = [];
+
+  if (fecha)      { condiciones.push('DATE(c.fecha_inicio) = ?'); params.push(fecha); }
+  if (estado)     { condiciones.push('c.estado = ?');             params.push(estado); }
+  if (empleadoId) { condiciones.push('c.empleado_id = ?');        params.push(Number(empleadoId)); }
+
+  const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+  const [rows] = await pool.execute(
+    `SELECT
+       c.id,
+       DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d') AS fecha,
+       TIME_FORMAT(c.fecha_inicio, '%H:%i')    AS hora,
+       c.estado,
+       cl.nombre   AS cliente,
+       cl.telefono,
+       s.nombre    AS servicio,
+       s.duracion_min,
+       u.nombre    AS empleado
+     FROM citas c
+     JOIN clientes  cl ON c.cliente_id  = cl.id
+     JOIN servicios  s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     ${where}
+     ORDER BY c.fecha_inicio DESC
+     LIMIT 200`,
+    params
+  );
+  return rows;
+}
+
+/**
+ * Actualiza el estado de una cita desde la app (recepcionista o admin).
+ * @param {number} citaId
+ * @param {string} estado - 'completada' | 'cancelada' | 'pendiente' | 'confirmada'
+ * @returns {Promise<boolean>} true si se actualizó
+ */
+async function updateEstadoCita(citaId, estado) {
+  const [result] = await pool.execute(
+    'UPDATE citas SET estado = ? WHERE id = ?',
+    [estado, citaId]
+  );
+  return result.affectedRows > 0;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CLIENTES — Lista para la app
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna la lista de clientes con su número de citas.
+ * Usada por GET /api/clientes.
+ * @returns {Promise<Array>}
+ */
+async function getClientesLista() {
+  const [rows] = await pool.execute(
+    `SELECT
+       cl.id,
+       cl.telefono,
+       cl.nombre,
+       cl.creado_en,
+       COUNT(c.id)                                        AS total_citas,
+       MAX(DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d %H:%i')) AS ultima_cita
+     FROM clientes cl
+     LEFT JOIN citas c ON cl.id = c.cliente_id
+     GROUP BY cl.id
+     ORDER BY cl.creado_en DESC
+     LIMIT 500`
+  );
+  return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  DASHBOARD — Estadísticas para el dueño
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Calcula las métricas del dashboard:
+ * - citasHoy          → total de citas del día
+ * - clientesNuevos    → clientes registrados este mes
+ * - tasaAsistencia    → % de citas completadas vs confirmadas (últimos 30 días)
+ * - ingresosEstimados → suma de precios de citas completadas hoy
+ * @returns {Promise<object>}
+ */
+async function getDashboardStats() {
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  // Citas de hoy
+  const [[{ citasHoy }]] = await pool.execute(
+    `SELECT COUNT(*) AS citasHoy FROM citas WHERE DATE(fecha_inicio) = ? AND estado != 'cancelada'`,
+    [hoy]
+  );
+
+  // Clientes nuevos este mes
+  const [[{ clientesNuevos }]] = await pool.execute(
+    `SELECT COUNT(*) AS clientesNuevos FROM clientes
+     WHERE YEAR(creado_en) = YEAR(NOW()) AND MONTH(creado_en) = MONTH(NOW())`
+  );
+
+  // Tasa de asistencia (últimos 30 días)
+  const [[tasaRow]] = await pool.execute(
+    `SELECT
+       COUNT(CASE WHEN estado = 'completada' THEN 1 END) AS completadas,
+       COUNT(CASE WHEN estado IN ('completada','cancelada') THEN 1 END) AS finalizadas
+     FROM citas
+     WHERE fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+  );
+  const tasaAsistencia = tasaRow.finalizadas > 0
+    ? `${Math.round((tasaRow.completadas / tasaRow.finalizadas) * 100)}%`
+    : 'N/A';
+
+  // Ingresos estimados de citas completadas hoy
+  const [[{ ingresosEstimados }]] = await pool.execute(
+    `SELECT COALESCE(SUM(s.precio), 0) AS ingresosEstimados
+     FROM citas c
+     JOIN servicios s ON c.servicio_id = s.id
+     WHERE DATE(c.fecha_inicio) = ? AND c.estado = 'completada'`,
+    [hoy]
+  );
+
+  return {
+    citasHoy,
+    clientesNuevos,
+    tasaAsistencia,
+    ingresosEstimados: ingresosEstimados > 0 ? `$${Number(ingresosEstimados).toFixed(0)}` : '$0',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BLOQUEOS — Creación desde la app
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Crea un bloqueo puntual (urgente) desde la Nexus-App.
+ * @param {object} datos - { motivo, fechaInicio, fechaFin, empleadoId? }
+ * @returns {Promise<number>} ID del bloqueo creado
+ */
+async function crearBloqueo({ motivo, fechaInicio, fechaFin, empleadoId }) {
+  const [result] = await pool.execute(
+    `INSERT INTO bloqueos (empleado_id, motivo, fecha_inicio, fecha_fin, recurrente)
+     VALUES (?, ?, ?, ?, 0)`,
+    [empleadoId || null, motivo, fechaInicio, fechaFin]
+  );
+  return result.insertId;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CONFIG NEGOCIO
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna el valor de una clave de configuración del negocio.
+ * @param {string} clave  - Ej: 'MIN_BOOKING_HOURS'
+ * @returns {Promise<string|null>}
+ */
+async function getConfig(clave) {
+  const [rows] = await pool.execute(
+    'SELECT valor FROM config_negocio WHERE clave = ?',
+    [clave]
+  );
+  return rows[0]?.valor ?? null;
+}
+
+/**
+ * Retorna toda la configuración del negocio como objeto clave→valor.
+ * @returns {Promise<object>}
+ */
+async function getAllConfig() {
+  const [rows] = await pool.execute('SELECT clave, valor FROM config_negocio');
+  return Object.fromEntries(rows.map(r => [r.clave, r.valor]));
+}
+
 module.exports = {
+  // Bot
   findOrCreateCliente,
   updateClienteNombre,
   getServicios,
@@ -216,4 +461,13 @@ module.exports = {
   createCita,
   cancelCita,
   getCitasActivasCliente,
+  getConfig,
+  getAllConfig,
+  // API REST (Nexus-App)
+  getCitasPorFecha,
+  getCitasFiltradas,
+  updateEstadoCita,
+  getClientesLista,
+  getDashboardStats,
+  crearBloqueo,
 };

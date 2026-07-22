@@ -1,0 +1,52 @@
+DATABASE: nexus_flow
+USER: nexus_user
+ENGINE: MariaDB
+
+== TABLES ==
+
+-- bloqueos --
+id          int(10) unsigned   NOT NULL  PRI  auto_increment
+empleado_id int(10) unsigned   NULL      MUL
+motivo      varchar(100)       NOT NULL
+fecha_inicio datetime          NOT NULL
+fecha_fin   datetime           NOT NULL
+
+-- citas --
+id          int(10) unsigned   NOT NULL  PRI  auto_increment
+cliente_id  int(10) unsigned   NOT NULL  MUL
+servicio_id int(10) unsigned   NOT NULL  MUL
+empleado_id int(10) unsigned   NULL      MUL
+fecha_inicio datetime          NOT NULL
+fecha_fin   datetime           NOT NULL
+estado      enum('pendiente','confirmada','cancelada','completada')  NOT NULL  DEFAULT: confirmada
+notas       text               NULL
+creado_en   timestamp          NOT NULL  DEFAULT: current_timestamp()
+
+-- clientes --
+id          int(10) unsigned   NOT NULL  PRI  auto_increment
+telefono    varchar(20)        NOT NULL  UNI
+nombre      varchar(100)       NULL
+creado_en   timestamp          NOT NULL  DEFAULT: current_timestamp()
+
+-- horarios_trabajo --
+id          int(10) unsigned   NOT NULL  PRI  auto_increment
+empleado_id int(10) unsigned   NULL      MUL
+dia_semana  tinyint(4)         NOT NULL
+hora_inicio time               NOT NULL
+hora_fin    time               NOT NULL
+
+-- servicios --
+id           int(10) unsigned  NOT NULL  PRI  auto_increment
+nombre       varchar(100)      NOT NULL
+descripcion  text              NULL
+duracion_min smallint(6)       NOT NULL  DEFAULT: 60
+activo       tinyint(1)        NOT NULL  DEFAULT: 1
+
+-- usuarios --
+id          int(10) unsigned   NOT NULL  PRI  auto_increment
+nombre      varchar(100)       NOT NULL
+email       varchar(150)       NOT NULL  UNI
+password    varchar(255)       NOT NULL
+rol         enum('admin','encargado','empleado')  NOT NULL  DEFAULT: empleado
+activo      tinyint(1)         NOT NULL  DEFAULT: 1
+creado_en   timestamp          NOT NULL  DEFAULT: current_timestamp()

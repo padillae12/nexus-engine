@@ -2,6 +2,18 @@
 // Pool de conexiones MySQL reutilizable para todo el proyecto.
 // Se importa como: const pool = require('./pool');
 // Y se usa como:   const [rows] = await pool.execute(sql, params);
+//
+// ── Modo mock ───────────────────────────────────────────────────
+// Si USE_MOCK_DB=true en .env, no se intenta conectar al VPS.
+// Las queries reales son reemplazadas por queries.mock.js.
+
+require('dotenv').config();
+
+if (process.env.USE_MOCK_DB === 'true') {
+  console.log('🟡 [MOCK] pool.js omitido — usando base de datos simulada.');
+  module.exports = { execute: async () => { throw new Error('Mock activo'); } };
+  return; // Node permite return en CommonJS a nivel de módulo
+}
 
 const mysql = require('mysql2/promise');
 const config = require('../config');
@@ -15,7 +27,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,
-  timezone:           '+00:00', // Almacena todo en UTC, muestra en local si necesitas
+  timezone:           '+00:00',
 });
 
 // Prueba de conexión al arrancar
@@ -26,7 +38,7 @@ pool.getConnection()
   })
   .catch(err => {
     console.error('❌ Error conectando a MySQL:', err.message);
-    process.exit(1); // No tiene sentido correr el bot sin DB
+    process.exit(1);
   });
 
 module.exports = pool;
