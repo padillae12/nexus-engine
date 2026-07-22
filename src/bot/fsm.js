@@ -148,13 +148,19 @@ async function handleMessage(telefono, mensaje) {
         const { getCitasActivasCliente } = require('../db/queries');
         const citas = await getCitasActivasCliente(sesion.clienteId);
         if (citas.length === 0) {
-          result = { respuesta: `No tienes citas próximas. ¿Quieres agendar una?\nEscribe *"1"* para comenzar.`, nuevoEstado: 'MAIN_MENU' };
+          result = {
+            respuesta: `No tienes citas próximas, *${sesion.nombre || 'amigo/a'}*. 😊\n\n¿Quieres *agendar* una nueva cita?`,
+            nuevoEstado: 'MAIN_MENU'
+          };
         } else {
           const lista = citas.map((c, i) => {
             const f = new Date(c.fecha_inicio);
             return `*${i + 1}.* ${c.servicio} — ${f.toLocaleDateString('es-MX')} ${f.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
           }).join('\n');
-          result = { respuesta: `📋 *Tus próximas citas:*\n\n${lista}\n\n_¿Necesitas algo más? Escribe "menú" para volver._`, nuevoEstado: 'MAIN_MENU' };
+          result = {
+            respuesta: `📋 *Tus próximas citas:*\n\n${lista}\n\n_¿Necesitas algo más? Escribe *"menú"* para volver al inicio._`,
+            nuevoEstado: 'MAIN_MENU'
+          };
         }
       } else if (opcion === '3' || quiereCancelar(msg)) {
         sesion.citasCancelables = null;

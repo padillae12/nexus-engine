@@ -24,7 +24,7 @@ const quiereCancelar = (msg) =>
 
 /** El usuario quiere ver sus citas */
 const quiereVerCitas = (msg) =>
-  /\b(mis\s+citas?|tengo\s+cita|ver\s+cita|cuando\s+es\|cuand(o|a)\s+tengo)\b/i.test(msg);
+  /\b(mis\s+citas?|tengo\s+cita|ver\s*citas?|ver|cuando\s+es|cuand[oa]\s+tengo)\b/i.test(msg);
 
 // ─────────────────────────────────────────────────────────────────
 //  EXTRACCIÓN DE FECHAS
