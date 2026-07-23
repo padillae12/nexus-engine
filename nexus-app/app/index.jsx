@@ -105,7 +105,19 @@ export default function AgendaScreen() {
         renderItem={({ item }) => (
           <CitaCard
             cita={item}
-            onPress={() => router.push({ pathname: '/cita/[id]', params: { id: item.id } })}
+            onPress={() => router.push({
+              pathname: '/cita/[id]',
+              params: {
+                id:          item.id,
+                hora:        item.hora,
+                cliente:     item.cliente ?? 'Sin nombre',
+                servicio:    item.servicio,
+                empleado:    item.empleado ?? '',
+                estado:      item.estado,
+                duracion_min: item.duracion_min,
+                precio:      item.precio ?? '',
+              },
+            })}
           />
         )}
         contentContainerStyle={styles.lista}

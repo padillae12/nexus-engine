@@ -257,6 +257,7 @@ async function getCitasPorFecha(fecha) {
        cl.telefono,
        s.nombre    AS servicio,
        s.duracion_min,
+       s.precio,
        u.nombre    AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
@@ -295,6 +296,7 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        cl.telefono,
        s.nombre    AS servicio,
        s.duracion_min,
+       s.precio,
        u.nombre    AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id

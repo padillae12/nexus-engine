@@ -7,31 +7,49 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, Alert, ActivityIndicator,
+  SafeAreaView, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { updateEstadoCita } from '../../services/api';
 
+const ESTADO_CONFIG = {
+  confirmada: { color: '#00ce6d', bg: 'rgba(0,206,109,0.12)', label: 'Confirmada',  icon: '🟢' },
+  pendiente:  { color: '#fdcb6e', bg: 'rgba(253,203,110,0.12)', label: 'Pendiente', icon: '🟡' },
+  completada: { color: '#6c5ce7', bg: 'rgba(108,92,231,0.12)', label: 'Completada', icon: '✅' },
+  cancelada:  { color: '#ff7675', bg: 'rgba(255,118,117,0.12)', label: 'Cancelada',  icon: '🔴' },
+};
+
 const ACCIONES = [
-  { estado: 'completada', label: '✅ Marcar Completada', color: '#00ce6d' },
-  { estado: 'cancelada',  label: '❌ Cancelar Cita',     color: '#ff7675' },
-  { estado: 'pendiente',  label: '🔄 Marcar Pendiente',  color: '#fdcb6e' },
+  { estado: 'completada', label: 'Marcar Completada', icon: '✅', color: '#00ce6d', bg: 'rgba(0,206,109,0.1)' },
+  { estado: 'cancelada',  label: 'Cancelar Cita',     icon: '✕',  color: '#ff7675', bg: 'rgba(255,118,117,0.1)' },
+  { estado: 'pendiente',  label: 'Marcar Pendiente',  icon: '◷',  color: '#fdcb6e', bg: 'rgba(253,203,110,0.1)' },
 ];
 
 export default function DetalleCitaScreen() {
-  const { id, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min } = useLocalSearchParams();
-  const router = useRouter();
-  const [estado, setEstado] = useState(estadoInicial ?? 'confirmada');
+  const { id, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio } =
+    useLocalSearchParams();
+  const router  = useRouter();
+  const [estado,  setEstado]  = useState(estadoInicial ?? 'confirmada');
   const [loading, setLoading] = useState(false);
 
-  const cambiarEstado = async (nuevoEstado) => {
+  const cfg = ESTADO_CONFIG[estado] ?? ESTADO_CONFIG.pendiente;
+
+  // Iniciales del cliente para el avatar
+  const iniciales = (cliente ?? 'SN')
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('');
+
+  const cambiarEstado = (nuevoEstado) => {
+    const accion = ACCIONES.find(a => a.estado === nuevoEstado);
     Alert.alert(
-      'Cambiar estado',
-      `¿Marcar esta cita como "${nuevoEstado}"?`,
+      accion.label,
+      `¿Confirmas cambiar el estado a "${ESTADO_CONFIG[nuevoEstado].label}"?`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'No', style: 'cancel' },
         {
-          text: 'Confirmar',
+          text: 'Sí, confirmar',
           onPress: async () => {
             setLoading(true);
             try {
@@ -53,67 +71,139 @@ export default function DetalleCitaScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>‹ Volver</Text>
+          <Text style={styles.backArrow}>‹</Text>
+          <Text style={styles.backText}>Volver</Text>
         </TouchableOpacity>
-        <Text style={styles.titulo}>Detalle de Cita</Text>
+        <Text style={styles.headerTitle}>Detalle de Cita</Text>
+        <View style={{ width: 64 }} />
       </View>
 
-      {/* Info de la cita */}
-      <View style={styles.card}>
-        <Text style={styles.horaGrande}>{hora}</Text>
-        <Text style={styles.clienteNombre}>{cliente ?? 'Sin nombre'}</Text>
-        <Text style={styles.servicio}>{servicio}</Text>
-        {empleado ? <Text style={styles.empleado}>👤 {empleado}</Text> : null}
-        {duracion_min ? <Text style={styles.duracion}>⏱ {duracion_min} minutos</Text> : null}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.estadoBadge}>
-          <Text style={styles.estadoText}>Estado: {estado}</Text>
+        {/* Avatar + nombre */}
+        <View style={styles.avatarSection}>
+          <View style={[styles.avatar, { borderColor: cfg.color }]}>
+            <Text style={[styles.avatarText, { color: cfg.color }]}>{iniciales}</Text>
+          </View>
+          <Text style={styles.clienteNombre}>{cliente ?? 'Sin nombre'}</Text>
+          <View style={[styles.estadoPill, { backgroundColor: cfg.bg, borderColor: cfg.color + '60' }]}>
+            <Text style={styles.estadoIcon}>{cfg.icon}</Text>
+            <Text style={[styles.estadoLabel, { color: cfg.color }]}>{cfg.label}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Acciones */}
-      <Text style={styles.accionesTitle}>Cambiar estado</Text>
-      {loading
-        ? <ActivityIndicator color="#6c5ce7" />
-        : ACCIONES.filter(a => a.estado !== estado).map(accion => (
-          <TouchableOpacity
-            key={accion.estado}
-            style={[styles.accionBtn, { borderColor: accion.color + '60' }]}
-            onPress={() => cambiarEstado(accion.estado)}
-          >
-            <Text style={[styles.accionText, { color: accion.color }]}>{accion.label}</Text>
-          </TouchableOpacity>
-        ))
-      }
+        {/* Card de info */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>HORA</Text>
+              <Text style={styles.infoValue}>{hora}</Text>
+            </View>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>PRECIO</Text>
+              <Text style={styles.infoValue}>
+                {precio && precio !== '' ? `$${Number(precio).toLocaleString('es-MX')}` : 'N/D'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoSeparator} />
+
+          <View style={styles.infoFull}>
+            <Text style={styles.infoLabel}>SERVICIO</Text>
+            <Text style={styles.infoValueLg}>{servicio}</Text>
+          </View>
+
+          {empleado ? (
+            <>
+              <View style={styles.infoSeparator} />
+              <View style={styles.infoFull}>
+                <Text style={styles.infoLabel}>PROFESIONAL</Text>
+                <Text style={styles.infoValueLg}>👤 {empleado}</Text>
+              </View>
+            </>
+          ) : null}
+        </View>
+
+        {/* Acciones */}
+        {loading ? (
+          <ActivityIndicator color="#6c5ce7" style={{ marginTop: 24 }} />
+        ) : (
+          <View style={styles.acciones}>
+            <Text style={styles.accionesTitle}>CAMBIAR ESTADO</Text>
+            {ACCIONES.filter(a => a.estado !== estado).map(accion => (
+              <TouchableOpacity
+                key={accion.estado}
+                style={[styles.accionBtn, { backgroundColor: accion.bg, borderColor: accion.color + '40' }]}
+                onPress={() => cambiarEstado(accion.estado)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.accionIcon}>{accion.icon}</Text>
+                <Text style={[styles.accionLabel, { color: accion.color }]}>{accion.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a', padding: 20 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
-  backBtn: { paddingVertical: 4 },
-  backText: { color: '#6c5ce7', fontSize: 16 },
-  titulo: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20,
-    padding: 24, marginBottom: 28,
-    borderWidth: 1, borderColor: 'rgba(108,92,231,0.25)',
+  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
   },
-  horaGrande: { fontSize: 42, fontWeight: '800', color: '#fff', marginBottom: 8 },
-  clienteNombre: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  servicio: { fontSize: 15, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  empleado: { fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 8 },
-  duracion: { fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 4 },
-  estadoBadge: {
-    marginTop: 16, backgroundColor: 'rgba(108,92,231,0.2)',
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, alignSelf: 'flex-start',
+  backBtn:   { flexDirection: 'row', alignItems: 'center', gap: 2, width: 64 },
+  backArrow: { fontSize: 24, color: '#6c5ce7', lineHeight: 26 },
+  backText:  { fontSize: 15, color: '#6c5ce7', fontWeight: '500' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+
+  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+
+  // Avatar
+  avatarSection: { alignItems: 'center', marginTop: 16, marginBottom: 28 },
+  avatar: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: 'rgba(108,92,231,0.12)',
+    borderWidth: 2, justifyContent: 'center', alignItems: 'center',
+    marginBottom: 14,
   },
-  estadoText: { color: '#6c5ce7', fontWeight: '600', fontSize: 13 },
-  accionesTitle: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  avatarText:     { fontSize: 28, fontWeight: '800' },
+  clienteNombre:  { fontSize: 22, fontWeight: '700', color: '#fff', marginBottom: 10 },
+  estadoPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 6,
+  },
+  estadoIcon:  { fontSize: 12 },
+  estadoLabel: { fontSize: 13, fontWeight: '700' },
+
+  // Info card
+  infoCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20, borderWidth: 1,
+    borderColor: 'rgba(108,92,231,0.2)',
+    marginBottom: 28, overflow: 'hidden',
+  },
+  infoRow:     { flexDirection: 'row' },
+  infoItem:    { flex: 1, padding: 20, alignItems: 'center' },
+  infoDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 16 },
+  infoFull:    { padding: 20 },
+  infoSeparator: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 20 },
+  infoLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, marginBottom: 6 },
+  infoValue:   { fontSize: 22, fontWeight: '800', color: '#fff' },
+  infoValueLg: { fontSize: 16, fontWeight: '600', color: '#fff', marginTop: 2 },
+
+  // Acciones
+  acciones:      { gap: 10 },
+  accionesTitle: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, marginBottom: 4 },
   accionBtn: {
-    borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 20,
   },
-  accionText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  accionIcon:  { fontSize: 18, width: 28, textAlign: 'center' },
+  accionLabel: { fontSize: 15, fontWeight: '700' },
 });

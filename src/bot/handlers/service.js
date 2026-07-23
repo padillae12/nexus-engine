@@ -4,8 +4,14 @@
 const { getServicios, getServicioById } = require('../../db/queries');
 const { extraerNumeroOpcion } = require('../../utils/regex');
 
+// Palabras clave que indican que el cliente quiere más info del servicio
+const PALABRAS_MAS_INFO = ['más información', 'mas informacion', 'más info', 'mas info',
+  'detalles', 'cuánto dura', 'cuanto dura', 'duración', 'duracion',
+  'cuánto tiempo', 'cuanto tiempo', 'info', 'información', 'informacion'];
+
 /**
- * Muestra la lista de servicios disponibles.
+ * Muestra la lista de servicios disponibles con precio.
+ * La duración solo se muestra si el cliente pide más información.
  */
 async function handleServiceMenu(sesion, msg) {
   const servicios = await getServicios();
@@ -22,10 +28,10 @@ async function handleServiceMenu(sesion, msg) {
 
   const lista = servicios
     .map((s, i) => {
-      const precio = s.mostrar_precio && s.precio != null
-        ? ` — $${Number(s.precio).toLocaleString('es-MX')}`
+      const precio = s.precio != null
+        ? ` — *$${Number(s.precio).toLocaleString('es-MX')}*`
         : '';
-      return `*${i + 1}.* ${s.nombre} _(${s.duracion_min} min)_${precio}`;
+      return `*${i + 1}.* ${s.nombre}${precio}`;
     })
     .join('\n');
 
@@ -40,12 +46,33 @@ async function handleServiceMenu(sesion, msg) {
 /**
  * Captura la elección del servicio y avanza al estado de fecha.
  * Acepta: número de opción (1, 2, 3...) o nombre del servicio.
+ * Si el cliente pide más información, muestra duración y detalles.
  */
 async function handleServiceSelect(sesion, msg) {
   const catalogo = sesion.catalogoServicios || [];
-  let servicioElegido = null;
+  const msgLower = msg.toLowerCase().trim();
+
+  // ── ¿El cliente pide más información? ───────────────────────────
+  const pideMasInfo = PALABRAS_MAS_INFO.some(p => msgLower.includes(p));
+  if (pideMasInfo && catalogo.length > 0) {
+    const detalles = catalogo
+      .map((s, i) => {
+        const precio   = s.precio != null ? `$${Number(s.precio).toLocaleString('es-MX')}` : 'Variable';
+        const duracion = `${s.duracion_min} min`;
+        return `*${i + 1}.* ${s.nombre}\n   💰 ${precio}  ⏱ ${duracion}`;
+      })
+      .join('\n\n');
+
+    return {
+      respuesta:
+        `Aquí tienes los detalles de nuestros servicios:\n\n${detalles}\n\n` +
+        `_¿Cuál te gustaría agendar?_`,
+      nuevoEstado: 'SERVICE_SELECT',
+    };
+  }
 
   // ── Intentar por número ──────────────────────────────────────────
+  let servicioElegido = null;
   const opcion = extraerNumeroOpcion(msg);
   if (opcion && opcion >= 1 && opcion <= catalogo.length) {
     servicioElegido = catalogo[opcion - 1];
@@ -53,7 +80,6 @@ async function handleServiceSelect(sesion, msg) {
 
   // ── Intentar por nombre (búsqueda parcial, case-insensitive) ─────
   if (!servicioElegido) {
-    const msgLower = msg.toLowerCase().trim();
     servicioElegido = catalogo.find(s =>
       s.nombre.toLowerCase().includes(msgLower) ||
       msgLower.includes(s.nombre.toLowerCase())
@@ -63,12 +89,16 @@ async function handleServiceSelect(sesion, msg) {
   // ── No se reconoció la opción ────────────────────────────────────
   if (!servicioElegido) {
     const lista = catalogo
-      .map((s, i) => `*${i + 1}.* ${s.nombre}`)
+      .map((s, i) => {
+        const precio = s.precio != null ? ` — *$${Number(s.precio).toLocaleString('es-MX')}*` : '';
+        return `*${i + 1}.* ${s.nombre}${precio}`;
+      })
       .join('\n');
     return {
       respuesta:
         `No entendí cuál servicio quieres 🤔\n\n` +
-        `Puedes escribir el número o el nombre:\n\n${lista}`,
+        `Puedes escribir el número o el nombre:\n\n${lista}\n\n` +
+        `_Escribe "más información" para ver duración y detalles._`,
       nuevoEstado: 'SERVICE_SELECT',
     };
   }
@@ -77,9 +107,13 @@ async function handleServiceSelect(sesion, msg) {
   sesion.servicioNombre = servicioElegido.nombre;
   sesion.duracionMin    = servicioElegido.duracion_min;
 
+  const precioTexto = servicioElegido.precio != null
+    ? ` · *$${Number(servicioElegido.precio).toLocaleString('es-MX')}*`
+    : '';
+
   return {
     respuesta:
-      `✅ *${servicioElegido.nombre}* seleccionado _(${servicioElegido.duracion_min} min)_.\n\n` +
+      `✅ *${servicioElegido.nombre}* seleccionado${precioTexto}.\n\n` +
       `📅 ¿Para qué día quieres tu cita?\n\n` +
       `Puedes decirme algo como:\n` +
       `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_`,
