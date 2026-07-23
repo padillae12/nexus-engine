@@ -21,7 +21,12 @@ async function handleServiceMenu(sesion, msg) {
   sesion.catalogoServicios = servicios;
 
   const lista = servicios
-    .map((s, i) => `*${i + 1}.* ${s.nombre} _(${s.duracion_min} min)_`)
+    .map((s, i) => {
+      const precio = s.mostrar_precio && s.precio != null
+        ? ` — $${Number(s.precio).toLocaleString('es-MX')}`
+        : '';
+      return `*${i + 1}.* ${s.nombre} _(${s.duracion_min} min)_${precio}`;
+    })
     .join('\n');
 
   return {

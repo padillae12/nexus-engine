@@ -15,17 +15,32 @@ const BASE_URL = 'http://207.244.251.219:3001/api';
 // ── Helper base ───────────────────────────────────────────────────
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
+
+  // Timeout de 8 segundos — si el VPS no responde, lanza error claro
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+
   const config = {
     headers: { 'Content-Type': 'application/json' },
+    signal: controller.signal,
     ...options,
   };
 
-  const res = await fetch(url, config);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `Error ${res.status}`);
+  try {
+    const res = await fetch(url, config);
+    clearTimeout(timer);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || `Error ${res.status}`);
+    }
+    return res.json();
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new Error('Sin respuesta del servidor (timeout). Verifica tu conexión.');
+    }
+    throw err;
   }
-  return res.json();
 }
 
 // ══════════════════════════════════════════════════════════════════
