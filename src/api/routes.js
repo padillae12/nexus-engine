@@ -53,25 +53,37 @@ router.get('/db-health', async (req, res) => {
 
 // POST /api/auth/verify-pin
 // Body: { pin: "123456" }
-// Compara el PIN ingresado contra el hash bcrypt en config_negocio.
+// Compara el PIN ingresado contra el valor en config_negocio.
+// Soporta tanto texto plano como hash bcrypt.
 router.post('/auth/verify-pin', async (req, res) => {
   try {
     const { pin } = req.body;
     if (!pin) return res.status(400).json({ ok: false, message: 'PIN requerido' });
 
-    const hashGuardado = await db.getConfig('ADMIN_PIN');
-    if (!hashGuardado) {
-      // Si no hay PIN configurado, rechazar por seguridad
-      return res.status(500).json({ ok: false, message: 'PIN no configurado en el sistema' });
+    // Intentar con ADMIN_PIN primero, luego RECEPTION_PIN
+    const pinStr = String(pin);
+    let ok = false;
+
+    for (const clave of ['ADMIN_PIN', 'RECEPTION_PIN']) {
+      const valorGuardado = await db.getConfig(clave);
+      if (!valorGuardado) continue;
+
+      // Si es hash bcrypt, comparar con bcrypt; si no, comparar directo
+      const esBcrypt = valorGuardado.startsWith('$2b$') || valorGuardado.startsWith('$2a$');
+      const coincide = esBcrypt
+        ? await bcrypt.compare(pinStr, valorGuardado)
+        : pinStr === valorGuardado;
+
+      if (coincide) { ok = true; break; }
     }
 
-    const ok = await bcrypt.compare(String(pin), hashGuardado);
     res.json({ ok });
   } catch (err) {
     console.error('[verify-pin]', err.message);
     res.status(500).json({ ok: false, message: 'Error interno' });
   }
 });
+
 
 // ─────────────────────────────────────────────────────────────────
 //  CITAS

@@ -24,9 +24,10 @@
 6. [API REST](#6-api-rest)
 7. [Stack Tecnológico](#7-stack-tecnológico)
 8. [Instalación y Despliegue](#8-instalación-y-despliegue)
-9. [Variables de Entorno](#9-variables-de-entorno)
-10. [Estrategia de Negocio](#10-estrategia-de-negocio)
-11. [Formulario de Onboarding — Cliente](#11-formulario-de-onboarding--cliente)
+9. [Solución de Problemas Comunes](#9-solución-de-problemas-comunes)
+10. [Variables de Entorno](#10-variables-de-entorno)
+11. [Estrategia de Negocio](#11-estrategia-de-negocio)
+12. [Formulario de Onboarding — Cliente](#12-formulario-de-onboarding--cliente)
 
 ---
 
@@ -566,23 +567,61 @@ npm run start:api  # producción
 
 ### Despliegue en Producción (VPS + PM2)
 
+> ⚠️ **IMPORTANTE — Escanear el QR ANTES de activar PM2**
+>
+> PM2 corre el bot en segundo plano y no puedes ver el QR desde ahí.
+> **La primera vez (o después de un LOGOUT) debes escanear el QR en modo manual primero.**
+
+#### Paso 1 — Escanear el QR (solo la primera vez)
+
 ```bash
-# Instalar PM2 (solo la primera vez)
+cd ~/nexus-engine
+
+# Arrancar en modo manual para ver el QR en pantalla
+node src/bot/index.js
+```
+
+Cuando aparezca el QR en la terminal:
+1. Abre **WhatsApp** en el celular del negocio
+2. Ve a **Dispositivos vinculados → Vincular un dispositivo**
+3. Escanea el QR
+
+Espera a ver:
+```
+✅ Nexus-Engine conectado a WhatsApp.
+🤖 Bot activo y escuchando mensajes...
+```
+
+Luego presiona **Ctrl+C** para cerrar el modo manual.  
+La sesión queda guardada en `.wwebjs_auth/` y **no volverás a necesitar el QR** mientras el número siga vinculado.
+
+#### Paso 2 — Activar PM2 (una sola vez)
+
+```bash
+# Instalar PM2 si no está
 npm install -g pm2
 
-# Arrancar el bot (escanear QR la primera vez en consola)
+# Arrancar el bot (usará la sesión guardada, sin pedir QR)
 pm2 start src/bot/index.js --name nexus-engine
 
 # Arrancar la API
 pm2 start src/api/server.js --name nexus-api
 
-# Guardar y configurar arranque automático
+# Ver que ambos estén verdes
+pm2 status
+
+# Guardar y configurar arranque automático al reiniciar el VPS
 pm2 save
 pm2 startup
+# ↑ Copia y ejecuta el comando que te muestre (empieza con "sudo env PATH=...")
 ```
 
-> **Nota:** Si la sesión expira, PM2 reiniciará el proceso y pedirá el QR de nuevo.
-> Revisar logs con: `pm2 logs nexus-engine`
+> **Verificar que todo funciona:**
+> ```bash
+> pm2 status          # ambos procesos en verde (online)
+> pm2 logs nexus-engine --lines 20  # debe mostrar "conectado a WhatsApp"
+> ```
+
 
 ### Scripts Disponibles
 
@@ -596,7 +635,117 @@ pm2 startup
 
 ---
 
-## 9. Variables de Entorno
+## 9. Solución de Problemas Comunes
+
+### 🔴 El número se desvinculó del bot (LOGOUT)
+
+**Síntoma:** Alguien fue a *WhatsApp → Dispositivos vinculados* y desvinculó el bot manualmente, o la sesión expiró.
+
+**Lo que pasa internamente:** La sesión guardada en `.wwebjs_auth/` queda inválida. Si el bot intenta arrancar con esa sesión corrupta, falla con `ProtocolError` y **no muestra QR**.
+
+**Solución con PM2 (producción) — ejecutar en el VPS:**
+
+```bash
+cd ~/nexus-engine
+
+# 1. Detener el bot (PM2 lo tiene en background, no puedes ver el QR desde ahí)
+pm2 stop nexus-engine
+
+# 2. Borrar la sesión corrupta
+rm -rf .wwebjs_auth .wwebjs_cache
+
+# 3. Arrancar en modo manual para ver el QR en pantalla
+node src/bot/index.js
+```
+
+Cuando aparezca el QR:
+1. Abre **WhatsApp** en el celular del negocio
+2. Ve a **Dispositivos vinculados → Vincular un dispositivo**
+3. Escanea el QR
+
+Espera a ver `✅ Nexus-Engine conectado a WhatsApp.` y luego:
+
+```bash
+# 4. Ctrl+C para cerrar el modo manual
+# 5. Devolver el control a PM2
+pm2 restart nexus-engine
+```
+
+> ⚠️ **¿Por qué no usar `pm2 restart` directo?**  
+> PM2 corre el proceso en segundo plano — el QR aparece en los logs pero no es escaneable en pantalla.  
+> Siempre que necesites el QR, primero `pm2 stop` → escanear con `node` → `pm2 restart`.
+
+---
+
+### 🔴 El bot arranca pero no muestra QR y se cae
+
+**Causa:** Quedó una sesión corrupta en `.wwebjs_auth/` de una desvinculación anterior.
+
+**Solución:**
+```bash
+cd ~/nexus-engine
+rm -rf .wwebjs_auth .wwebjs_cache
+pm2 restart nexus-engine
+```
+
+---
+
+### 🟡 El bot dice "conectado" pero no responde mensajes
+
+**Verificar:**
+```bash
+# Ver logs en tiempo real
+pm2 logs nexus-engine
+
+# Ver estado
+pm2 status
+```
+
+Si el proceso está caído: `pm2 restart nexus-engine`
+
+---
+
+### 🟡 Error de conexión a la base de datos
+
+```bash
+# Probar el healthcheck de la API
+curl http://localhost:3001/api/db-health
+```
+
+Si falla: verificar que MariaDB esté corriendo:
+```bash
+sudo systemctl status mariadb
+sudo systemctl start mariadb
+```
+
+---
+
+### ℹ️ Cómo revisar logs del bot
+
+```bash
+# Últimas 50 líneas
+pm2 logs nexus-engine --lines 50
+
+# En tiempo real (Ctrl+C para salir)
+pm2 logs nexus-engine
+```
+
+---
+
+### ℹ️ Cómo actualizar el bot en el VPS
+
+Cada vez que se haga un cambio en el código:
+
+```bash
+cd ~/nexus-engine
+git pull
+pm2 restart nexus-engine
+pm2 restart nexus-api
+```
+
+---
+
+## 10. Variables de Entorno
 
 Crear el archivo `.env` en la raíz del proyecto copiando `.env.example`:
 
@@ -713,23 +862,25 @@ R:
 
 **2.1** Lista todos los servicios que ofreces:
 
-| # | Nombre del servicio | Descripción breve | Duración (min) | ¿Activo? |
-|---|---|---|---|---|
-| 1 | | | | Sí / No |
-| 2 | | | | Sí / No |
-| 3 | | | | Sí / No |
-| 4 | | | | Sí / No |
-| 5 | | | | Sí / No |
-| 6 | | | | Sí / No |
+| # | Nombre del servicio | Descripción breve | Duración (min) | Precio (MXN) | ¿El bot menciona el precio? | ¿Activo? |
+|---|---|---|---|---|---|---|
+| 1 | | | | | Sí / No | Sí / No |
+| 2 | | | | | Sí / No | Sí / No |
+| 3 | | | | | Sí / No | Sí / No |
+| 4 | | | | | Sí / No | Sí / No |
+| 5 | | | | | Sí / No | Sí / No |
+| 6 | | | | | Sí / No | Sí / No |
 
-**2.2** ¿Los servicios tienen precio fijo? ¿Quieres que el bot lo mencione?
-```
-R:
-```
+> _Deja el precio en blanco si es variable o se cotiza aparte._
 
-**2.3** ¿Hay servicios que requieren datos adicionales al agendar?
+**2.2** ¿Hay servicios que requieren datos adicionales al agendar?
 ```
 R: (ej: "para Ortodoncia necesito saber si es primera visita")
+```
+
+**2.3** ¿Hay alguna pregunta que el bot deba hacer antes de confirmar ciertos servicios?
+```
+R: (ej: "para Ortodoncia, preguntar si es primera visita")
 ```
 
 ---
@@ -746,6 +897,17 @@ Sábado (si aplica): de ______ a ______
 Excepciones:
 ```
 
+> 💡 **Nota para el cliente:** El bot **nunca ofrecerá** un horario que se salga del horario de cierre.
+> Esto incluye citas que, por su duración, terminarían después de la hora de cierre.
+>
+> **Ejemplos:**
+> - Negocio cierra a las 8:00 pm → el bot **NO** ofrecerá las 8:00 pm como horario de inicio.
+> - Servicio de 2 horas, negocio cierra a las 8:00 pm → el bot **NO** ofrecerá las 7:00 pm ni más tarde,
+>   porque la cita terminaría a las 9:00 pm (fuera de horario).
+> - Servicio de 30 min, cierra a las 8:00 pm → el último horario disponible sería las 7:30 pm.
+>
+> No necesitas configurar nada extra — el sistema lo calcula automáticamente con base en la duración de cada servicio.
+
 **3.3** ¿Tienen hora de comida o descanso que el bot NO debe ofrecer?
 ```
 R: (ej: de 2:00pm a 3:00pm todos los días)
@@ -760,6 +922,13 @@ R: (ej: mínimo 2 horas antes / mínimo 1 día antes)
 ```
 R: (ej: máximo 30 días / máximo 2 semanas)
 ```
+
+**3.6** ¿En qué zona horaria opera el negocio?
+```
+R: (ej: Ciudad de México — UTC-6 / Mexicali/Tijuana — UTC-7 / Monterrey — UTC-6)
+```
+
+> _Importante para que las citas se muestren en la hora correcta._
 
 ---
 
@@ -777,35 +946,53 @@ R:
 
 **4.3** Si hay varios empleados:
 
-| # | Nombre | Servicios que realiza | Horario diferente al general |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
+| # | Nombre completo | Servicios que realiza | Horario diferente al general | Email |
+|---|---|---|---|---|
+| 1 | | | | |
+| 2 | | | | |
+| 3 | | | | |
+
+> _El email se usa para enviar notificaciones de nuevas citas (próximamente)._
+
+**4.4** ¿Cuál es el PIN de acceso para el administrador (dueño) en la app?
+```
+R: (mínimo 4 dígitos, ej: 9182)
+```
+
+**4.5** ¿Cuál es el PIN de acceso para la(s) recepcionista(s)?
+```
+R: (mínimo 4 dígitos, diferente al del admin. Ej: 3456)
+```
+
+> _Los PINs permiten acceder al dashboard de la Nexus-App. El dueño tiene acceso total; la recepcionista solo ve las citas del día._
 
 ---
 
 ### SECCIÓN 5 — Tono y Personalidad del Bot
 
-**5.1** ¿Cómo quieres que hable el bot con tus clientes?
-- [ ] Formal (usted, profesional)
-- [ ] Semi-formal (tú, amigable pero profesional)
-- [ ] Casual (relajado, con emojis)
-
-**5.2** ¿Cómo se va a llamar el asistente virtual?
+**5.1** ¿Cómo se va a llamar el asistente virtual?
 ```
-R: (ej: "Sofía", "Asistente Dental Dr. García", "El bot de BeautyStudio")
+R: (ej: "Sofía", "Asistente Dental Dr. García", "Nexus")
 ```
 
-**5.3** ¿Hay alguna frase de bienvenida específica que quieras usar?
+**5.2** ¿Hay alguna frase de bienvenida específica que quieras usar?
 ```
 R: (ej: "¡Hola! Gracias por contactar a Clínica García, tu salud es nuestra prioridad.")
 ```
 
-**5.4** ¿En qué idioma deben ser los mensajes?
-- [ ] Solo español
-- [ ] Solo inglés
-- [ ] Español e inglés (el bot detecta el idioma del cliente)
+> _Si dejas este campo vacío, el bot usará el saludo por defecto._
+
+**5.3** ¿En qué idioma deben ser los mensajes?
+- [x] Solo español _(disponible ahora)_
+- [ ] Solo inglés 🚧 _(próximamente)_
+- [ ] Español e inglés 🚧 _(próximamente)_
+
+**5.4** 🚧 _(Próximamente)_ ¿Cómo quieres que hable el bot?
+- [ ] Formal (usted)
+- [ ] Semi-formal (tú, amigable)
+- [ ] Casual (con emojis)
+
+> _El ajuste de tono estará disponible en versiones futuras._
 
 ---
 
@@ -816,23 +1003,23 @@ R: (ej: "¡Hola! Gracias por contactar a Clínica García, tu salud es nuestra p
 R: (ej: hasta 24 horas antes / en cualquier momento)
 ```
 
-**6.2** ¿Quieres que el bot envíe un recordatorio antes de la cita?
-- [ ] Sí — ¿con cuánto tiempo de anticipación? __________
-- [ ] No
-
-**6.3** ¿Qué pasa si un cliente cancela? ¿El bot le ofrece reagendar?
+**6.2** ¿Qué pasa si un cliente cancela? ¿El bot le ofrece reagendar?
 - [ ] Sí, ofrecer reagendar automáticamente
 - [ ] No, solo confirmar la cancelación
 
-**6.4** ¿Hay días festivos o fechas especiales sin servicio?
+**6.3** ¿Cuántas citas simultáneas puede manejar tu negocio?
 ```
-R:
+R: (ej: 1 cita a la vez / hasta 3 simultáneas si hay 3 empleados)
 ```
 
-**6.5** ¿Cuántas citas simultáneas puede manejar tu negocio?
+**6.4** ¿Hay días festivos o fechas especiales sin servicio?
 ```
-R: (ej: 1 cita a la vez / hasta 3 simultáneas con diferentes empleados)
+R: (ej: 25 de diciembre, Semana Santa...)
 ```
+
+**6.5** 🚧 _(Próximamente)_ ¿Quieres que el bot envíe recordatorios por WhatsApp antes de la cita?
+- [ ] Sí — ¿con cuánto tiempo de anticipación? __________
+- [ ] No
 
 ---
 
@@ -852,9 +1039,11 @@ R: (ej: email, motivo de visita, si es primera vez)
 - [ ] Mostrar el menú principal
 - [ ] Dar un número de teléfono para hablar con una persona
 
-**7.4** ¿Quieres opción de transferir a un humano (pausar el bot)?
+**7.4** 🚧 _(Próximamente)_ ¿Quieres opción de transferir a un humano (pausar el bot)?
 - [ ] Sí
 - [ ] No
+
+> _Esta función estará disponible en versiones futuras. Por ahora el bot siempre responde._
 
 **7.5** Si un cliente escribe fuera del horario de atención, ¿qué debe responder el bot?
 ```
@@ -896,18 +1085,39 @@ R:
 
 **PASO 1 — Configuración del negocio**
 - [ ] Información del negocio capturada en `.env` (`BUSINESS_NAME`)
+- [ ] Zona horaria actualizada en DB: `UPDATE config_negocio SET valor='America/Hermosillo' WHERE clave='TIMEZONE';`
 - [ ] Servicios cargados en la base de datos (`tabla: servicios`)
 - [ ] Horarios configurados (`tabla: horarios_trabajo`)
-- [ ] Bloqueos registrados (`tabla: bloqueos`)
+- [ ] Bloqueos registrados si aplica (`tabla: bloqueos`)
 - [ ] Empleados registrados si aplica (`tabla: usuarios`)
-- [ ] Tono y mensajes personalizados en los handlers
+- [ ] **PINs de acceso a la Nexus-App configurados** — ejecutar en el VPS:
+
+```bash
+cd ~/nexus-engine
+node -e "
+const bcrypt = require('bcrypt');
+const adminPin = 'PIN_ADMIN_DEL_CLIENTE';      // ← respuesta pregunta 4.4
+const recepPin = 'PIN_RECEPCION_DEL_CLIENTE';  // ← respuesta pregunta 4.5
+Promise.all([
+  bcrypt.hash(String(adminPin), 10),
+  bcrypt.hash(String(recepPin), 10)
+]).then(([adminHash, recepHash]) => {
+  const exec = require('child_process').execSync;
+  exec(\`mysql -u nexus_user -p'PadAlex01' nexus_flow -e \"INSERT INTO config_negocio (clave,valor,descripcion) VALUES ('ADMIN_PIN','\${adminHash}','PIN admin') ON DUPLICATE KEY UPDATE valor='\${adminHash}';\"\`);
+  exec(\`mysql -u nexus_user -p'PadAlex01' nexus_flow -e \"UPDATE config_negocio SET valor='\${recepHash}' WHERE clave='RECEPTION_PIN';\"\`);
+  console.log('✅ PINs configurados correctamente.');
+});
+"
+```
 
 **PASO 2 — Pruebas y entrega**
 - [ ] Prueba de flujo completo realizada (agendar → confirmar → cancelar)
-- [ ] Webhook verificado: `GET /webhook` responde 200 con el challenge
-- [ ] Mensaje de prueba enviado al número desde WhatsApp y respuesta recibida
-- [ ] Bot desplegado en PM2 en el VPS con `pm2 start`
-- [ ] Bot entregado y dueño capacitado
+- [ ] Mensaje de prueba enviado desde otro número y respuesta recibida
+- [ ] Flujo de cancelación probado
+- [ ] Horarios correctos verificados (días libres y hora de cierre)
+- [ ] Bot corriendo en PM2: `pm2 status` muestra `nexus-engine` y `nexus-api` en verde
+- [ ] Dueño capacitado en uso de la Nexus-App (PIN admin y recepcionista)
+- [ ] Procedimiento de re-vinculación de QR explicado al cliente
 
 ---
 

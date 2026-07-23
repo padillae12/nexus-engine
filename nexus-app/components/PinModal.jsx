@@ -16,7 +16,7 @@ import {
   Vibration,
 } from 'react-native';
 
-const PIN_LENGTH = 6;
+const PIN_LENGTH = 5;
 
 export default function PinModal({ visible, onClose, onSubmit, loading, error }) {
   const [pin, setPin] = useState('');

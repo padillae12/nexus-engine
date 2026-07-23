@@ -10,7 +10,7 @@
 
 // ── Configuración ──────────────────────────────────────────────────
 // Cambia esta IP por la de tu VPS (o tu máquina local en desarrollo)
-const BASE_URL = 'http://192.168.1.100:3001/api';
+const BASE_URL = 'http://207.244.251.219:3001/api';
 
 // ── Helper base ───────────────────────────────────────────────────
 async function request(endpoint, options = {}) {
