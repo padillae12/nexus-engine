@@ -1092,23 +1092,29 @@ R:
 - [ ] Empleados registrados si aplica (`tabla: usuarios`)
 - [ ] **PINs de acceso a la Nexus-App configurados** — ejecutar en el VPS:
 
-```bash
-cd ~/nexus-engine
-node -e "
-const bcrypt = require('bcrypt');
-const adminPin = 'PIN_ADMIN_DEL_CLIENTE';      // ← respuesta pregunta 4.4
-const recepPin = 'PIN_RECEPCION_DEL_CLIENTE';  // ← respuesta pregunta 4.5
-Promise.all([
-  bcrypt.hash(String(adminPin), 10),
-  bcrypt.hash(String(recepPin), 10)
-]).then(([adminHash, recepHash]) => {
-  const exec = require('child_process').execSync;
-  exec(\`mysql -u nexus_user -p'PadAlex01' nexus_flow -e \"INSERT INTO config_negocio (clave,valor,descripcion) VALUES ('ADMIN_PIN','\${adminHash}','PIN admin') ON DUPLICATE KEY UPDATE valor='\${adminHash}';\"\`);
-  exec(\`mysql -u nexus_user -p'PadAlex01' nexus_flow -e \"UPDATE config_negocio SET valor='\${recepHash}' WHERE clave='RECEPTION_PIN';\"\`);
-  console.log('✅ PINs configurados correctamente.');
-});
-"
-```
+  1. Editar `scripts/fix_pins.js` con los PINs del cliente (preguntas 4.4 y 4.5):
+  ```js
+  const ADMIN_PIN     = 'PIN_ADMIN_DEL_CLIENTE';     // ← pregunta 4.4
+  const RECEPTION_PIN = 'PIN_RECEPCION_DEL_CLIENTE'; // ← pregunta 4.5
+  ```
+
+  2. Ejecutar en el VPS:
+  ```bash
+  cd ~/nexus-engine
+  node scripts/fix_pins.js
+  pm2 restart nexus-api
+  ```
+
+  3. Verificar que el output muestre **60 chars** en ambos PINs:
+  ```
+  ✅ Resultado:
+    ADMIN_PIN: 60 chars (esperado: 60)
+    RECEPTION_PIN: 60 chars (esperado: 60)
+  ```
+
+  > ⚠️ **No usar** `node -e` inline para generar hashes — puede truncar los valores en la DB.
+
+
 
 **PASO 2 — Pruebas y entrega**
 - [ ] Prueba de flujo completo realizada (agendar → confirmar → cancelar)
