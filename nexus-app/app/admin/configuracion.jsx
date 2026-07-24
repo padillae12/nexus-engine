@@ -1,4 +1,6 @@
 // app/admin/configuracion.jsx — Pantalla Admin: configuración del negocio
+// Diseño Profesional & Ejecutivo (Zero Emojis)
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { getConfig, checkHealth } from '../../services/api';
@@ -32,25 +34,25 @@ export default function ConfiguracionScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <ActivityIndicator color="#6c5ce7" style={{ marginTop: 60 }} />;
+  if (loading) return <ActivityIndicator color="#6366F1" style={{ marginTop: 60 }} />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       {/* Estado del servidor */}
-      <Text style={styles.sectionTitle}>Estado del Servidor</Text>
-      <View style={[styles.healthCard, { borderColor: apiOnline ? '#00ce6d40' : '#ff767540' }]}>
-        <Text style={styles.healthDot}>{apiOnline ? '🟢' : '🔴'}</Text>
-        <View>
+      <Text style={styles.sectionTitle}>ESTADO DEL SERVIDOR</Text>
+      <View style={[styles.healthCard, { borderColor: apiOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)' }]}>
+        <View style={[styles.healthDot, { backgroundColor: apiOnline ? '#10B981' : '#EF4444' }]} />
+        <View style={{ flex: 1 }}>
           <Text style={styles.healthLabel}>API Nexus-Engine</Text>
-          <Text style={[styles.healthStatus, { color: apiOnline ? '#00ce6d' : '#ff7675' }]}>
-            {apiOnline ? 'Online' : 'Sin conexión'}
+          <Text style={[styles.healthStatus, { color: apiOnline ? '#10B981' : '#EF4444' }]}>
+            {apiOnline ? 'Conexión activa · En línea' : 'Servidor sin respuesta'}
           </Text>
         </View>
       </View>
 
       {/* Configuración del negocio */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Configuración Actual</Text>
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>PARÁMETROS DEL SISTEMA</Text>
       {config ? (
         <View style={styles.configList}>
           <ConfigRow label="Min. anticipación" valor={`${config.MIN_BOOKING_HOURS}h`} descripcion="Para agendar una cita" />
@@ -65,38 +67,62 @@ export default function ConfiguracionScreen() {
       )}
 
       <Text style={styles.hint}>
-        Para modificar la configuración, edita la tabla `config_negocio` en la base de datos.
+        Nota: Para modificar estos parámetros, edite los valores correspondientes en la tabla config_negocio de MariaDB.
       </Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  container: { flex: 1, backgroundColor: '#0B0F17' },
   content: { padding: 20 },
-  sectionTitle: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
-  healthCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
-    padding: 16, borderWidth: 1,
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 1.2,
+    marginBottom: 12,
   },
-  healthDot: { fontSize: 24 },
-  healthLabel: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  healthStatus: { fontSize: 13, marginTop: 2 },
-  configList: { gap: 2 },
+  healthCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+  },
+  healthDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  healthLabel: { color: '#F9FAFB', fontWeight: '700', fontSize: 14 },
+  healthStatus: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  configList: { gap: 6 },
   configRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, marginBottom: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#1F2937',
   },
   configInfo: { flex: 1 },
-  configLabel: { color: '#fff', fontSize: 14 },
-  configDesc: { color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 2 },
+  configLabel: { color: '#F3F4F6', fontSize: 13, fontWeight: '600' },
+  configDesc: { color: '#6B7280', fontSize: 11, marginTop: 2 },
   configValor: {
-    backgroundColor: 'rgba(108,92,231,0.2)', borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.25)',
   },
-  configValorText: { color: '#6c5ce7', fontSize: 13, fontWeight: '600' },
-  emptyText: { color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 30 },
-  hint: { color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 20, lineHeight: 18 },
+  configValorText: { color: '#6366F1', fontSize: 12, fontWeight: '700' },
+  emptyText: { color: '#6B7280', textAlign: 'center', marginTop: 30, fontSize: 13 },
+  hint: { color: '#6B7280', fontSize: 11, marginTop: 24, lineHeight: 16 },
 });

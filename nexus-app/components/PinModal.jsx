@@ -1,8 +1,6 @@
 // components/PinModal.jsx
 // ══════════════════════════════════════════════════════════════════
-//  Modal de ingreso del PIN secreto del dueño.
-//  Se activa tocando el logo 5 veces (gesto discreto).
-//  Muestra 6 círculos rellenos conforme se digita el PIN.
+//  Modal de Autenticación de PIN — Diseño Profesional (Zero Emojis)
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -21,19 +19,16 @@ const PIN_LENGTH = 5;
 export default function PinModal({ visible, onClose, onSubmit, loading, error }) {
   const [pin, setPin] = useState('');
 
-  // Limpiar PIN al abrir/cerrar
   useEffect(() => {
     if (!visible) setPin('');
   }, [visible]);
 
-  // Cuando se completa el PIN, enviarlo automáticamente
   useEffect(() => {
     if (pin.length === PIN_LENGTH) {
       onSubmit(pin);
     }
   }, [pin]);
 
-  // Vibración en error
   useEffect(() => {
     if (error) {
       Vibration.vibrate([0, 100, 100, 100]);
@@ -58,9 +53,9 @@ export default function PinModal({ visible, onClose, onSubmit, loading, error })
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
-          {/* Header */}
-          <Text style={styles.title}>Acceso Admin</Text>
-          <Text style={styles.subtitle}>Ingresa el PIN del dueño</Text>
+          <Text style={styles.badgeLabel}>SEGURIDAD</Text>
+          <Text style={styles.title}>Autenticación de Administrador</Text>
+          <Text style={styles.subtitle}>Ingrese su PIN de 5 dígitos para continuar</Text>
 
           {/* Indicadores de PIN */}
           <View style={styles.dotsRow}>
@@ -76,7 +71,7 @@ export default function PinModal({ visible, onClose, onSubmit, loading, error })
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {/* Loading */}
-          {loading && <ActivityIndicator color="#6c5ce7" style={{ marginBottom: 12 }} />}
+          {loading && <ActivityIndicator color="#6366F1" style={{ marginBottom: 16 }} />}
 
           {/* Teclado numérico */}
           <View style={styles.keypad}>
@@ -91,6 +86,7 @@ export default function PinModal({ visible, onClose, onSubmit, loading, error })
                       else if (key !== '') handleDigit(key);
                     }}
                     disabled={loading || key === ''}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.keyText}>{key}</Text>
                   </TouchableOpacity>
@@ -112,77 +108,92 @@ export default function PinModal({ visible, onClose, onSubmit, loading, error })
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(3, 7, 18, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   card: {
     width: 320,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 24,
+    backgroundColor: '#111827',
+    borderRadius: 16,
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(108,92,231,0.3)',
+    borderColor: '#1F2937',
+  },
+  badgeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6366F1',
+    letterSpacing: 1.2,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#fff',
+    color: '#F9FAFB',
+    textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.5)',
-    marginBottom: 28,
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   dotsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   dot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#6c5ce7',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: '#374151',
     backgroundColor: 'transparent',
   },
   dotFilled: {
-    backgroundColor: '#6c5ce7',
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
   },
   error: {
-    color: '#ff7675',
-    fontSize: 13,
-    marginBottom: 12,
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 16,
     textAlign: 'center',
   },
   keypad: {
     width: '100%',
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 4,
   },
   keyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
   },
   key: {
     flex: 1,
-    height: 56,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
+    height: 52,
+    backgroundColor: '#1F2937',
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   keyEmpty: {
     backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   keyText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#fff',
+    color: '#F9FAFB',
   },
   cancelBtn: {
     marginTop: 20,
@@ -190,7 +201,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   cancelText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

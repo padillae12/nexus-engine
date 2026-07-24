@@ -1,10 +1,7 @@
 // app/index.jsx
 // ══════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL — Agenda (Hoy / Mañana)
-//
-//  Pantalla principal que se muestra al abrir la app.
-//  Permite cambiar entre las citas de Hoy y Mañana.
-//  Gesto: tocar el logo 5 veces abre el modal de PIN para admin.
+//  PANTALLA PRINCIPAL — Control de Citas (Modo Recepción / General)
+//  Diseño Profesional & Ejecutivo (Zero Emojis)
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -41,7 +38,6 @@ export default function AgendaScreen() {
     weekday: 'long', day: 'numeric', month: 'long',
   });
 
-  // ── Cargar citas de hoy y mañana ────────────────────────────────
   const cargarCitas = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -60,7 +56,7 @@ export default function AgendaScreen() {
 
   useEffect(() => { cargarCitas(); }, []);
 
-  // ── Gesto discreto: tocar logo 5 veces → abrir PIN ─────────────
+  // Gesto discreto: tocar logo 5 veces -> abrir PIN admin
   const handleLogoTap = () => {
     const newCount = logoTaps + 1;
     setLogoTaps(newCount);
@@ -74,7 +70,6 @@ export default function AgendaScreen() {
     }
   };
 
-  // ── Navegar a modo Admin al autenticarse ────────────────────────
   useEffect(() => {
     if (isAdmin) {
       setShowPin(false);
@@ -90,11 +85,11 @@ export default function AgendaScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Header Ejecutivo */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleLogoTap} activeOpacity={1}>
+        <TouchableOpacity onPress={handleLogoTap} activeOpacity={0.8}>
           <View style={styles.logoBox}>
-            <Text style={styles.logoText}>N</Text>
+            <Text style={styles.logoText}>NEXUS</Text>
           </View>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -104,37 +99,44 @@ export default function AgendaScreen() {
           <Text style={styles.fecha}>{activeFecha}</Text>
         </View>
         <View style={styles.headerRight}>
-          <Text style={styles.totalCitas}>{listData.length} cita{listData.length !== 1 ? 's' : ''}</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>
+              {listData.length} {listData.length === 1 ? 'cita' : 'citas'}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Tabs Selector: Hoy vs Mañana */}
-      <View style={styles.tabSelectorRow}>
+      {/* Selector de Pestañas Segmentado */}
+      <View style={styles.segmentedContainer}>
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'hoy' && styles.tabBtnActive]}
+          style={[styles.segmentBtn, activeTab === 'hoy' && styles.segmentBtnActive]}
           onPress={() => setActiveTab('hoy')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'hoy' && styles.tabBtnTextActive]}>
-            📅 Hoy ({citasHoy.length})
+          <Text style={[styles.segmentText, activeTab === 'hoy' && styles.segmentTextActive]}>
+            HOY ({citasHoy.length})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'manana' && styles.tabBtnActive]}
+          style={[styles.segmentBtn, activeTab === 'manana' && styles.segmentBtnActive]}
           onPress={() => setActiveTab('manana')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'manana' && styles.tabBtnTextActive]}>
-            🌅 Mañana ({citasManana.length})
+          <Text style={[styles.segmentText, activeTab === 'manana' && styles.segmentTextActive]}>
+            MAÑANA ({citasManana.length})
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Banner próxima cita (solo en hoy) */}
+      {/* Banner de Próxima Cita (sin emojis) */}
       {activeTab === 'hoy' && proxima && (
-        <View style={styles.proximaBanner}>
-          <Text style={styles.proximaLabel}>⏱ Próxima cita de hoy</Text>
+        <View style={styles.proximaCard}>
+          <View style={styles.proximaHeaderRow}>
+            <View style={styles.proximaDot} />
+            <Text style={styles.proximaLabel}>PRÓXIMA CITA EN AGENDA</Text>
+          </View>
           <Text style={styles.proximaInfo}>
             {proxima.hora} · {proxima.cliente ?? 'Sin nombre'} · {proxima.servicio}
           </Text>
@@ -151,35 +153,37 @@ export default function AgendaScreen() {
             onPress={() => router.push({
               pathname: '/cita/[id]',
               params: {
-                id:          item.id,
-                fecha:       item.fecha ?? '',
-                hora:        item.hora,
-                cliente:     item.cliente ?? 'Sin nombre',
-                servicio:    item.servicio,
-                empleado:    item.empleado ?? '',
-                estado:      item.estado,
+                id:           item.id,
+                fecha:        item.fecha ?? '',
+                hora:         item.hora,
+                cliente:      item.cliente ?? 'Sin nombre',
+                servicio:     item.servicio,
+                empleado:     item.empleado ?? '',
+                estado:       item.estado,
                 duracion_min: item.duracion_min,
-                precio:      item.precio ?? '',
-                creado_en:   item.creado_en ?? '',
+                precio:       item.precio ?? '',
+                creado_en:    item.creado_en ?? '',
               },
             })}
           />
         )}
         contentContainerStyle={styles.lista}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={cargarCitas} tintColor="#6c5ce7" />
+          <RefreshControl refreshing={refreshing} onRefresh={cargarCitas} tintColor="#6366F1" />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🗓️</Text>
-            <Text style={styles.emptyText}>
-              {activeTab === 'hoy' ? 'No hay citas para hoy' : 'No hay citas agendadas para mañana'}
+            <Text style={styles.emptyTitle}>Sin citas programadas</Text>
+            <Text style={styles.emptySubText}>
+              {activeTab === 'hoy'
+                ? 'No hay registros en la agenda para la fecha de hoy.'
+                : 'No hay registros en la agenda para la fecha de mañana.'}
             </Text>
           </View>
         }
       />
 
-      {/* Modal PIN */}
+      {/* Modal PIN Admin */}
       <PinModal
         visible={showPin}
         onClose={() => setShowPin(false)}
@@ -192,72 +196,142 @@ export default function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  container: { flex: 1, backgroundColor: '#0B0F17' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 10,
-    gap: 14,
+    paddingBottom: 14,
+    gap: 12,
   },
   logoBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#6c5ce7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  titulo: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  fecha: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'capitalize' },
-  headerRight: { marginLeft: 'auto' },
-  totalCitas: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
-
-  // Selector de Tabs
-  tabSelectorRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 14,
-    gap: 10,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#111827',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#6366F1',
   },
-  tabBtnActive: {
-    backgroundColor: '#6c5ce7',
-    borderColor: '#6c5ce7',
+  logoText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#6366F1',
+    letterSpacing: 1.5,
   },
-  tabBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  tabBtnTextActive: {
-    color: '#fff',
+  titulo: {
+    fontSize: 18,
     fontWeight: '700',
+    color: '#F9FAFB',
+  },
+  fecha: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  headerRight: {
+    marginLeft: 'auto',
+  },
+  countBadge: {
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
 
-  proximaBanner: {
+  // Selector Segmentado
+  segmentedContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    padding: 3,
     marginHorizontal: 20,
-    marginBottom: 12,
-    backgroundColor: 'rgba(108,92,231,0.15)',
-    borderRadius: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  segmentBtnActive: {
+    backgroundColor: '#6366F1',
+  },
+  segmentText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 0.8,
+  },
+  segmentTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Banner Próxima Cita
+  proximaCard: {
+    marginHorizontal: 20,
+    marginBottom: 14,
+    backgroundColor: '#111827',
+    borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(108,92,231,0.3)',
+    borderColor: '#1F2937',
+    borderLeftWidth: 3,
+    borderLeftColor: '#6366F1',
   },
-  proximaLabel: { fontSize: 11, color: '#6c5ce7', fontWeight: '700', marginBottom: 4 },
-  proximaInfo: { fontSize: 14, color: '#fff', fontWeight: '500' },
-  lista: { paddingHorizontal: 20, paddingBottom: 20 },
-  emptyState: { alignItems: 'center', marginTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: 'rgba(255,255,255,0.35)', fontSize: 15 },
+  proximaHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  proximaDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#6366F1',
+  },
+  proximaLabel: {
+    fontSize: 10,
+    color: '#6366F1',
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  proximaInfo: {
+    fontSize: 13,
+    color: '#E5E7EB',
+    fontWeight: '500',
+  },
+
+  lista: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 60,
+    paddingHorizontal: 30,
+  },
+  emptyTitle: {
+    color: '#E5E7EB',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  emptySubText: {
+    color: '#6B7280',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });

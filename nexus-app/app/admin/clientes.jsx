@@ -1,19 +1,29 @@
-// app/admin/clientes.jsx — Pantalla Admin: lista de clientes del bot
+// app/admin/clientes.jsx — Pantalla Admin: lista de clientes registrados por el bot
+// Diseño Profesional & Ejecutivo (Zero Emojis)
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { getClientes } from '../../services/api';
 
 function ClienteRow({ cliente }) {
+  const inicial = (cliente.nombre ?? '?')[0].toUpperCase();
+  const fechaStr = cliente.creado_en
+    ? new Date(cliente.creado_en).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
+
   return (
     <View style={styles.row}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{(cliente.nombre ?? '?')[0].toUpperCase()}</Text>
+        <Text style={styles.avatarText}>{inicial}</Text>
       </View>
       <View style={styles.info}>
         <Text style={styles.nombre}>{cliente.nombre ?? 'Sin nombre'}</Text>
         <Text style={styles.telefono}>{cliente.telefono}</Text>
       </View>
-      <Text style={styles.fecha}>{new Date(cliente.creado_en).toLocaleDateString('es-MX')}</Text>
+      <View style={styles.metaCol}>
+        <Text style={styles.citasCount}>{cliente.total_citas ?? 0} citas</Text>
+        <Text style={styles.fecha}>{fechaStr}</Text>
+      </View>
     </View>
   );
 }
@@ -31,42 +41,79 @@ export default function ClientesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Total: {clientes.length} clientes</Text>
-      {loading
-        ? <ActivityIndicator color="#6c5ce7" style={{ marginTop: 40 }} />
-        : (
-          <FlatList
-            data={clientes}
-            keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => <ClienteRow cliente={item} />}
-            contentContainerStyle={styles.lista}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>Sin clientes registrados aún</Text>
-            }
-          />
-        )
-      }
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle}>DIRECTORIO DE CLIENTES</Text>
+        <Text style={styles.headerCount}>{clientes.length} registrados</Text>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator color="#6366F1" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={clientes}
+          keyExtractor={item => String(item.id)}
+          renderItem={({ item }) => <ClienteRow cliente={item} />}
+          contentContainerStyle={styles.lista}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>Sin clientes registrados en la base de datos</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a' },
-  header: { padding: 16, color: 'rgba(255,255,255,0.4)', fontSize: 13 },
-  lista: { paddingHorizontal: 16, paddingBottom: 20 },
+  container: { flex: 1, backgroundColor: '#0B0F17' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  headerTitle: {
+    color: '#6B7280',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+  headerCount: {
+    color: '#9CA3AF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  lista: { paddingHorizontal: 16, paddingBottom: 24 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14, padding: 14, marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#1F2937',
   },
   avatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#6c5ce7', justifyContent: 'center', alignItems: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#374151',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  avatarText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  avatarText: { color: '#F9FAFB', fontWeight: '700', fontSize: 14 },
   info: { flex: 1 },
-  nombre: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  telefono: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
-  fecha: { color: 'rgba(255,255,255,0.3)', fontSize: 11 },
-  emptyText: { textAlign: 'center', color: 'rgba(255,255,255,0.35)', marginTop: 60 },
+  nombre: { color: '#F9FAFB', fontSize: 14, fontWeight: '600' },
+  telefono: { color: '#6B7280', fontSize: 12, marginTop: 2, fontVariant: ['tabular-nums'] },
+  metaCol: { alignItems: 'flex-end' },
+  citasCount: { color: '#6366F1', fontSize: 11, fontWeight: '700' },
+  fecha: { color: '#6B7280', fontSize: 10, marginTop: 2 },
+  empty: { alignItems: 'center', marginTop: 60 },
+  emptyText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
 });

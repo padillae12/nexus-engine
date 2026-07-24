@@ -1,4 +1,6 @@
 // app/admin/citas.jsx — Pantalla Admin: lista de citas con filtros
+// Diseño Profesional & Ejecutivo (Zero Emojis)
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -16,7 +18,10 @@ export default function CitasScreen() {
   useEffect(() => {
     setLoading(true);
     const params = {};
-    if (filtro === 'Hoy') params.fecha = new Date().toISOString().slice(0, 10);
+    if (filtro === 'Hoy') {
+      const d = new Date();
+      params.fecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
     if (!['Todas', 'Hoy'].includes(filtro)) params.estado = filtro.toLowerCase();
 
     getCitas(params)
@@ -27,13 +32,14 @@ export default function CitasScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Filtros */}
+      {/* Filtros de Segmentación */}
       <View style={styles.filtrosRow}>
         {FILTROS.map(f => (
           <TouchableOpacity
             key={f}
             style={[styles.filtroBtn, filtro === f && styles.filtroBtnActive]}
             onPress={() => setFiltro(f)}
+            activeOpacity={0.8}
           >
             <Text style={[styles.filtroText, filtro === f && styles.filtroTextActive]}>{f}</Text>
           </TouchableOpacity>
@@ -41,7 +47,7 @@ export default function CitasScreen() {
       </View>
 
       {loading
-        ? <ActivityIndicator color="#6c5ce7" style={{ marginTop: 40 }} />
+        ? <ActivityIndicator color="#6366F1" style={{ marginTop: 40 }} />
         : (
           <FlatList
             data={citas}
@@ -52,16 +58,16 @@ export default function CitasScreen() {
                 onPress={() => router.push({
                   pathname: '/cita/[id]',
                   params: {
-                    id:          item.id,
-                    fecha:       item.fecha ?? '',
-                    hora:        item.hora,
-                    cliente:     item.cliente ?? 'Sin nombre',
-                    servicio:    item.servicio,
-                    empleado:    item.empleado ?? '',
-                    estado:      item.estado,
+                    id:           item.id,
+                    fecha:        item.fecha ?? '',
+                    hora:         item.hora,
+                    cliente:      item.cliente ?? 'Sin nombre',
+                    servicio:     item.servicio,
+                    empleado:     item.empleado ?? '',
+                    estado:       item.estado,
                     duracion_min: item.duracion_min,
-                    precio:      item.precio ?? '',
-                    creado_en:   item.creado_en ?? '',
+                    precio:       item.precio ?? '',
+                    creado_en:    item.creado_en ?? '',
                   },
                 })}
               />
@@ -69,7 +75,7 @@ export default function CitasScreen() {
             contentContainerStyle={styles.lista}
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Text style={styles.emptyText}>Sin citas para este filtro</Text>
+                <Text style={styles.emptyText}>Sin registros para el filtro seleccionado</Text>
               </View>
             }
           />
@@ -80,17 +86,23 @@ export default function CitasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  container: { flex: 1, backgroundColor: '#0B0F17' },
   filtrosRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16 },
   filtroBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    backgroundColor: '#111827',
   },
-  filtroBtnActive: { backgroundColor: '#6c5ce7', borderColor: '#6c5ce7' },
-  filtroText: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
-  filtroTextActive: { color: '#fff', fontWeight: '600' },
-  lista: { paddingHorizontal: 16, paddingBottom: 20 },
+  filtroBtnActive: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  filtroText: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  filtroTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  lista: { paddingHorizontal: 16, paddingBottom: 24 },
   empty: { alignItems: 'center', marginTop: 60 },
-  emptyText: { color: 'rgba(255,255,255,0.35)', fontSize: 15 },
+  emptyText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
 });

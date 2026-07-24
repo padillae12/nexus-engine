@@ -1,6 +1,6 @@
 // app/admin/dashboard.jsx
 // ══════════════════════════════════════════════════════════════════
-//  PANTALLA ADMIN — Dashboard de estadísticas + ingresos diarios
+//  PANTALLA ADMIN — Dashboard Ejecutivo (Zero Emojis)
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -10,21 +10,21 @@ import {
 } from 'react-native';
 import { getDashboardStats, getIngresosDiarios } from '../../services/api';
 
-// ── Tarjeta de estadística ─────────────────────────────────────────
-function StatCard({ emoji, label, value, trend, color }) {
+// Tarjeta de métrica ejecutiva
+function StatCard({ label, value, trend, color }) {
   return (
-    <View style={[styles.statCard, { borderColor: color + '40' }]}>
-      <View style={[styles.statIconWrap, { backgroundColor: color + '18' }]}>
-        <Text style={styles.statEmoji}>{emoji}</Text>
+    <View style={[styles.statCard, { borderColor: '#1F2937' }]}>
+      <View style={styles.statHeaderRow}>
+        <View style={[styles.statDot, { backgroundColor: color }]} />
+        <Text style={styles.statLabel}>{label}</Text>
       </View>
       <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
       {trend ? <Text style={[styles.statTrend, { color }]}>{trend}</Text> : null}
     </View>
   );
 }
 
-// ── Fila de ingreso diario ─────────────────────────────────────────
+// Fila de ingreso diario en la tabla
 function IngresoRow({ fecha, citas, total, isHoy }) {
   const fechaObj  = new Date(fecha + 'T12:00:00');
   const diasSem   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -37,8 +37,8 @@ function IngresoRow({ fecha, citas, total, isHoy }) {
       {/* Fecha */}
       <View style={styles.ingresoFechaWrap}>
         {isHoy && <Text style={styles.ingresoHoyTag}>HOY</Text>}
-        <Text style={[styles.ingresoDia, isHoy && { color: '#6c5ce7' }]}>
-          {isHoy ? `${diaSem} ${dia}` : `${diaSem} ${dia}`}
+        <Text style={[styles.ingresoDia, isHoy && { color: '#6366F1' }]}>
+          {`${diaSem} ${dia}`}
         </Text>
         <Text style={styles.ingresoMes}>{mes}</Text>
       </View>
@@ -50,7 +50,7 @@ function IngresoRow({ fecha, citas, total, isHoy }) {
       </View>
 
       {/* Total */}
-      <Text style={[styles.ingresoTotal, { color: total > 0 ? '#00ce6d' : 'rgba(255,255,255,0.3)' }]}>
+      <Text style={[styles.ingresoTotal, { color: total > 0 ? '#10B981' : '#6B7280' }]}>
         ${Number(total).toLocaleString('es-MX')}
       </Text>
     </View>
@@ -88,7 +88,7 @@ export default function DashboardScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6c5ce7" />
+        <ActivityIndicator size="large" color="#6366F1" />
       </View>
     );
   }
@@ -96,7 +96,7 @@ export default function DashboardScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <Text style={styles.errorText}>Error al cargar métricas: {error}</Text>
         <TouchableOpacity onPress={cargarDatos} style={styles.retryBtn}>
           <Text style={styles.retryText}>Reintentar</Text>
         </TouchableOpacity>
@@ -106,7 +106,7 @@ export default function DashboardScreen() {
 
   const hoy = new Date().toISOString().slice(0, 10);
 
-  // Calcular total del mes (citas del mes actual en los datos)
+  // Total del mes actual
   const inicioMes = new Date();
   inicioMes.setDate(1);
   const inicioMesStr = inicioMes.toISOString().slice(0, 10);
@@ -119,40 +119,38 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6c5ce7" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />}
     >
       {/* ── Stats grid ───────────────────────────────────────── */}
-      <Text style={styles.sectionTitle}>Resumen</Text>
+      <Text style={styles.sectionTitle}>RESUMEN EJECUTIVO</Text>
       <View style={styles.grid}>
-        <StatCard emoji="📋" label="Citas hoy"       value={stats?.citasHoy ?? '—'}      color="#6c5ce7" />
-        <StatCard emoji="🌅" label="Citas mañana"    value={stats?.citasManana ?? '—'}   color="#a29bfe" />
-        <StatCard emoji="👤" label="Clientes nuevos" value={stats?.clientesNuevos ?? '—'} color="#00ce6d" trend="+este mes" />
-        <StatCard emoji="✅" label="Tasa asistencia" value={stats?.tasaAsistencia ?? '—'} color="#fdcb6e" />
-        <StatCard emoji="💰" label="Ingresos del día" value={stats?.ingresosHoy ?? '$0'}  color="#00b894" />
+        <StatCard label="Citas hoy"       value={stats?.citasHoy ?? '—'}      color="#6366F1" />
+        <StatCard label="Citas mañana"    value={stats?.citasManana ?? '—'}   color="#818CF8" />
+        <StatCard label="Clientes nuevos" value={stats?.clientesNuevos ?? '—'} color="#10B981" trend="+este mes" />
+        <StatCard label="Tasa asistencia" value={stats?.tasaAsistencia ?? '—'} color="#F59E0B" />
+        <StatCard label="Ingresos del día" value={stats?.ingresosHoy ?? '$0'}  color="#34D399" />
       </View>
 
       {/* ── Resumen del mes ───────────────────────────────────── */}
       <View style={styles.mesBanner}>
         <View>
-          <Text style={styles.mesBannerLabel}>INGRESOS DEL MES</Text>
+          <Text style={styles.mesBannerLabel}>INGRESOS DEL MES (ACUMULADO)</Text>
           <Text style={styles.mesBannerValue}>
-            ${totalMes.toLocaleString('es-MX')}
+            ${totalMes.toLocaleString('es-MX')} MXN
           </Text>
         </View>
-        <Text style={styles.mesBannerIcon}>📊</Text>
       </View>
 
       {/* ── Historial por día ─────────────────────────────────── */}
       <View style={styles.historialHeader}>
-        <Text style={styles.sectionTitle}>Historial de ingresos</Text>
-        <Text style={styles.historialSub}>últimos 60 días · solo completadas</Text>
+        <Text style={styles.sectionTitle}>HISTORIAL DE INGRESOS</Text>
+        <Text style={styles.historialSub}>Últimos 60 días · Citas completadas</Text>
       </View>
 
       {ingresos.length === 0 ? (
         <View style={styles.emptyHistorial}>
-          <Text style={styles.emptyIcon}>📭</Text>
-          <Text style={styles.emptyText}>Sin citas completadas aún</Text>
-          <Text style={styles.emptyHint}>Los ingresos aparecen cuando el empleado marca una cita como completada</Text>
+          <Text style={styles.emptyText}>Sin historial de citas completadas</Text>
+          <Text style={styles.emptyHint}>Los ingresos se registrarán cuando las citas se marquen como completadas.</Text>
         </View>
       ) : (
         <View style={styles.historialCard}>
@@ -182,78 +180,111 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  container: { flex: 1, backgroundColor: '#0B0F17' },
   content:   { padding: 20, paddingBottom: 40 },
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f1a', padding: 24 },
-  errorText: { color: '#ff7675', fontSize: 16, marginBottom: 16, textAlign: 'center' },
-  retryBtn:  { backgroundColor: 'rgba(108,92,231,0.2)', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10 },
-  retryText: { color: '#6c5ce7', fontWeight: '700' },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0F17', padding: 24 },
+  errorText: { color: '#EF4444', fontSize: 14, marginBottom: 16, textAlign: 'center' },
+  retryBtn:  { backgroundColor: 'rgba(99, 102, 241, 0.15)', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.3)' },
+  retryText: { color: '#6366F1', fontWeight: '600', fontSize: 13 },
 
   sectionTitle: {
-    fontSize: 11, color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 1.2,
+    marginBottom: 12,
   },
 
-  // Stats
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
+  // Stats Grid
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   statCard: {
-    width: '47%', backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 18, padding: 16, borderWidth: 1,
+    width: '48%',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
   },
-  statIconWrap: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  statEmoji:   { fontSize: 20 },
-  statValue:   { fontSize: 24, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  statLabel:   { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
-  statTrend:   { fontSize: 11, fontWeight: '600', marginTop: 6 },
+  statHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  statDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F9FAFB',
+    fontVariant: ['tabular-nums'],
+  },
+  statTrend: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 4,
+  },
 
-  // Mes banner
+  // Mes Banner
   mesBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(108,92,231,0.12)',
-    borderRadius: 18, padding: 20,
-    borderWidth: 1, borderColor: 'rgba(108,92,231,0.3)',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#6366F1',
     marginBottom: 24,
   },
-  mesBannerLabel: { fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 1.2, marginBottom: 6 },
-  mesBannerValue: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  mesBannerIcon:  { fontSize: 32 },
+  mesBannerLabel: { fontSize: 10, color: '#6366F1', letterSpacing: 1.2, fontWeight: '700', marginBottom: 4 },
+  mesBannerValue: { fontSize: 26, fontWeight: '800', color: '#F9FAFB', fontVariant: ['tabular-nums'] },
 
-  // Historial header
-  historialHeader: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 12 },
-  historialSub:    { fontSize: 11, color: 'rgba(255,255,255,0.25)', flex: 1 },
+  // Historial Header
+  historialHeader: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },
+  historialSub:    { fontSize: 11, color: '#6B7280', flex: 1, textAlign: 'right' },
 
-  // Historial card
+  // Historial Card / Table
   historialCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 18, borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1F2937',
     overflow: 'hidden',
   },
   historialColHeader: {
-    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#161E2E',
   },
-  colLabel: { fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 1, fontWeight: '700' },
-  historialDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
-  rowDivider:       { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 16 },
+  colLabel: { fontSize: 9, color: '#6B7280', letterSpacing: 1, fontWeight: '700' },
+  historialDivider: { height: 1, backgroundColor: '#1F2937' },
+  rowDivider:       { height: 1, backgroundColor: '#1F2937' },
 
   // Fila de ingreso
   ingresoRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  ingresoRowHoy: { backgroundColor: 'rgba(108,92,231,0.08)' },
+  ingresoRowHoy: { backgroundColor: 'rgba(99, 102, 241, 0.06)' },
   ingresoFechaWrap: { flex: 1.4 },
-  ingresoHoyTag: { fontSize: 8, color: '#6c5ce7', fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
-  ingresoDia:  { fontSize: 14, fontWeight: '700', color: '#fff' },
-  ingresoMes:  { fontSize: 11, color: 'rgba(255,255,255,0.35)' },
+  ingresoHoyTag: { fontSize: 8, color: '#6366F1', fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
+  ingresoDia:  { fontSize: 13, fontWeight: '700', color: '#F9FAFB' },
+  ingresoMes:  { fontSize: 11, color: '#6B7280' },
   ingresoCitasWrap: { flex: 0.8, alignItems: 'center' },
-  ingresoCitasNum:  { fontSize: 16, fontWeight: '700', color: '#fff' },
-  ingresoCitasLabel: { fontSize: 10, color: 'rgba(255,255,255,0.35)' },
-  ingresoTotal: { flex: 1, textAlign: 'right', fontSize: 15, fontWeight: '800' },
+  ingresoCitasNum:  { fontSize: 14, fontWeight: '700', color: '#F3F4F6' },
+  ingresoCitasLabel: { fontSize: 10, color: '#6B7280' },
+  ingresoTotal: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
 
   // Empty
-  emptyHistorial: { alignItems: 'center', paddingVertical: 40 },
-  emptyIcon: { fontSize: 40, marginBottom: 12 },
-  emptyText: { color: 'rgba(255,255,255,0.5)', fontSize: 15, fontWeight: '600', marginBottom: 8 },
-  emptyHint: { color: 'rgba(255,255,255,0.3)', fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  emptyHistorial: { alignItems: 'center', paddingVertical: 32, backgroundColor: '#111827', borderRadius: 12, borderWidth: 1, borderColor: '#1F2937' },
+  emptyText: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  emptyHint: { color: '#6B7280', fontSize: 12, textAlign: 'center' },
 });
