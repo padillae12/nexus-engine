@@ -1,9 +1,10 @@
 // app/admin/_layout.jsx
-// Layout del área de Admin con estilo ejecutivo y minimalista
+// Layout del área de Admin con estilo ejecutivo e íconos vectoriales limpios (Ionicons)
 
 import React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAdmin } from '../_layout';
 
 export default function AdminLayout() {
@@ -34,7 +35,7 @@ export default function AdminLayout() {
         },
         headerRight: () => (
           <TouchableOpacity onPress={handleExit} style={styles.exitBtn} activeOpacity={0.75}>
-            <View style={styles.exitBadgeDot} />
+            <Ionicons name="lock-closed-outline" size={13} color="#EF4444" />
             <Text style={styles.exitText}>Salir de Admin</Text>
           </TouchableOpacity>
         ),
@@ -42,14 +43,14 @@ export default function AdminLayout() {
           backgroundColor: '#0B0F17',
           borderTopWidth: 1,
           borderTopColor: '#1F2937',
-          height: 60,
+          height: 62,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 6,
         },
         tabBarActiveTintColor: '#6366F1',
         tabBarInactiveTintColor: '#6B7280',
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
           letterSpacing: 0.3,
         },
@@ -59,24 +60,52 @@ export default function AdminLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'grid' : 'grid-outline'}
+              size={20}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="citas"
         options={{
           title: 'Citas',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              size={20}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="clientes"
         options={{
           title: 'Clientes',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'people' : 'people-outline'}
+              size={20}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="configuracion"
         options={{
           title: 'Configuración',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={20}
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>
@@ -87,20 +116,14 @@ const styles = StyleSheet.create({
   exitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     marginRight: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.25)',
-  },
-  exitBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
   },
   exitText: {
     color: '#EF4444',

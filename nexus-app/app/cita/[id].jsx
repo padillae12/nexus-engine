@@ -1,6 +1,6 @@
 // app/cita/[id].jsx
 // ══════════════════════════════════════════════════════════════════
-//  Detalle de Cita — Diseño Profesional & Ejecutivo (Zero Emojis)
+//  Detalle de Cita — Diseño Profesional con Íconos Vectoriales
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { updateEstadoCita } from '../../services/api';
 
 const ESTADO_CONFIG = {
@@ -20,9 +21,9 @@ const ESTADO_CONFIG = {
 };
 
 const ACCIONES = [
-  { estado: 'completada', label: 'Marcar como Completada', color: '#10B981', bg: 'rgba(16, 185, 129, 0.08)' },
-  { estado: 'cancelada',  label: 'Cancelar Cita',          color: '#EF4444', bg: 'rgba(239, 68, 68, 0.08)' },
-  { estado: 'pendiente',  label: 'Marcar como Pendiente',   color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.08)' },
+  { estado: 'completada', label: 'Marcar como Completada', icon: 'checkmark-circle-outline', color: '#10B981', bg: 'rgba(16, 185, 129, 0.08)' },
+  { estado: 'cancelada',  label: 'Cancelar Cita',          icon: 'close-circle-outline',     color: '#EF4444', bg: 'rgba(239, 68, 68, 0.08)' },
+  { estado: 'pendiente',  label: 'Marcar como Pendiente',   icon: 'time-outline',             color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.08)' },
 ];
 
 export default function DetalleCitaScreen() {
@@ -90,7 +91,7 @@ export default function DetalleCitaScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.75}>
-          <Text style={styles.backArrow}>‹</Text>
+          <Ionicons name="chevron-back" size={20} color="#6366F1" />
           <Text style={styles.backText}>Volver</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalle de Cita</Text>
@@ -117,7 +118,10 @@ export default function DetalleCitaScreen() {
 
           {/* Fecha programada */}
           <View style={styles.infoFull}>
-            <Text style={styles.infoLabel}>FECHA PROGRAMADA</Text>
+            <View style={styles.infoLabelRow}>
+              <Ionicons name="calendar-outline" size={12} color="#6B7280" />
+              <Text style={styles.infoLabel}>FECHA PROGRAMADA</Text>
+            </View>
             <Text style={styles.infoValueLg}>{fechaProgramada || 'Fecha de la cita'}</Text>
           </View>
           <View style={styles.infoSeparator} />
@@ -125,12 +129,18 @@ export default function DetalleCitaScreen() {
           {/* Hora y Precio */}
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>HORA</Text>
+              <View style={styles.infoLabelRow}>
+                <Ionicons name="time-outline" size={12} color="#6B7280" />
+                <Text style={styles.infoLabel}>HORA</Text>
+              </View>
               <Text style={styles.infoValue}>{hora}</Text>
             </View>
             <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>PRECIO</Text>
+              <View style={styles.infoLabelRow}>
+                <Ionicons name="cash-outline" size={12} color="#6B7280" />
+                <Text style={styles.infoLabel}>PRECIO</Text>
+              </View>
               <Text style={styles.infoValue}>
                 {precio && precio !== '' ? `$${Number(precio).toLocaleString('es-MX')}` : 'N/D'}
               </Text>
@@ -141,7 +151,10 @@ export default function DetalleCitaScreen() {
 
           {/* Servicio */}
           <View style={styles.infoFull}>
-            <Text style={styles.infoLabel}>SERVICIO</Text>
+            <View style={styles.infoLabelRow}>
+              <Ionicons name="medical-outline" size={12} color="#6B7280" />
+              <Text style={styles.infoLabel}>SERVICIO</Text>
+            </View>
             <Text style={styles.infoValueLg}>{servicio}</Text>
           </View>
 
@@ -149,7 +162,10 @@ export default function DetalleCitaScreen() {
             <>
               <View style={styles.infoSeparator} />
               <View style={styles.infoFull}>
-                <Text style={styles.infoLabel}>PROFESIONAL ASIGNADO</Text>
+                <View style={styles.infoLabelRow}>
+                  <Ionicons name="person-outline" size={12} color="#6B7280" />
+                  <Text style={styles.infoLabel}>PROFESIONAL ASIGNADO</Text>
+                </View>
                 <Text style={styles.infoValueLg}>{empleado}</Text>
               </View>
             </>
@@ -158,7 +174,10 @@ export default function DetalleCitaScreen() {
           {/* Fecha de creación / agendada el */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
-            <Text style={styles.infoLabel}>FECHA DE REGISTRO</Text>
+            <View style={styles.infoLabelRow}>
+              <Ionicons name="create-outline" size={12} color="#6B7280" />
+              <Text style={styles.infoLabel}>FECHA DE REGISTRO</Text>
+            </View>
             <Text style={styles.infoSubText}>
               {fechaRegistro || 'Registro automático'}
             </Text>
@@ -178,7 +197,7 @@ export default function DetalleCitaScreen() {
                 onPress={() => cambiarEstado(accion.estado)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.accionDot, { backgroundColor: accion.color }]} />
+                <Ionicons name={accion.icon} size={18} color={accion.color} />
                 <Text style={[styles.accionLabel, { color: accion.color }]}>{accion.label}</Text>
               </TouchableOpacity>
             ))}
@@ -202,10 +221,9 @@ const styles = StyleSheet.create({
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     width: 64,
   },
-  backArrow: { fontSize: 22, color: '#6366F1', fontWeight: '400' },
   backText:  { fontSize: 14, color: '#6366F1', fontWeight: '600' },
   headerTitle: { fontSize: 15, fontWeight: '700', color: '#F9FAFB', letterSpacing: 0.3 },
 
@@ -251,7 +269,8 @@ const styles = StyleSheet.create({
   infoDivider: { width: 1, backgroundColor: '#1F2937', marginVertical: 12 },
   infoFull: { padding: 16 },
   infoSeparator: { height: 1, backgroundColor: '#1F2937' },
-  infoLabel: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1.2, marginBottom: 4 },
+  infoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  infoLabel: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1.2 },
   infoValue: { fontSize: 20, fontWeight: '800', color: '#F9FAFB', fontVariant: ['tabular-nums'] },
   infoValueLg: { fontSize: 15, fontWeight: '600', color: '#F3F4F6', marginTop: 1 },
   infoSubText: { fontSize: 13, fontWeight: '500', color: '#9CA3AF', marginTop: 1 },
@@ -268,6 +287,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  accionDot: { width: 8, height: 8, borderRadius: 4 },
   accionLabel: { fontSize: 14, fontWeight: '600' },
 });
