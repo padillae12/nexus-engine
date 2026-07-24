@@ -287,7 +287,8 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
                 mode="date"
                 display="default"
                 minimumDate={new Date()}
-                onChange={handleDatePickerChange}
+                onValueChange={handleDatePickerChange}
+                onDismiss={() => setShowDatePicker(false)}
               />
             )}
 
