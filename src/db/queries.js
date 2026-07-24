@@ -390,9 +390,9 @@ async function getDashboardStats() {
     ? `${Math.round((tasaRow.completadas / tasaRow.finalizadas) * 100)}%`
     : 'N/A';
 
-  // Ingresos estimados de citas completadas hoy
-  const [[{ ingresosEstimados }]] = await pool.execute(
-    `SELECT COALESCE(SUM(s.precio), 0) AS ingresosEstimados
+  // Ingresos del día — solo citas marcadas como completada
+  const [[{ ingresosHoy }]] = await pool.execute(
+    `SELECT COALESCE(SUM(s.precio), 0) AS ingresosHoy
      FROM citas c
      JOIN servicios s ON c.servicio_id = s.id
      WHERE DATE(c.fecha_inicio) = ? AND c.estado = 'completada'`,
@@ -403,8 +403,33 @@ async function getDashboardStats() {
     citasHoy,
     clientesNuevos,
     tasaAsistencia,
-    ingresosEstimados: ingresosEstimados > 0 ? `$${Number(ingresosEstimados).toFixed(0)}` : '$0',
+    ingresosHoy: ingresosHoy > 0 ? `$${Number(ingresosHoy).toFixed(0)}` : '$0',
   };
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  INGRESOS — Historial diario para la app
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna el historial de ingresos agrupado por día (últimos 60 días).
+ * Solo cuenta citas con estado = 'completada'.
+ * @returns {Promise<Array>} [{ fecha, citas_completadas, total }]
+ */
+async function getIngresosDiarios() {
+  const [rows] = await pool.execute(
+    `SELECT
+       DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d') AS fecha,
+       COUNT(c.id)                             AS citas_completadas,
+       COALESCE(SUM(s.precio), 0)              AS total
+     FROM citas c
+     JOIN servicios s ON c.servicio_id = s.id
+     WHERE c.estado = 'completada'
+       AND c.fecha_inicio >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+     GROUP BY DATE(c.fecha_inicio)
+     ORDER BY fecha DESC`
+  );
+  return rows;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -471,5 +496,6 @@ module.exports = {
   updateEstadoCita,
   getClientesLista,
   getDashboardStats,
+  getIngresosDiarios,
   crearBloqueo,
 };

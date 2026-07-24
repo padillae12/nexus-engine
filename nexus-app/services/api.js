@@ -130,10 +130,19 @@ export async function getClientes() {
 
 /**
  * Obtiene las estadísticas del dashboard del dueño.
- * @returns {Promise<{citasHoy, clientesNuevos, tasaAsistencia, ingresosEstimados}>}
+ * @returns {Promise<{citasHoy, clientesNuevos, tasaAsistencia, ingresosHoy}>}
  */
 export async function getDashboardStats() {
   return request('/dashboard/stats');
+}
+
+/**
+ * Obtiene el historial de ingresos diarios (últimos 60 días).
+ * Solo cuenta citas marcadas como 'completada'.
+ * @returns {Promise<Array<{fecha, citas_completadas, total}>>}
+ */
+export async function getIngresosDiarios() {
+  return request('/ingresos/diario');
 }
 
 // ══════════════════════════════════════════════════════════════════

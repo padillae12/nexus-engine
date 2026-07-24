@@ -170,6 +170,19 @@ router.get('/dashboard/stats', async (req, res) => {
   }
 });
 
+// GET /api/ingresos/diario
+// Retorna historial de ingresos agrupado por día (últimos 60 días).
+// Solo cuenta citas con estado = 'completada'.
+router.get('/ingresos/diario', async (req, res) => {
+  try {
+    const datos = await db.getIngresosDiarios();
+    res.json(datos);
+  } catch (err) {
+    console.error('[GET /ingresos/diario]', err.message);
+    res.status(500).json({ message: 'Error al obtener ingresos diarios' });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────
 //  BLOQUEOS
 // ─────────────────────────────────────────────────────────────────
