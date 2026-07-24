@@ -113,16 +113,63 @@ router.get('/citas/manana', async (req, res) => {
   }
 });
 
-// GET /api/citas?fecha=YYYY-MM-DD&estado=confirmada&empleadoId=1
-// Retorna citas con filtros opcionales.
-router.get('/citas', async (req, res) => {
+// GET /api/servicios
+// Retorna el catálogo de servicios activos para los selectores de la app.
+router.get('/servicios', async (req, res) => {
   try {
-    const { fecha, estado, empleadoId } = req.query;
-    const citas = await db.getCitasFiltradas({ fecha, estado, empleadoId });
-    res.json(citas);
+    const servicios = await db.getServicios();
+    res.json(servicios);
   } catch (err) {
-    console.error('[GET /citas]', err.message);
-    res.status(500).json({ message: 'Error al obtener citas' });
+    console.error('[GET /servicios]', err.message);
+    res.status(500).json({ message: 'Error al obtener servicios' });
+  }
+});
+
+// POST /api/citas
+// Permite agendar una nueva cita manualmente desde la Nexus-App.
+// Body: { nombreCliente, telefonoCliente, servicioId, fecha, hora }
+router.post('/citas', async (req, res) => {
+  try {
+    const { nombreCliente, telefonoCliente, servicioId, fecha, hora } = req.body;
+
+    if (!nombreCliente || !servicioId || !fecha || !hora) {
+      return res.status(400).json({ message: 'Nombre del cliente, servicio, fecha y hora son obligatorios.' });
+    }
+
+    const tel = (telefonoCliente && telefonoCliente.trim()) ? telefonoCliente.trim() : '0000000000';
+    const cliente = await db.findOrCreateCliente(tel);
+    if (nombreCliente) {
+      await db.updateClienteNombre(cliente.id, nombreCliente.trim());
+    }
+
+    const servicio = await db.getServicioById(Number(servicioId));
+    if (!servicio) {
+      return res.status(400).json({ message: 'El servicio seleccionado no existe' });
+    }
+
+    // Calcular fechaInicio y fechaFin
+    const fechaInicioStr = `${fecha} ${hora}:00`;
+    const inicioDate = new Date(`${fecha}T${hora}:00`);
+    const finDate = new Date(inicioDate.getTime() + servicio.duracion_min * 60000);
+    const finHora = String(finDate.getHours()).padStart(2, '0');
+    const finMin = String(finDate.getMinutes()).padStart(2, '0');
+    const fechaFinStr = `${fecha} ${finHora}:${finMin}:00`;
+
+    const citaId = await db.createCita({
+      clienteId: cliente.id,
+      servicioId: Number(servicioId),
+      empleadoId: null,
+      fechaInicio: fechaInicioStr,
+      fechaFin: fechaFinStr,
+    });
+
+    res.json({ ok: true, citaId });
+  } catch (err) {
+    if (err.message === 'SLOT_OCUPADO') {
+      return res.status(409).json({ message: 'Ese horario ya está ocupado por otra cita.' });
+    }
+    console.error('[POST /citas]', err.message);
+    res.status(500).json({ message: err.message || 'Error al agendar cita' });
   }
 });
 

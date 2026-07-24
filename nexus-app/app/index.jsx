@@ -14,7 +14,9 @@ import { useRouter } from 'expo-router';
 import { useAdmin } from './_layout';
 import CitaCard from '../components/CitaCard';
 import PinModal from '../components/PinModal';
+import NuevaCitaModal from '../components/NuevaCitaModal';
 import { getCitasHoy, getCitasManana } from '../services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AgendaScreen() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function AgendaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [logoTaps, setLogoTaps] = useState(0);
   const [showPin, setShowPin] = useState(false);
+  const [showNuevaCita, setShowNuevaCita] = useState(false);
 
   // Formatear fechas para los headers
   const fechaHoy = new Date().toLocaleDateString('es-MX', {
@@ -98,13 +101,14 @@ export default function AgendaScreen() {
           </Text>
           <Text style={styles.fecha}>{activeFecha}</Text>
         </View>
-        <View style={styles.headerRight}>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>
-              {listData.length} {listData.length === 1 ? 'cita' : 'citas'}
-            </Text>
-          </View>
-        </View>
+        <TouchableOpacity
+          style={styles.addBtnHeader}
+          onPress={() => setShowNuevaCita(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={16} color="#FFFFFF" />
+          <Text style={styles.addBtnHeaderText}>Agendar</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Selector de Pestañas Segmentado */}
@@ -191,6 +195,13 @@ export default function AgendaScreen() {
         loading={loading}
         error={error}
       />
+
+      {/* Modal Agendar Cita Manual */}
+      <NuevaCitaModal
+        visible={showNuevaCita}
+        onClose={() => setShowNuevaCita(false)}
+        onSuccess={cargarCitas}
+      />
     </SafeAreaView>
   );
 }
@@ -204,6 +215,20 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 14,
     gap: 12,
+  },
+  addBtnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  addBtnHeaderText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   logoBox: {
     paddingHorizontal: 10,

@@ -5,7 +5,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import CitaCard from '../../components/CitaCard';
+import NuevaCitaModal from '../../components/NuevaCitaModal';
 import { getCitas } from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const FILTROS = ['Todas', 'Hoy', 'Confirmadas', 'Completadas', 'Canceladas'];
 
@@ -14,8 +16,9 @@ export default function CitasScreen() {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('Hoy');
+  const [showNuevaCita, setShowNuevaCita] = useState(false);
 
-  useEffect(() => {
+  const cargarCitas = () => {
     setLoading(true);
     const params = {};
     if (filtro === 'Hoy') {
@@ -28,10 +31,27 @@ export default function CitasScreen() {
       .then(setCitas)
       .catch(console.warn)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    cargarCitas();
   }, [filtro]);
 
   return (
     <View style={styles.container}>
+      {/* Header Acción */}
+      <View style={styles.topActionRow}>
+        <Text style={styles.topTitle}>GESTIÓN DE CITAS</Text>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => setShowNuevaCita(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={16} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>Nueva Cita</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Filtros de Segmentación */}
       <View style={styles.filtrosRow}>
         {FILTROS.map(f => (
@@ -81,12 +101,47 @@ export default function CitasScreen() {
           />
         )
       }
+
+      {/* Modal Agendar Cita Manual */}
+      <NuevaCitaModal
+        visible={showNuevaCita}
+        onClose={() => setShowNuevaCita(false)}
+        onSuccess={cargarCitas}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B0F17' },
+  topActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  topTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 1.2,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  addBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   filtrosRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16 },
   filtroBtn: {
     paddingHorizontal: 14,

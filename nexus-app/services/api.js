@@ -98,13 +98,23 @@ export async function getCitasManana() {
 }
 
 /**
- * Obtiene todas las citas (con filtros opcionales).
- * @param {object} params - { fecha, estado, empleadoId }
+ * Crea una nueva cita manualmente desde la app.
+ * @param {object} datos - { nombreCliente, telefonoCliente, servicioId, fecha, hora }
+ * @returns {Promise<object>}
+ */
+export async function crearCita(datos) {
+  return request('/citas', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Obtiene el catálogo de servicios disponibles.
  * @returns {Promise<Array>}
  */
-export async function getCitas(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  return request(`/citas${query ? `?${query}` : ''}`);
+export async function getServicios() {
+  return request('/servicios');
 }
 
 /**
