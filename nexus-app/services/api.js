@@ -90,6 +90,14 @@ export async function getCitasHoy() {
 }
 
 /**
+ * Obtiene todas las citas del día de mañana.
+ * @returns {Promise<Array>}
+ */
+export async function getCitasManana() {
+  return request('/citas/manana');
+}
+
+/**
  * Obtiene todas las citas (con filtros opcionales).
  * @param {object} params - { fecha, estado, empleadoId }
  * @returns {Promise<Array>}

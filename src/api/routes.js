@@ -101,6 +101,18 @@ router.get('/citas/hoy', async (req, res) => {
   }
 });
 
+// GET /api/citas/manana
+// Retorna todas las citas del día de mañana, ordenadas por hora.
+router.get('/citas/manana', async (req, res) => {
+  try {
+    const citas = await db.getCitasPorFecha('manana');
+    res.json(citas);
+  } catch (err) {
+    console.error('[GET /citas/manana]', err.message);
+    res.status(500).json({ message: 'Error al obtener citas de mañana' });
+  }
+});
+
 // GET /api/citas?fecha=YYYY-MM-DD&estado=confirmada&empleadoId=1
 // Retorna citas con filtros opcionales.
 router.get('/citas', async (req, res) => {

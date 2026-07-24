@@ -248,6 +248,19 @@ async function getCitasActivasCliente(clienteId) {
  */
 async function getCitasPorFecha(fecha) {
   const usaCurDate = !fecha || fecha === 'hoy';
+  const usaManana  = fecha === 'manana';
+
+  let dateWhere = 'DATE(c.fecha_inicio) = ?';
+  let params    = [fecha];
+
+  if (usaCurDate) {
+    dateWhere = 'DATE(c.fecha_inicio) = CURDATE()';
+    params    = [];
+  } else if (usaManana) {
+    dateWhere = 'DATE(c.fecha_inicio) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)';
+    params    = [];
+  }
+
   const [rows] = await pool.execute(
     `SELECT
        c.id,
@@ -264,9 +277,9 @@ async function getCitasPorFecha(fecha) {
      JOIN clientes  cl ON c.cliente_id  = cl.id
      JOIN servicios  s ON c.servicio_id = s.id
      LEFT JOIN usuarios u ON c.empleado_id = u.id
-     WHERE DATE(c.fecha_inicio) = ${usaCurDate ? 'CURDATE()' : '?'}
+     WHERE ${dateWhere}
      ORDER BY c.fecha_inicio ASC`,
-    usaCurDate ? [] : [fecha]
+    params
   );
   return rows;
 }
@@ -370,6 +383,11 @@ async function getDashboardStats() {
     `SELECT COUNT(*) AS citasHoy FROM citas WHERE DATE(fecha_inicio) = CURDATE() AND estado != 'cancelada'`
   );
 
+  // Citas de mañana
+  const [[{ citasManana }]] = await pool.execute(
+    `SELECT COUNT(*) AS citasManana FROM citas WHERE DATE(fecha_inicio) = DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND estado != 'cancelada'`
+  );
+
   // Clientes nuevos este mes
   const [[{ clientesNuevos }]] = await pool.execute(
     `SELECT COUNT(*) AS clientesNuevos FROM clientes
@@ -398,6 +416,7 @@ async function getDashboardStats() {
 
   return {
     citasHoy,
+    citasManana,
     clientesNuevos,
     tasaAsistencia,
     ingresosHoy: ingresosHoy > 0 ? `$${Number(ingresosHoy).toFixed(0)}` : '$0',

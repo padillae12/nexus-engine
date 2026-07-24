@@ -122,9 +122,10 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6c5ce7" />}
     >
       {/* ── Stats grid ───────────────────────────────────────── */}
-      <Text style={styles.sectionTitle}>Resumen de hoy</Text>
+      <Text style={styles.sectionTitle}>Resumen</Text>
       <View style={styles.grid}>
         <StatCard emoji="📋" label="Citas hoy"       value={stats?.citasHoy ?? '—'}      color="#6c5ce7" />
+        <StatCard emoji="🌅" label="Citas mañana"    value={stats?.citasManana ?? '—'}   color="#a29bfe" />
         <StatCard emoji="👤" label="Clientes nuevos" value={stats?.clientesNuevos ?? '—'} color="#00ce6d" trend="+este mes" />
         <StatCard emoji="✅" label="Tasa asistencia" value={stats?.tasaAsistencia ?? '—'} color="#fdcb6e" />
         <StatCard emoji="💰" label="Ingresos del día" value={stats?.ingresosHoy ?? '$0'}  color="#00b894" />

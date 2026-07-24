@@ -1,9 +1,10 @@
 // app/index.jsx
 // ══════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL — Agenda del Día (Modo Recepcionista)
+//  PANTALLA PRINCIPAL — Agenda (Hoy / Mañana)
 //
-//  Esta es la pantalla que siempre está visible en el local.
-//  El dueño toca el logo 5 veces para abrir el modal de PIN.
+//  Pantalla principal que se muestra al abrir la app.
+//  Permite cambiar entre las citas de Hoy y Mañana.
+//  Gesto: tocar el logo 5 veces abre el modal de PIN para admin.
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,27 +17,40 @@ import { useRouter } from 'expo-router';
 import { useAdmin } from './_layout';
 import CitaCard from '../components/CitaCard';
 import PinModal from '../components/PinModal';
-import { getCitasHoy } from '../services/api';
+import { getCitasHoy, getCitasManana } from '../services/api';
 
 export default function AgendaScreen() {
   const router = useRouter();
   const { isAdmin, enterAdmin, exitAdmin, loading, error } = useAdmin();
 
-  const [citas, setCitas] = useState([]);
+  const [activeTab, setActiveTab] = useState('hoy'); // 'hoy' | 'manana'
+  const [citasHoy, setCitasHoy] = useState([]);
+  const [citasManana, setCitasManana] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [logoTaps, setLogoTaps] = useState(0);
   const [showPin, setShowPin] = useState(false);
-  const [fecha] = useState(() => {
-    const hoy = new Date();
-    return hoy.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Formatear fechas para los headers
+  const fechaHoy = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long',
   });
 
-  // ── Cargar citas del día ────────────────────────────────────────
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const fechaManana = tomorrow.toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+
+  // ── Cargar citas de hoy y mañana ────────────────────────────────
   const cargarCitas = useCallback(async () => {
     setRefreshing(true);
     try {
-      const data = await getCitasHoy();
-      setCitas(data);
+      const [resHoy, resManana] = await Promise.all([
+        getCitasHoy().catch(() => []),
+        getCitasManana().catch(() => []),
+      ]);
+      setCitasHoy(resHoy);
+      setCitasManana(resManana);
     } catch (e) {
       console.warn('[Agenda] Error al cargar citas:', e.message);
     } finally {
@@ -68,8 +82,11 @@ export default function AgendaScreen() {
     }
   }, [isAdmin]);
 
-  // ── Próxima cita ────────────────────────────────────────────────
-  const proxima = citas.find(c => c.estado === 'confirmada');
+  const listData = activeTab === 'hoy' ? citasHoy : citasManana;
+  const activeFecha = activeTab === 'hoy' ? fechaHoy : fechaManana;
+
+  // Próxima cita de hoy
+  const proxima = citasHoy.find(c => c.estado === 'confirmada');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,19 +97,44 @@ export default function AgendaScreen() {
             <Text style={styles.logoText}>N</Text>
           </View>
         </TouchableOpacity>
-        <View>
-          <Text style={styles.titulo}>Agenda del Día</Text>
-          <Text style={styles.fecha}>{fecha}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.titulo}>
+            {activeTab === 'hoy' ? 'Agenda de Hoy' : 'Agenda de Mañana'}
+          </Text>
+          <Text style={styles.fecha}>{activeFecha}</Text>
         </View>
         <View style={styles.headerRight}>
-          <Text style={styles.totalCitas}>{citas.length} citas</Text>
+          <Text style={styles.totalCitas}>{listData.length} cita{listData.length !== 1 ? 's' : ''}</Text>
         </View>
       </View>
 
-      {/* Banner próxima cita */}
-      {proxima && (
+      {/* Tabs Selector: Hoy vs Mañana */}
+      <View style={styles.tabSelectorRow}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'hoy' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('hoy')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'hoy' && styles.tabBtnTextActive]}>
+            📅 Hoy ({citasHoy.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'manana' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('manana')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'manana' && styles.tabBtnTextActive]}>
+            🌅 Mañana ({citasManana.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Banner próxima cita (solo en hoy) */}
+      {activeTab === 'hoy' && proxima && (
         <View style={styles.proximaBanner}>
-          <Text style={styles.proximaLabel}>⏱ Próxima cita</Text>
+          <Text style={styles.proximaLabel}>⏱ Próxima cita de hoy</Text>
           <Text style={styles.proximaInfo}>
             {proxima.hora} · {proxima.cliente ?? 'Sin nombre'} · {proxima.servicio}
           </Text>
@@ -101,7 +143,7 @@ export default function AgendaScreen() {
 
       {/* Lista de citas */}
       <FlatList
-        data={citas}
+        data={listData}
         keyExtractor={item => String(item.id)}
         renderItem={({ item }) => (
           <CitaCard
@@ -128,7 +170,9 @@ export default function AgendaScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🗓️</Text>
-            <Text style={styles.emptyText}>No hay citas para hoy</Text>
+            <Text style={styles.emptyText}>
+              {activeTab === 'hoy' ? 'No hay citas para hoy' : 'No hay citas agendadas para mañana'}
+            </Text>
           </View>
         }
       />
@@ -152,7 +196,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
     gap: 14,
   },
   logoBox: {
@@ -167,7 +211,38 @@ const styles = StyleSheet.create({
   titulo: { fontSize: 18, fontWeight: '700', color: '#fff' },
   fecha: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'capitalize' },
   headerRight: { marginLeft: 'auto' },
-  totalCitas: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
+  totalCitas: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
+
+  // Selector de Tabs
+  tabSelectorRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 14,
+    gap: 10,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  tabBtnActive: {
+    backgroundColor: '#6c5ce7',
+    borderColor: '#6c5ce7',
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  tabBtnTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+
   proximaBanner: {
     marginHorizontal: 20,
     marginBottom: 12,
@@ -180,7 +255,7 @@ const styles = StyleSheet.create({
   proximaLabel: { fontSize: 11, color: '#6c5ce7', fontWeight: '700', marginBottom: 4 },
   proximaInfo: { fontSize: 14, color: '#fff', fontWeight: '500' },
   lista: { paddingHorizontal: 20, paddingBottom: 20 },
-  emptyState: { alignItems: 'center', marginTop: 80 },
+  emptyState: { alignItems: 'center', marginTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: 'rgba(255,255,255,0.35)', fontSize: 16 },
+  emptyText: { color: 'rgba(255,255,255,0.35)', fontSize: 15 },
 });
