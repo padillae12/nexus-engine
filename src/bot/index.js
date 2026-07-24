@@ -57,12 +57,16 @@ client.on('qr', (qr) => {
   qrcode.generate(qr, { small: true });
 });
 
+const { iniciarMotorRecordatorios } = require('./reminders');
+
 // ─────────────────────────────────────────────────────────────────
 //  LISTO
 // ─────────────────────────────────────────────────────────────────
 client.on('ready', () => {
+  global.whatsappClient = client;
   console.log('✅ Nexus-Engine conectado a WhatsApp.');
   console.log('🤖 Bot activo y escuchando mensajes...\n');
+  iniciarMotorRecordatorios(client);
 });
 
 // ─────────────────────────────────────────────────────────────────

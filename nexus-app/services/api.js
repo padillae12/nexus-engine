@@ -180,6 +180,30 @@ export async function crearBloqueo(datos) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  EMPLEADOS
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Obtiene la lista de empleados y sus teléfonos.
+ * @returns {Promise<Array>}
+ */
+export async function getEmpleados() {
+  return request('/empleados');
+}
+
+/**
+ * Crea o actualiza un empleado con su número de teléfono.
+ * @param {object} datos - { id?, nombre, email, password?, telefono, rol, activo }
+ * @returns {Promise<object>}
+ */
+export async function guardarEmpleado(datos) {
+  return request('/empleados', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  CONFIG NEGOCIO
 // ══════════════════════════════════════════════════════════════════
 

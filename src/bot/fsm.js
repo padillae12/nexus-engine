@@ -9,7 +9,7 @@ const { handleWelcome, handleWaitingName, buildMenuPrincipal } = require('./hand
 const { handleServiceMenu, handleServiceSelect }               = require('./handlers/service');
 const { handleDateSelect }                  = require('./handlers/date');
 const { handleTimeSelect }                  = require('./handlers/time');
-const { handleConfirmation, handleEditMenu, handleCancelFlow, handleCancelSelect } = require('./handlers/confirm');
+const { handleConfirmation, handleEditMenu, handleCancelFlow, handleCancelSelect, handleReminderSelect } = require('./handlers/confirm');
 const { quiereAgendar, quiereCancelar, quiereVerCitas, quiereInfo } = require('../utils/regex');
 const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol } = require('../utils/slots');
 
@@ -213,6 +213,11 @@ async function handleMessage(telefono, mensaje) {
     // ── TIME_SELECT: eligiendo hora ──────────────────────────────
     case 'TIME_SELECT':
       result = await handleTimeSelect(sesion, msg);
+      break;
+
+    // ── REMINDER_SELECT: eligiendo anticipación del recordatorio ──
+    case 'REMINDER_SELECT':
+      result = await handleReminderSelect(sesion, msg);
       break;
 
     // ── CONFIRMATION: confirmando la cita ────────────────────────

@@ -1,10 +1,54 @@
-// src/bot/handlers/confirm.js
-// Estado CONFIRMATION: el usuario confirma o rechaza la cita.
-// Si confirma → se inserta en la DB. Si no → regresa a elegir fecha.
-
 const { createCita, getCitasActivasCliente } = require('../../db/queries');
-const { esConfirmacion, esNegacion } = require('../../utils/regex');
+const { esConfirmacion, esNegacion, extraerNumeroOpcion } = require('../../utils/regex');
 const { formatFechaEspanol } = require('../../utils/slots');
+const { notificarNuevaCitaEmpleado } = require('../reminders');
+
+/**
+ * Maneja la selección del tiempo del recordatorio por parte del cliente.
+ */
+async function handleReminderSelect(sesion, msg) {
+  const opcion = extraerNumeroOpcion(msg);
+
+  let mins = 120;
+  let text = '2 horas antes';
+
+  if (opcion === 1) { mins = 60; text = '1 hora antes'; }
+  else if (opcion === 2) { mins = 120; text = '2 horas antes'; }
+  else if (opcion === 3) { mins = 1440; text = '1 día antes (24 hrs)'; }
+  else if (opcion === 4) { mins = 0; text = 'Desactivado'; }
+  else {
+    return {
+      respuesta: `Por favor elige un número del 1 al 4 para seleccionar cuándo deseas tu recordatorio.`,
+      nuevoEstado: 'REMINDER_SELECT',
+    };
+  }
+
+  sesion.recordatorioMins = mins;
+  sesion.recordatorioTexto = text;
+
+  const [h, m] = sesion.horaSeleccionada.split(':').map(Number);
+  const periodo = h >= 12 ? 'pm' : 'am';
+  const h12     = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  const horaTexto = `${h12}:${String(m).padStart(2, '0')}${periodo}`;
+
+  const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
+  const fechaTexto = formatFechaEspanol(fechaObj);
+
+  const resumen =
+    `✅ *Resumen de tu cita:*\n\n` +
+    `👤 Nombre: *${sesion.nombre}*\n` +
+    `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
+    `📅 Fecha: *${fechaTexto}*\n` +
+    `⏰ Hora: *${horaTexto}*\n` +
+    `🔔 Recordatorio: *${text}*\n\n` +
+    `¿Confirmas tu cita?\n` +
+    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.`;
+
+  return {
+    respuesta: resumen,
+    nuevoEstado: 'CONFIRMATION',
+  };
+}
 
 /**
  * Maneja la respuesta de confirmación del usuario.
@@ -28,7 +72,19 @@ async function handleConfirmation(sesion, msg) {
         empleadoId:  sesion.empleadoId || null,
         fechaInicio,
         fechaFin,
+        recordatorioMins: sesion.recordatorioMins ?? 120,
       });
+
+      // Notificar al empleado/admin por WhatsApp si aplica (asíncrono)
+      if (global.whatsappClient) {
+        notificarNuevaCitaEmpleado(global.whatsappClient, {
+          clienteNombre: sesion.nombre,
+          clienteTelefono: sesion.telefono,
+          servicioNombre: sesion.servicioNombre,
+          fechaInicio,
+          empleadoId: sesion.empleadoId,
+        }).catch(() => {});
+      }
 
       const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
       const fechaTexto = formatFechaEspanol(fechaObj);
@@ -214,6 +270,7 @@ async function handleCancelSelect(sesion, msg) {
 }
 
 module.exports = {
+  handleReminderSelect,
   handleConfirmation,
   handleEditMenu,
   handleCancelFlow,

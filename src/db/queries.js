@@ -174,21 +174,22 @@ async function isBloqueado(fechaHora, empleadoId = null) {
 // ─────────────────────────────────────────────────────────────────
 
 /**
- * Crea una cita nueva en la base de datos.
+ * Crea una nueva cita en la base de datos.
  * @param {object} datos
  * @param {number} datos.clienteId
  * @param {number} datos.servicioId
  * @param {number|null} datos.empleadoId
  * @param {string} datos.fechaInicio - 'YYYY-MM-DD HH:mm:ss'
  * @param {string} datos.fechaFin    - 'YYYY-MM-DD HH:mm:ss'
+ * @param {number} [datos.recordatorioMins] - Minutos de anticipación para el recordatorio (ej. 60, 120, 1440)
  * @returns {Promise<number>} ID de la cita creada
  */
-async function createCita({ clienteId, servicioId, empleadoId, fechaInicio, fechaFin }) {
+async function createCita({ clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins = 120 }) {
   try {
     const [result] = await pool.execute(
-      `INSERT INTO citas (cliente_id, servicio_id, empleado_id, fecha_inicio, fecha_fin, estado)
-       VALUES (?, ?, ?, ?, ?, 'confirmada')`,
-      [clienteId, servicioId, empleadoId, fechaInicio, fechaFin]
+      `INSERT INTO citas (cliente_id, servicio_id, empleado_id, fecha_inicio, fecha_fin, estado, recordatorio_mins)
+       VALUES (?, ?, ?, ?, ?, 'confirmada', ?)`,
+      [clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins]
     );
     return result.insertId;
   } catch (err) {
@@ -487,12 +488,103 @@ async function getConfig(clave) {
 }
 
 /**
- * Retorna toda la configuración del negocio como objeto clave→valor.
- * @returns {Promise<object>}
+ * Auto-migración silenciosa de columnas para recordatorios y teléfonos de empleados
  */
-async function getAllConfig() {
-  const [rows] = await pool.execute('SELECT clave, valor FROM config_negocio');
-  return Object.fromEntries(rows.map(r => [r.clave, r.valor]));
+async function ensureRemindersSchema() {
+  try {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(20) NULL').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+  } catch (e) {
+    // Ignorar errores si la columna ya existe
+  }
+}
+ensureRemindersSchema();
+
+/**
+ * Obtiene la lista de empleados/usuarios del negocio.
+ */
+async function getEmpleados() {
+  const [rows] = await pool.execute(
+    `SELECT id, nombre, email, telefono, rol, activo, creado_en FROM usuarios ORDER BY id DESC`
+  );
+  return rows;
+}
+
+/**
+ * Crea o actualiza un empleado en la base de datos.
+ */
+async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'empleado', activo = 1 }) {
+  const bcrypt = require('bcrypt');
+  if (id) {
+    let sql = 'UPDATE usuarios SET nombre = ?, email = ?, telefono = ?, rol = ?, activo = ?';
+    const params = [nombre, email, telefono || null, rol, activo];
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      sql += ', password = ?';
+      params.push(hash);
+    }
+    sql += ' WHERE id = ?';
+    params.push(id);
+    await pool.execute(sql, params);
+    return id;
+  } else {
+    const hash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('123456', 10);
+    const [res] = await pool.execute(
+      `INSERT INTO usuarios (nombre, email, password, telefono, rol, activo) VALUES (?, ?, ?, ?, ?, ?)`,
+      [nombre, email, hash, telefono || null, rol, activo]
+    );
+    return res.insertId;
+  }
+}
+
+/**
+ * Obtiene el teléfono del empleado asignado a una cita o el teléfono del admin.
+ */
+async function getTelefonoEmpleado(empleadoId = null) {
+  if (empleadoId) {
+    const [rows] = await pool.execute('SELECT telefono, nombre FROM usuarios WHERE id = ?', [empleadoId]);
+    if (rows.length > 0 && rows[0].telefono) return rows[0];
+  }
+  const [admins] = await pool.execute(
+    "SELECT telefono, nombre FROM usuarios WHERE rol = 'admin' AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
+  );
+  return admins[0] || null;
+}
+
+/**
+ * Busca citas confirmadas cuyos recordatorios deben enviarse ahora por WhatsApp.
+ */
+async function getCitasPendientesRecordatorio() {
+  const [rows] = await pool.execute(
+    `SELECT 
+       c.id,
+       c.fecha_inicio,
+       c.recordatorio_mins,
+       cl.telefono AS cliente_telefono,
+       cl.nombre AS cliente_nombre,
+       s.nombre AS servicio_nombre,
+       u.nombre AS empleado_nombre,
+       u.telefono AS empleado_telefono
+     FROM citas c
+     JOIN clientes cl ON c.cliente_id = cl.id
+     JOIN servicios s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     WHERE c.estado = 'confirmada'
+       AND c.recordatorio_mins > 0
+       AND c.recordatorio_enviado = 0
+       AND c.fecha_inicio > NOW()
+       AND TIMESTAMPDIFF(MINUTE, NOW(), c.fecha_inicio) <= c.recordatorio_mins`
+  );
+  return rows;
+}
+
+/**
+ * Marca que el recordatorio por WhatsApp de una cita fue enviado.
+ */
+async function markRecordatorioEnviado(citaId) {
+  await pool.execute('UPDATE citas SET recordatorio_enviado = 1 WHERE id = ?', [citaId]);
 }
 
 module.exports = {
@@ -509,6 +601,11 @@ module.exports = {
   getCitasActivasCliente,
   getConfig,
   getAllConfig,
+  getEmpleados,
+  guardarEmpleado,
+  getTelefonoEmpleado,
+  getCitasPendientesRecordatorio,
+  markRecordatorioEnviado,
   // API REST (Nexus-App)
   getCitasPorFecha,
   getCitasFiltradas,

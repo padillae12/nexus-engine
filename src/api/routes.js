@@ -264,6 +264,36 @@ router.post('/bloqueos', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
+//  EMPLEADOS
+// ─────────────────────────────────────────────────────────────────
+
+// GET /api/empleados — Lista todos los empleados
+router.get('/empleados', async (req, res) => {
+  try {
+    const empleados = await db.getEmpleados();
+    res.json(empleados);
+  } catch (err) {
+    console.error('[GET /empleados]', err.message);
+    res.status(500).json({ message: 'Error al obtener empleados' });
+  }
+});
+
+// POST /api/empleados — Crear o actualizar un empleado
+router.post('/empleados', async (req, res) => {
+  try {
+    const { id, nombre, email, password, telefono, rol, activo } = req.body;
+    if (!nombre) {
+      return res.status(400).json({ message: 'El nombre del empleado es requerido' });
+    }
+    const empId = await db.guardarEmpleado({ id, nombre, email, password, telefono, rol, activo });
+    res.status(201).json({ ok: true, id: empId });
+  } catch (err) {
+    console.error('[POST /empleados]', err.message);
+    res.status(500).json({ message: 'Error al guardar empleado' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
 //  CONFIG NEGOCIO
 // ─────────────────────────────────────────────────────────────────
 
