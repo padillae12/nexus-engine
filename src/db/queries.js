@@ -264,8 +264,10 @@ async function getCitasPorFecha(fecha) {
   const [rows] = await pool.execute(
     `SELECT
        c.id,
-       TIME_FORMAT(c.fecha_inicio, '%H:%i')  AS hora,
-       TIME_FORMAT(c.fecha_fin,   '%H:%i')  AS hora_fin,
+       DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d') AS fecha,
+       TIME_FORMAT(c.fecha_inicio, '%H:%i')    AS hora,
+       TIME_FORMAT(c.fecha_fin,   '%H:%i')    AS hora_fin,
+       DATE_FORMAT(c.creado_en, '%Y-%m-%d %H:%i') AS creado_en,
        c.estado,
        cl.nombre   AS cliente,
        cl.telefono,
@@ -305,6 +307,7 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        c.id,
        DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d') AS fecha,
        TIME_FORMAT(c.fecha_inicio, '%H:%i')    AS hora,
+       DATE_FORMAT(c.creado_en, '%Y-%m-%d %H:%i') AS creado_en,
        c.estado,
        cl.nombre   AS cliente,
        cl.telefono,

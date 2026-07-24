@@ -152,6 +152,7 @@ export default function AgendaScreen() {
               pathname: '/cita/[id]',
               params: {
                 id:          item.id,
+                fecha:       item.fecha ?? '',
                 hora:        item.hora,
                 cliente:     item.cliente ?? 'Sin nombre',
                 servicio:    item.servicio,
@@ -159,6 +160,7 @@ export default function AgendaScreen() {
                 estado:      item.estado,
                 duracion_min: item.duracion_min,
                 precio:      item.precio ?? '',
+                creado_en:   item.creado_en ?? '',
               },
             })}
           />

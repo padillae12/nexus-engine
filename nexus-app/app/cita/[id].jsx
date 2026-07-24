@@ -27,8 +27,27 @@ const ACCIONES = [
 ];
 
 export default function DetalleCitaScreen() {
-  const { id, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio } =
+  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en } =
     useLocalSearchParams();
+
+  // Formatear fecha programada (ej: Jue, 23 de Jul)
+  let fechaProgramada = fecha;
+  if (fecha && fecha.includes('-')) {
+    const [y, m, d] = fecha.split('-');
+    const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+    fechaProgramada = dateObj.toLocaleDateString('es-MX', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    });
+  }
+
+  // Formatear fecha de creación (ej: 23/07/2026 21:05)
+  let fechaRegistro = creado_en;
+  if (creado_en && creado_en.includes(' ')) {
+    const [f, h] = creado_en.split(' ');
+    const [y, m, d] = f.split('-');
+    fechaRegistro = `${d}/${m}/${y} a las ${h}`;
+  }
+
   const router  = useRouter();
   const [estado,  setEstado]  = useState(estadoInicial ?? 'confirmada');
   const [loading, setLoading] = useState(false);
@@ -95,6 +114,19 @@ export default function DetalleCitaScreen() {
 
         {/* Card de info */}
         <View style={styles.infoCard}>
+
+          {/* Fecha programada */}
+          {fechaProgramada ? (
+            <>
+              <View style={styles.infoFull}>
+                <Text style={styles.infoLabel}>FECHA PROGRAMADA</Text>
+                <Text style={styles.infoValueLg}>📅 {fechaProgramada}</Text>
+              </View>
+              <View style={styles.infoSeparator} />
+            </>
+          ) : null}
+
+          {/* Hora y Precio */}
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>HORA</Text>
@@ -111,6 +143,7 @@ export default function DetalleCitaScreen() {
 
           <View style={styles.infoSeparator} />
 
+          {/* Servicio */}
           <View style={styles.infoFull}>
             <Text style={styles.infoLabel}>SERVICIO</Text>
             <Text style={styles.infoValueLg}>{servicio}</Text>
@@ -122,6 +155,17 @@ export default function DetalleCitaScreen() {
               <View style={styles.infoFull}>
                 <Text style={styles.infoLabel}>PROFESIONAL</Text>
                 <Text style={styles.infoValueLg}>👤 {empleado}</Text>
+              </View>
+            </>
+          ) : null}
+
+          {/* Fecha de creación / agendada el */}
+          {fechaRegistro ? (
+            <>
+              <View style={styles.infoSeparator} />
+              <View style={styles.infoFull}>
+                <Text style={styles.infoLabel}>FECHA DE REGISTRO / AGENDADA EL</Text>
+                <Text style={styles.infoSubText}>⏱ {fechaRegistro}</Text>
               </View>
             </>
           ) : null}
@@ -197,6 +241,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, marginBottom: 6 },
   infoValue:   { fontSize: 22, fontWeight: '800', color: '#fff' },
   infoValueLg: { fontSize: 16, fontWeight: '600', color: '#fff', marginTop: 2 },
+  infoSubText: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
 
   // Acciones
   acciones:      { gap: 10 },
