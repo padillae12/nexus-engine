@@ -9,8 +9,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, RefreshControl, SafeAreaView,
+  StyleSheet, RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAdmin } from './_layout';
 import CitaCard from '../components/CitaCard';

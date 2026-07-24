@@ -93,8 +93,7 @@ router.post('/auth/verify-pin', async (req, res) => {
 // Retorna todas las citas del día actual, ordenadas por hora.
 router.get('/citas/hoy', async (req, res) => {
   try {
-    const hoy = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const citas = await db.getCitasPorFecha(hoy);
+    const citas = await db.getCitasPorFecha('hoy');
     res.json(citas);
   } catch (err) {
     console.error('[GET /citas/hoy]', err.message);

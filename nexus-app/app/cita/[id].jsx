@@ -7,8 +7,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, Alert, ActivityIndicator, ScrollView,
+  Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { updateEstadoCita } from '../../services/api';
 

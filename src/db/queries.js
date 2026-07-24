@@ -247,6 +247,7 @@ async function getCitasActivasCliente(clienteId) {
  * @returns {Promise<Array>}
  */
 async function getCitasPorFecha(fecha) {
+  const usaCurDate = !fecha || fecha === 'hoy';
   const [rows] = await pool.execute(
     `SELECT
        c.id,
@@ -263,9 +264,9 @@ async function getCitasPorFecha(fecha) {
      JOIN clientes  cl ON c.cliente_id  = cl.id
      JOIN servicios  s ON c.servicio_id = s.id
      LEFT JOIN usuarios u ON c.empleado_id = u.id
-     WHERE DATE(c.fecha_inicio) = ?
+     WHERE DATE(c.fecha_inicio) = ${usaCurDate ? 'CURDATE()' : '?'}
      ORDER BY c.fecha_inicio ASC`,
-    [fecha]
+    usaCurDate ? [] : [fecha]
   );
   return rows;
 }
@@ -364,12 +365,9 @@ async function getClientesLista() {
  * @returns {Promise<object>}
  */
 async function getDashboardStats() {
-  const hoy = new Date().toISOString().slice(0, 10);
-
   // Citas de hoy
   const [[{ citasHoy }]] = await pool.execute(
-    `SELECT COUNT(*) AS citasHoy FROM citas WHERE DATE(fecha_inicio) = ? AND estado != 'cancelada'`,
-    [hoy]
+    `SELECT COUNT(*) AS citasHoy FROM citas WHERE DATE(fecha_inicio) = CURDATE() AND estado != 'cancelada'`
   );
 
   // Clientes nuevos este mes
@@ -395,8 +393,7 @@ async function getDashboardStats() {
     `SELECT COALESCE(SUM(s.precio), 0) AS ingresosHoy
      FROM citas c
      JOIN servicios s ON c.servicio_id = s.id
-     WHERE DATE(c.fecha_inicio) = ? AND c.estado = 'completada'`,
-    [hoy]
+     WHERE DATE(c.fecha_inicio) = CURDATE() AND c.estado = 'completada'`
   );
 
   return {
