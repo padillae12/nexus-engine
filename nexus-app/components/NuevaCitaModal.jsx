@@ -1,6 +1,6 @@
 // components/NuevaCitaModal.jsx
 // ══════════════════════════════════════════════════════════════════
-//  Modal para Agendar Cita Manualmente — Diseño Ejecutivo
+//  Modal para Agendar Cita Manualmente — Con Calendario Nativo
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -14,8 +14,10 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { getServicios, crearCita } from '../services/api';
 
 const HORARIOS_RAPIDOS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -28,7 +30,8 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
 
   // Fecha seleccionada ('hoy' | 'manana' | 'custom')
   const [tipoFecha, setTipoFecha] = useState('hoy');
-  const [fechaCustom, setFechaCustom] = useState('');
+  const [customDate, setCustomDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Hora seleccionada
   const [hora, setHora] = useState('10:00');
@@ -54,22 +57,46 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
       setNombre('');
       setTelefono('');
       setTipoFecha('hoy');
+      setCustomDate(new Date());
+      setShowDatePicker(false);
       setHora('10:00');
     }
   }, [visible]);
 
+  // Manejar cambio de fecha en el Calendario Nativo
+  const handleDatePickerChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setCustomDate(date);
+      setTipoFecha('custom');
+    }
+  };
+
+  // Abrir calendario al tocar "Otra Fecha"
+  const handleSelectOtraFecha = () => {
+    setTipoFecha('custom');
+    setShowDatePicker(true);
+  };
+
   // Obtener fecha en formato YYYY-MM-DD
   const getFechaFinal = () => {
-    const d = new Date();
+    let d = new Date();
     if (tipoFecha === 'manana') {
       d.setDate(d.getDate() + 1);
-    } else if (tipoFecha === 'custom' && fechaCustom) {
-      return fechaCustom;
+    } else if (tipoFecha === 'custom') {
+      d = customDate;
     }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  // Formato legible para mostrar fecha custom
+  const getFechaCustomLegible = () => {
+    return customDate.toLocaleDateString('es-MX', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    });
   };
 
   const handleAgendar = async () => {
@@ -201,7 +228,7 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               )}
             </View>
 
-            {/* Selector: Fecha */}
+            {/* Selector: Fecha con Calendario Nativo */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>FECHA *</Text>
               <View style={styles.segmentedRow}>
@@ -227,28 +254,42 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
 
                 <TouchableOpacity
                   style={[styles.segmentBtn, tipoFecha === 'custom' && styles.segmentBtnActive]}
-                  onPress={() => setTipoFecha('custom')}
+                  onPress={handleSelectOtraFecha}
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.segmentText, tipoFecha === 'custom' && styles.segmentTextActive]}>
-                    Otra Fecha
+                    Abrir Calendario
                   </Text>
                 </TouchableOpacity>
               </View>
 
+              {/* Muestra la fecha seleccionada del calendario */}
               {tipoFecha === 'custom' && (
-                <View style={[styles.inputWrap, { marginTop: 8 }]}>
-                  <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="YYYY-MM-DD (Ej. 2026-07-28)"
-                    placeholderTextColor="#6B7280"
-                    value={fechaCustom}
-                    onChangeText={setFechaCustom}
-                  />
-                </View>
+                <TouchableOpacity
+                  style={styles.calendarSelectedBox}
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="calendar-outline" size={18} color="#6366F1" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.calendarSelectedLabel}>FECHA SELECCIONADA</Text>
+                    <Text style={styles.calendarSelectedText}>{getFechaCustomLegible()}</Text>
+                  </View>
+                  <Ionicons name="create-outline" size={16} color="#6B7280" />
+                </TouchableOpacity>
               )}
             </View>
+
+            {/* DateTimePicker Nativo (Pop-up de Calendario) */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={customDate}
+                mode="date"
+                display="default"
+                minimumDate={new Date()}
+                onChange={handleDatePickerChange}
+              />
+            )}
 
             {/* Selector: Hora */}
             <View style={styles.inputGroup}>
@@ -458,6 +499,33 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+
+  // Visual de fecha seleccionada en calendario
+  calendarSelectedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderWidth: 1,
+    borderColor: '#6366F1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  calendarSelectedLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#6366F1',
+    letterSpacing: 1,
+  },
+  calendarSelectedText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F9FAFB',
+    marginTop: 1,
+    textTransform: 'capitalize',
   },
 
   // Horarios Horizontales
