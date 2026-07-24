@@ -10,7 +10,7 @@ const { handleServiceMenu, handleServiceSelect }               = require('./hand
 const { handleDateSelect }                  = require('./handlers/date');
 const { handleTimeSelect }                  = require('./handlers/time');
 const { handleConfirmation, handleEditMenu, handleCancelFlow, handleCancelSelect } = require('./handlers/confirm');
-const { quiereAgendar, quiereCancelar, quiereVerCitas } = require('../utils/regex');
+const { quiereAgendar, quiereCancelar, quiereVerCitas, quiereInfo } = require('../utils/regex');
 const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol } = require('../utils/slots');
 
 // ─────────────────────────────────────────────────────────────────
@@ -165,6 +165,20 @@ async function handleMessage(telefono, mensaje) {
       } else if (opcion === '3' || quiereCancelar(msg)) {
         sesion.citasCancelables = null;
         result = await handleCancelFlow(sesion, msg);
+      } else if (opcion === '4' || quiereInfo(msg)) {
+        const { getAllConfig } = require('../db/queries');
+        const configNegocio = await getAllConfig().catch(() => ({}));
+        const horarioAtencion = configNegocio.HORARIO_ATENCION || '• Lunes a Viernes: 09:00 AM - 07:00 PM\n• Sábados: 09:00 AM - 02:00 PM\n• Domingos: Cerrado';
+        const ubicacion = configNegocio.UBICACION || 'Visítanos en nuestra sucursal principal.';
+
+        result = {
+          respuesta:
+            `ℹ️ *INFORMACIÓN Y HORARIOS DE ATENCIÓN*\n\n` +
+            `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
+            `📍 *Ubicación:*\n${ubicacion}\n\n` +
+            `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
+          nuevoEstado: 'MAIN_MENU'
+        };
       } else {
         result = {
           respuesta: buildMenuPrincipal(sesion.nombre || 'amigo/a'),

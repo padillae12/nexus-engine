@@ -26,6 +26,10 @@ const quiereCancelar = (msg) =>
 const quiereVerCitas = (msg) =>
   /\b(mis\s+citas?|tengo\s+cita|ver\s*citas?|ver|cuando\s+es|cuand[oa]\s+tengo)\b/i.test(msg);
 
+/** El usuario quiere ver información u horarios del negocio */
+const quiereInfo = (msg) =>
+  /\b(info|informaci[oó]n|horario|horarios|atenci[oó]n|ubicaci[oó]n|direcci[oó]n|d[oó]nde\s+est[aá]n|d[oó]nde\s+se\s+ubican|direcci[oó]n)\b/i.test(msg);
+
 // ─────────────────────────────────────────────────────────────────
 //  EXTRACCIÓN DE FECHAS
 // ─────────────────────────────────────────────────────────────────
@@ -140,6 +144,7 @@ module.exports = {
   esNegacion,
   quiereCancelar,
   quiereVerCitas,
+  quiereInfo,
   extraerFecha,
   extraerFechaRelativa,
   extraerFechaExplicita,

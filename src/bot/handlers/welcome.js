@@ -57,10 +57,11 @@ async function handleWaitingName(sesion, msg) {
 function buildMenuPrincipal(nombre) {
   return (
     `¿En qué te puedo ayudar hoy, *${nombre}*? 😊\n\n` +
-    `📅 *Agendar* una cita\n` +
-    `📋 *Ver* mis citas\n` +
-    `❌ *Cancelar* una cita\n\n` +
-    `_Solo dime qué necesitas o escribe el número de la opción (1, 2 o 3)._`
+    `1️⃣ 📅 *Agendar* una cita\n` +
+    `2️⃣ 📋 *Ver* mis citas\n` +
+    `3️⃣ ❌ *Cancelar* una cita\n` +
+    `4️⃣ ℹ️ *Información y Horarios*\n\n` +
+    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3 o 4)._`
   );
 }
 
