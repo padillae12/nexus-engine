@@ -116,15 +116,11 @@ export default function DetalleCitaScreen() {
         <View style={styles.infoCard}>
 
           {/* Fecha programada */}
-          {fechaProgramada ? (
-            <>
-              <View style={styles.infoFull}>
-                <Text style={styles.infoLabel}>FECHA PROGRAMADA</Text>
-                <Text style={styles.infoValueLg}>📅 {fechaProgramada}</Text>
-              </View>
-              <View style={styles.infoSeparator} />
-            </>
-          ) : null}
+          <View style={styles.infoFull}>
+            <Text style={styles.infoLabel}>FECHA PROGRAMADA</Text>
+            <Text style={styles.infoValueLg}>📅 {fechaProgramada || 'Fecha de la cita'}</Text>
+          </View>
+          <View style={styles.infoSeparator} />
 
           {/* Hora y Precio */}
           <View style={styles.infoRow}>
@@ -160,15 +156,13 @@ export default function DetalleCitaScreen() {
           ) : null}
 
           {/* Fecha de creación / agendada el */}
-          {fechaRegistro ? (
-            <>
-              <View style={styles.infoSeparator} />
-              <View style={styles.infoFull}>
-                <Text style={styles.infoLabel}>FECHA DE REGISTRO / AGENDADA EL</Text>
-                <Text style={styles.infoSubText}>⏱ {fechaRegistro}</Text>
-              </View>
-            </>
-          ) : null}
+          <View style={styles.infoSeparator} />
+          <View style={styles.infoFull}>
+            <Text style={styles.infoLabel}>FECHA DE REGISTRO / AGENDADA EL</Text>
+            <Text style={styles.infoSubText}>
+              ⏱ {fechaRegistro || 'Registro automático'}
+            </Text>
+          </View>
         </View>
 
         {/* Acciones */}
