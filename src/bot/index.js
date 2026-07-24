@@ -68,12 +68,14 @@ client.on('ready', () => {
 // ─────────────────────────────────────────────────────────────────
 //  MENSAJE ENTRANTE
 // ─────────────────────────────────────────────────────────────────
-client.on('message', async (msg) => {
-  if (msg.fromMe) return;
-  if (msg.from.endsWith('@g.us')) return;
+client.on('message_create', async (msg) => {
+  if (msg.from.endsWith('@g.us')) return; // Ignorar grupos
+
+  // Si el mensaje viene de mí mismo y NO es un chat enviado a mí mismo, ignorar
+  if (msg.fromMe && msg.to !== msg.from) return;
 
   const texto    = msg.body?.trim();
-  const telefono = msg.from;
+  const telefono = msg.fromMe ? msg.to : msg.from;
   if (!texto) return;
 
   console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono}: ${texto}`);
@@ -81,12 +83,13 @@ client.on('message', async (msg) => {
   try {
     const respuesta = await handleMessage(telefono, texto);
     if (respuesta) {
-      await msg.reply(respuesta);
+      await client.sendMessage(telefono, respuesta);
       console.log(`📤 Respuesta enviada a ${telefono}`);
     }
   } catch (error) {
     console.error(`❌ Error procesando mensaje de ${telefono}:`, error);
-    await msg.reply(
+    await client.sendMessage(
+      telefono,
       '😔 Ocurrió un error inesperado. Intenta de nuevo.\n\nEscribe *"reiniciar"* si el problema persiste.'
     ).catch(() => {});
   }
