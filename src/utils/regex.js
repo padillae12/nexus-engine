@@ -53,14 +53,24 @@ function extraerFechaRelativa(msg) {
     return d;
   }
 
-  // Detecta día de semana: "el lunes", "el martes"...
-  const dias = ['domingo','lunes','martes','miércoles','miercoles','jueves','viernes','sábado','sabado'];
-  for (let i = 0; i < dias.length; i++) {
-    const patron = new RegExp(`\\b${dias[i]}\\b`, 'i');
+  // Detecta día de semana: "el lunes", "el martes", "viernes", etc.
+  const mapaDias = {
+    'domingo': 0,
+    'lunes': 1,
+    'martes': 2,
+    'miércoles': 3,
+    'miercoles': 3,
+    'jueves': 4,
+    'viernes': 5,
+    'sábado': 6,
+    'sabado': 6,
+  };
+
+  for (const [nombreDia, diaObjetivo] of Object.entries(mapaDias)) {
+    const patron = new RegExp(`\\b${nombreDia}\\b`, 'i');
     if (patron.test(lower)) {
-      const diaObjetivo = i === 4 ? 3 : i === 8 ? 6 : i; // normaliza tildes
       const d = new Date(hoy);
-      const diff = (diaObjetivo - d.getDay() + 7) % 7 || 7; // siempre el próximo
+      const diff = (diaObjetivo - d.getDay() + 7) % 7 || 7; // siempre el próximo día de la semana
       d.setDate(d.getDate() + diff);
       return d;
     }
