@@ -502,10 +502,11 @@ async function ensureRemindersSchema() {
         empleado_id INT UNSIGNED NOT NULL,
         servicio_id INT UNSIGNED NOT NULL,
         PRIMARY KEY (empleado_id, servicio_id)
-      ) ENGINE=InnoDB;
-    `).catch(() => {});
+      ) ENGINE=InnoDB
+    `);
+    console.log('✅ Esquema MariaDB verificado (empleado_servicios)');
   } catch (e) {
-    // Ignorar errores si la columna o tabla ya existe
+    console.warn('⚠️ Nota sobre esquema:', e.message);
   }
 }
 ensureRemindersSchema();
