@@ -281,15 +281,29 @@ router.get('/empleados', async (req, res) => {
 // POST /api/empleados — Crear o actualizar un empleado
 router.post('/empleados', async (req, res) => {
   try {
-    const { id, nombre, email, password, telefono, rol, activo } = req.body;
+    const { id, nombre, email, password, telefono, rol, activo, servicioIds } = req.body;
     if (!nombre) {
       return res.status(400).json({ message: 'El nombre del empleado es requerido' });
     }
     const empId = await db.guardarEmpleado({ id, nombre, email, password, telefono, rol, activo });
+    if (Array.isArray(servicioIds)) {
+      await db.setServiciosEmpleado(empId, servicioIds);
+    }
     res.status(201).json({ ok: true, id: empId });
   } catch (err) {
     console.error('[POST /empleados]', err.message);
     res.status(500).json({ message: 'Error al guardar empleado' });
+  }
+});
+
+// GET /api/empleados/:id/servicios — Obtiene los servicios habilitados para un empleado
+router.get('/empleados/:id/servicios', async (req, res) => {
+  try {
+    const servicios = await db.getServiciosEmpleado(req.params.id);
+    res.json(servicios);
+  } catch (err) {
+    console.error('[GET /empleados/:id/servicios]', err.message);
+    res.status(500).json({ message: 'Error al obtener servicios del empleado' });
   }
 });
 

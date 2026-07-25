@@ -496,11 +496,83 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS empleado_servicios (
+        empleado_id INT UNSIGNED NOT NULL,
+        servicio_id INT UNSIGNED NOT NULL,
+        PRIMARY KEY (empleado_id, servicio_id)
+      ) ENGINE=InnoDB;
+    `).catch(() => {});
   } catch (e) {
-    // Ignorar errores si la columna ya existe
+    // Ignorar errores si la columna o tabla ya existe
   }
 }
 ensureRemindersSchema();
+
+/**
+ * Obtiene el especialista preferido/frecuente de un cliente para un servicio dado (ej. Ortodoncia).
+ */
+async function getEmpleadoPreferidoCliente(clienteId, servicioId) {
+  if (!clienteId || !servicioId) return null;
+  const [rows] = await pool.execute(
+    `SELECT c.empleado_id, u.nombre AS empleado_nombre
+     FROM citas c
+     JOIN usuarios u ON c.empleado_id = u.id
+     WHERE c.cliente_id = ?
+       AND c.servicio_id = ?
+       AND c.empleado_id IS NOT NULL
+       AND c.estado != 'cancelada'
+     ORDER BY c.fecha_inicio DESC
+     LIMIT 1`,
+    [clienteId, servicioId]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Obtiene la lista de empleados habilitados para realizar un servicio.
+ */
+async function getEmpleadosPorServicio(servicioId) {
+  const [rows] = await pool.execute(
+    `SELECT u.id, u.nombre, u.telefono
+     FROM usuarios u
+     JOIN empleado_servicios es ON u.id = es.empleado_id
+     WHERE es.servicio_id = ? AND u.activo = 1`,
+    [servicioId]
+  );
+  if (rows.length > 0) return rows;
+
+  // Si no hay asignación explícita, se consideran todos los empleados activos
+  const [todos] = await pool.execute(
+    `SELECT id, nombre, telefono FROM usuarios WHERE activo = 1 ORDER BY id ASC`
+  );
+  return todos;
+}
+
+/**
+ * Obtiene la lista de IDs de servicios autorizados para un empleado.
+ */
+async function getServiciosEmpleado(empleadoId) {
+  const [rows] = await pool.execute(
+    `SELECT servicio_id FROM empleado_servicios WHERE empleado_id = ?`,
+    [empleadoId]
+  );
+  return rows.map(r => r.servicio_id);
+}
+
+/**
+ * Guarda los servicios habilitados para un empleado.
+ */
+async function setServiciosEmpleado(empleadoId, servicioIds = []) {
+  await pool.execute(`DELETE FROM empleado_servicios WHERE empleado_id = ?`, [empleadoId]);
+  for (const sId of servicioIds) {
+    await pool.execute(
+      `INSERT INTO empleado_servicios (empleado_id, servicio_id) VALUES (?, ?)`,
+      [empleadoId, sId]
+    ).catch(() => {});
+  }
+}
 
 /**
  * Obtiene la lista de empleados/usuarios del negocio.
@@ -603,6 +675,10 @@ module.exports = {
   getAllConfig,
   getEmpleados,
   guardarEmpleado,
+  getEmpleadoPreferidoCliente,
+  getEmpleadosPorServicio,
+  getServiciosEmpleado,
+  setServiciosEmpleado,
   getTelefonoEmpleado,
   getCitasPendientesRecordatorio,
   markRecordatorioEnviado,

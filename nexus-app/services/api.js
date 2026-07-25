@@ -192,8 +192,8 @@ export async function getEmpleados() {
 }
 
 /**
- * Crea o actualiza un empleado con su número de teléfono.
- * @param {object} datos - { id?, nombre, email, password?, telefono, rol, activo }
+ * Crea o actualiza un empleado con su número de teléfono y servicios autorizados.
+ * @param {object} datos - { id?, nombre, email, password?, telefono, rol, activo, servicioIds? }
  * @returns {Promise<object>}
  */
 export async function guardarEmpleado(datos) {
@@ -201,6 +201,15 @@ export async function guardarEmpleado(datos) {
     method: 'POST',
     body: JSON.stringify(datos),
   });
+}
+
+/**
+ * Obtiene la lista de IDs de servicios autorizados para un empleado.
+ * @param {number} id
+ * @returns {Promise<Array<number>>}
+ */
+export async function getServiciosEmpleado(id) {
+  return request(`/empleados/${id}/servicios`);
 }
 
 // ══════════════════════════════════════════════════════════════════

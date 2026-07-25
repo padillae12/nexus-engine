@@ -1,4 +1,4 @@
-// app/admin/configuracion.jsx — Pantalla Admin: configuración & gestión de empleados
+// app/admin/configuracion.jsx — Pantalla Admin: configuración & gestión de empleados y especialidades
 // Diseño Profesional & Ejecutivo (Zero Emojis)
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getConfig, checkHealth, getEmpleados, guardarEmpleado } from '../../services/api';
+import { getConfig, checkHealth, getEmpleados, guardarEmpleado, getServicios } from '../../services/api';
 
 function ConfigRow({ label, valor, descripcion }) {
   return (
@@ -33,6 +33,7 @@ export default function ConfiguracionScreen() {
   const [config, setConfig] = useState(null);
   const [apiOnline, setApiOnline] = useState(null);
   const [empleados, setEmpleados] = useState([]);
+  const [catServicios, setCatServicios] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Formulario nuevo empleado
@@ -40,14 +41,21 @@ export default function ConfiguracionScreen() {
   const [empNombre, setEmpNombre] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empTel, setEmpTel] = useState('');
+  const [empServicioIds, setEmpServicioIds] = useState([]);
   const [savingEmp, setSavingEmp] = useState(false);
 
   const cargarDatos = () => {
-    Promise.all([getConfig(), checkHealth(), getEmpleados().catch(() => [])])
-      .then(([cfg, health, emps]) => {
+    Promise.all([
+      getConfig(),
+      checkHealth(),
+      getEmpleados().catch(() => []),
+      getServicios().catch(() => []),
+    ])
+      .then(([cfg, health, emps, srvs]) => {
         setConfig(cfg);
         setApiOnline(health);
         setEmpleados(emps);
+        setCatServicios(srvs);
       })
       .catch(console.warn)
       .finally(() => setLoading(false));
@@ -57,9 +65,17 @@ export default function ConfiguracionScreen() {
     cargarDatos();
   }, []);
 
+  const toggleServicio = (id) => {
+    if (empServicioIds.includes(id)) {
+      setEmpServicioIds(empServicioIds.filter(sId => sId !== id));
+    } else {
+      setEmpServicioIds([...empServicioIds, id]);
+    }
+  };
+
   const handleGuardarEmpleado = async () => {
     if (!empNombre.trim()) {
-      Alert.alert('Campo Requerido', 'Ingrese el nombre del empleado');
+      Alert.alert('Campo Requerido', 'Ingrese el nombre del especialista/empleado');
       return;
     }
     setSavingEmp(true);
@@ -70,11 +86,13 @@ export default function ConfiguracionScreen() {
         telefono: empTel.trim(),
         rol: 'empleado',
         activo: 1,
+        servicioIds: empServicioIds,
       });
-      Alert.alert('Empleado Guardado', 'El empleado y su teléfono han sido registrados.');
+      Alert.alert('Especialista Guardado', 'El especialista, su WhatsApp y sus servicios autorizados han sido registrados.');
       setEmpNombre('');
       setEmpEmail('');
       setEmpTel('');
+      setEmpServicioIds([]);
       setShowAddEmp(false);
       cargarDatos();
     } catch (err) {
@@ -103,7 +121,7 @@ export default function ConfiguracionScreen() {
 
       {/* Directorio de Empleados y Recordatorios */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>EMPLEADOS Y NOTIFICACIONES DE WHATSAPP</Text>
+        <Text style={styles.sectionTitle}>ESPECIALISTAS Y SERVICIOS AUTORIZADOS</Text>
         <TouchableOpacity
           style={styles.addEmpBtn}
           onPress={() => setShowAddEmp(!showAddEmp)}
@@ -117,13 +135,13 @@ export default function ConfiguracionScreen() {
       {/* Formulario Agregar Empleado */}
       {showAddEmp && (
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Registrar Empleado</Text>
+          <Text style={styles.formTitle}>Registrar Especialista</Text>
 
           <View style={styles.inputWrap}>
             <Ionicons name="person-outline" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="Nombre completo *"
+              placeholder="Nombre completo (Ej. Dr. Carlos) *"
               placeholderTextColor="#6B7280"
               value={empNombre}
               onChangeText={setEmpNombre}
@@ -154,6 +172,31 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
+          {/* Selector de Servicios Habilitados */}
+          <Text style={styles.subTitleLabel}>SERVICIOS QUE REALIZA ESTE ESPECIALISTA:</Text>
+          <View style={styles.servicesGrid}>
+            {catServicios.map(s => {
+              const checked = empServicioIds.includes(s.id);
+              return (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.serviceChip, checked && styles.serviceChipChecked]}
+                  onPress={() => toggleServicio(s.id)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={checked ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={checked ? "#6366F1" : "#6B7280"}
+                  />
+                  <Text style={[styles.serviceChipText, checked && styles.serviceChipTextChecked]}>
+                    {s.nombre}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <TouchableOpacity
             style={styles.saveEmpBtn}
             onPress={handleGuardarEmpleado}
@@ -165,7 +208,7 @@ export default function ConfiguracionScreen() {
             ) : (
               <>
                 <Ionicons name="checkmark-done" size={16} color="#FFFFFF" />
-                <Text style={styles.saveEmpBtnText}>Guardar Empleado</Text>
+                <Text style={styles.saveEmpBtnText}>Guardar Especialista</Text>
               </>
             )}
           </TouchableOpacity>
@@ -175,12 +218,12 @@ export default function ConfiguracionScreen() {
       {/* Lista de Empleados */}
       <View style={styles.empList}>
         {empleados.length === 0 ? (
-          <Text style={styles.emptyText}>Sin empleados registrados</Text>
+          <Text style={styles.emptyText}>Sin especialistas registrados</Text>
         ) : (
           empleados.map(emp => (
             <View key={emp.id} style={styles.empCard}>
               <View style={styles.empAvatar}>
-                <Ionicons name="person" size={18} color="#6366F1" />
+                <Ionicons name="medkit-outline" size={18} color="#6366F1" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.empNombre}>{emp.nombre}</Text>
@@ -213,7 +256,7 @@ export default function ConfiguracionScreen() {
       )}
 
       <Text style={styles.hint}>
-        Nota: Los recordatorios de citas se envían automáticamente por WhatsApp tanto al cliente como al empleado asignado.
+        Nota: El bot asigna automáticamente el especialista preferido del cliente en citas consecutivas (ej. tratamientos de Ortodoncia).
       </Text>
     </ScrollView>
   );
@@ -283,6 +326,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 4,
   },
+  subTitleLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 1,
+    marginTop: 6,
+  },
+  servicesGrid: {
+    gap: 6,
+  },
+  serviceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  serviceChipChecked: {
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderColor: '#6366F1',
+  },
+  serviceChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  serviceChipTextChecked: {
+    color: '#F9FAFB',
+    fontWeight: '700',
+  },
+
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
