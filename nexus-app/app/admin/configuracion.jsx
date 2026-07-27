@@ -65,6 +65,9 @@ export default function ConfiguracionScreen() {
     cargarDatos();
   }, []);
 
+  const planType = (config?.PLAN_TYPE || 'pro').toLowerCase();
+  const isPro = planType === 'pro';
+
   const toggleServicio = (id) => {
     if (empServicioIds.includes(id)) {
       setEmpServicioIds(empServicioIds.filter(sId => sId !== id));
@@ -75,7 +78,7 @@ export default function ConfiguracionScreen() {
 
   const handleGuardarEmpleado = async () => {
     if (!empNombre.trim()) {
-      Alert.alert('Campo Requerido', 'Ingrese el nombre del especialista/empleado');
+      Alert.alert('Campo Requerido', 'Ingrese el nombre del empleado');
       return;
     }
     setSavingEmp(true);
@@ -86,9 +89,9 @@ export default function ConfiguracionScreen() {
         telefono: empTel.trim(),
         rol: 'empleado',
         activo: 1,
-        servicioIds: empServicioIds,
+        servicioIds: isPro ? empServicioIds : [],
       });
-      Alert.alert('Especialista Guardado', 'El especialista, su WhatsApp y sus servicios autorizados han sido registrados.');
+      Alert.alert('Empleado Guardado', 'El registro del personal ha sido guardado exitosamente.');
       setEmpNombre('');
       setEmpEmail('');
       setEmpTel('');
@@ -107,21 +110,31 @@ export default function ConfiguracionScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-      {/* Estado del servidor */}
-      <Text style={styles.sectionTitle}>ESTADO DEL SERVIDOR</Text>
-      <View style={[styles.healthCard, { borderColor: apiOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)' }]}>
-        <View style={[styles.healthDot, { backgroundColor: apiOnline ? '#10B981' : '#EF4444' }]} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.healthLabel}>API Nexus-Engine</Text>
-          <Text style={[styles.healthStatus, { color: apiOnline ? '#10B981' : '#EF4444' }]}>
-            {apiOnline ? 'Conexión activa · En línea' : 'Servidor sin respuesta'}
-          </Text>
+      {/* Estado del servidor & Plan */}
+      <Text style={styles.sectionTitle}>NIVEL DE PLAN Y SERVIDOR</Text>
+      <View style={styles.topStatusGrid}>
+        <View style={[styles.healthCard, { borderColor: apiOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)' }]}>
+          <View style={[styles.healthDot, { backgroundColor: apiOnline ? '#10B981' : '#EF4444' }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.healthLabel}>API Server</Text>
+            <Text style={[styles.healthStatus, { color: apiOnline ? '#10B981' : '#EF4444' }]}>
+              {apiOnline ? 'Conexión activa' : 'Sin respuesta'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.planCard, isPro ? styles.planCardPro : styles.planCardBasico]}>
+          <Ionicons name={isPro ? "shield-checkmark" : "flash"} size={16} color={isPro ? "#6366F1" : "#F59E0B"} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.planTitle}>{isPro ? "PLAN PRO / CLÍNICO" : "PLAN BÁSICO / EXPRESS"}</Text>
+            <Text style={styles.planDesc}>{isPro ? "Funciones clínicas y médico de cabecera" : "Flujo ultra-rápido para locales"}</Text>
+          </View>
         </View>
       </View>
 
-      {/* Directorio de Empleados y Recordatorios */}
+      {/* Directorio de Empleados */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>ESPECIALISTAS Y SERVICIOS AUTORIZADOS</Text>
+        <Text style={styles.sectionTitle}>{isPro ? "ESPECIALISTAS Y SERVICIOS AUTORIZADOS" : "DIRECTORIO DE PERSONAL"}</Text>
         <TouchableOpacity
           style={styles.addEmpBtn}
           onPress={() => setShowAddEmp(!showAddEmp)}
@@ -135,13 +148,13 @@ export default function ConfiguracionScreen() {
       {/* Formulario Agregar Empleado */}
       {showAddEmp && (
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Registrar Especialista</Text>
+          <Text style={styles.formTitle}>{isPro ? "Registrar Especialista" : "Registrar Personal"}</Text>
 
           <View style={styles.inputWrap}>
             <Ionicons name="person-outline" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="Nombre completo (Ej. Dr. Carlos) *"
+              placeholder="Nombre completo *"
               placeholderTextColor="#6B7280"
               value={empNombre}
               onChangeText={setEmpNombre}
@@ -172,30 +185,34 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
-          {/* Selector de Servicios Habilitados */}
-          <Text style={styles.subTitleLabel}>SERVICIOS QUE REALIZA ESTE ESPECIALISTA:</Text>
-          <View style={styles.servicesGrid}>
-            {catServicios.map(s => {
-              const checked = empServicioIds.includes(s.id);
-              return (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[styles.serviceChip, checked && styles.serviceChipChecked]}
-                  onPress={() => toggleServicio(s.id)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={checked ? "checkbox" : "square-outline"}
-                    size={16}
-                    color={checked ? "#6366F1" : "#6B7280"}
-                  />
-                  <Text style={[styles.serviceChipText, checked && styles.serviceChipTextChecked]}>
-                    {s.nombre}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Selector de Servicios Habilitados (Solo Plan Pro) */}
+          {isPro && (
+            <>
+              <Text style={styles.subTitleLabel}>SERVICIOS QUE REALIZA ESTE ESPECIALISTA:</Text>
+              <View style={styles.servicesGrid}>
+                {catServicios.map(s => {
+                  const checked = empServicioIds.includes(s.id);
+                  return (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[styles.serviceChip, checked && styles.serviceChipChecked]}
+                      onPress={() => toggleServicio(s.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={checked ? "checkbox" : "square-outline"}
+                        size={16}
+                        color={checked ? "#6366F1" : "#6B7280"}
+                      />
+                      <Text style={[styles.serviceChipText, checked && styles.serviceChipTextChecked]}>
+                        {s.nombre}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
             style={styles.saveEmpBtn}
@@ -208,7 +225,7 @@ export default function ConfiguracionScreen() {
             ) : (
               <>
                 <Ionicons name="checkmark-done" size={16} color="#FFFFFF" />
-                <Text style={styles.saveEmpBtnText}>Guardar Especialista</Text>
+                <Text style={styles.saveEmpBtnText}>Guardar Registro</Text>
               </>
             )}
           </TouchableOpacity>
@@ -218,18 +235,18 @@ export default function ConfiguracionScreen() {
       {/* Lista de Empleados */}
       <View style={styles.empList}>
         {empleados.length === 0 ? (
-          <Text style={styles.emptyText}>Sin especialistas registrados</Text>
+          <Text style={styles.emptyText}>Sin personal registrado</Text>
         ) : (
           empleados.map(emp => (
             <View key={emp.id} style={styles.empCard}>
               <View style={styles.empAvatar}>
-                <Ionicons name="medkit-outline" size={18} color="#6366F1" />
+                <Ionicons name={isPro ? "medkit-outline" : "person-outline"} size={18} color="#6366F1" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.empNombre}>{emp.nombre}</Text>
                 <View style={styles.empMetaRow}>
                   <Ionicons name="logo-whatsapp" size={12} color="#10B981" />
-                  <Text style={styles.empTel}>{emp.telefono || 'Sin WhatsApp configurado'}</Text>
+                  <Text style={styles.empTel}>{emp.telefono || 'Sin WhatsApp'}</Text>
                 </View>
               </View>
               <View style={styles.empBadge}>
@@ -244,11 +261,10 @@ export default function ConfiguracionScreen() {
       <Text style={[styles.sectionTitle, { marginTop: 24 }]}>PARÁMETROS DEL SISTEMA</Text>
       {config ? (
         <View style={styles.configList}>
+          <ConfigRow label="Tipo de Plan" valor={planType.toUpperCase()} descripcion="Nivel de suscripción" />
           <ConfigRow label="Min. anticipación" valor={`${config.MIN_BOOKING_HOURS}h`} descripcion="Para agendar una cita" />
           <ConfigRow label="Máx. días a futuro" valor={`${config.MAX_BOOKING_DAYS} días`} />
           <ConfigRow label="Límite cancelación" valor={`${config.CANCEL_HOURS_LIMIT}h antes`} />
-          <ConfigRow label="Ofrecer reagendar" valor={config.OFFER_RESCHEDULE === 'true' ? 'Sí' : 'No'} />
-          <ConfigRow label="Selección empleado" valor={config.EMPLOYEE_SELECTION === 'true' ? 'Sí' : 'No'} />
           <ConfigRow label="Nombre del bot" valor={config.BOT_NAME} />
         </View>
       ) : (
@@ -256,7 +272,9 @@ export default function ConfiguracionScreen() {
       )}
 
       <Text style={styles.hint}>
-        Nota: El bot asigna automáticamente el especialista preferido del cliente en citas consecutivas (ej. tratamientos de Ortodoncia).
+        {isPro
+          ? "Modo Pro/Clínico Activo: Asignación automática de especialista preferido y notificaciones al WhatsApp del médico."
+          : "Modo Básico/Express Activo: Flujo de agendamiento ultra-rápido optimizado para locales comerciales."}
       </Text>
     </ScrollView>
   );
@@ -279,6 +297,54 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
+  topStatusGrid: {
+    gap: 8,
+  },
+  healthCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+  },
+  healthDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  healthLabel: { color: '#F9FAFB', fontWeight: '700', fontSize: 13 },
+  healthStatus: { fontSize: 11, fontWeight: '500', marginTop: 1 },
+
+  planCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+  },
+  planCardPro: {
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderColor: '#6366F1',
+  },
+  planCardBasico: {
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    borderColor: '#F59E0B',
+  },
+  planTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#F9FAFB',
+    letterSpacing: 1,
+  },
+  planDesc: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+
   addEmpBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,22 +359,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  healthCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-  },
-  healthDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  healthLabel: { color: '#F9FAFB', fontWeight: '700', fontSize: 14 },
-  healthStatus: { fontSize: 12, fontWeight: '500', marginTop: 2 },
 
   // Formulario agregar empleado
   formCard: {

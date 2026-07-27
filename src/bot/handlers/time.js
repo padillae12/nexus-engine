@@ -33,15 +33,39 @@ async function handleTimeSelect(sesion, msg) {
   const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
   const fechaTexto = formatFechaEspanol(fechaObj);
 
+const { getPlanType } = require('../../db/queries');
+
+  const planType = await getPlanType();
+
+  if (planType === 'pro') {
+    return {
+      respuesta:
+        `🔔 *¿Con cuánto tiempo de anticipación te gustaría recibir un recordatorio por WhatsApp?*\n\n` +
+        `1️⃣ 1 hora antes\n` +
+        `2️⃣ 2 horas antes\n` +
+        `3️⃣ 1 día antes (24 hrs)\n` +
+        `4️⃣ Sin recordatorio\n\n` +
+        `_Escribe el número de la opción (1, 2, 3 o 4)._`,
+      nuevoEstado: 'REMINDER_SELECT',
+    };
+  }
+
+  // Plan Básico: Asignación automática de recordatorio (2h antes) y paso directo a confirmación
+  sesion.recordatorioMins = 120;
+  sesion.recordatorioTexto = '2 horas antes';
+
+  const resumen =
+    `✅ *Resumen de tu cita:*\n\n` +
+    `👤 Nombre: *${sesion.nombre}*\n` +
+    `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
+    `📅 Fecha: *${fechaTexto}*\n` +
+    `⏰ Hora: *${horaTexto}*\n\n` +
+    `¿Confirmas tu cita?\n` +
+    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.`;
+
   return {
-    respuesta:
-      `🔔 *¿Con cuánto tiempo de anticipación te gustaría recibir un recordatorio por WhatsApp?*\n\n` +
-      `1️⃣ 1 hora antes\n` +
-      `2️⃣ 2 horas antes\n` +
-      `3️⃣ 1 día antes (24 hrs)\n` +
-      `4️⃣ Sin recordatorio\n\n` +
-      `_Escribe el número de la opción (1, 2, 3 o 4)._`,
-    nuevoEstado: 'REMINDER_SELECT',
+    respuesta: resumen,
+    nuevoEstado: 'CONFIRMATION',
   };
 }
 

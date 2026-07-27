@@ -107,22 +107,28 @@ async function handleServiceSelect(sesion, msg) {
   sesion.servicioNombre = servicioElegido.nombre;
   sesion.duracionMin    = servicioElegido.duracion_min;
 
-  // ── Detección de Especialista Frecuente / Capacitado ──────────────
-  const { getEmpleadoPreferidoCliente, getEmpleadosPorServicio } = require('../../db/queries');
-  const preferido = await getEmpleadoPreferidoCliente(sesion.clienteId, servicioElegido.id);
+  // ── Detección de Especialista Frecuente / Capacitado (Solo Plan Pro) ─
+  const { getEmpleadoPreferidoCliente, getEmpleadosPorServicio, getPlanType } = require('../../db/queries');
+  const planType = await getPlanType();
   let textoEspecialista = '';
 
-  if (preferido) {
-    sesion.empleadoId = preferido.empleado_id;
-    textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${preferido.empleado_nombre} (Tu especialista frecuente en ${servicioElegido.nombre})\n\n`;
-  } else {
-    const capacitados = await getEmpleadosPorServicio(servicioElegido.id);
-    if (capacitados.length === 1) {
-      sesion.empleadoId = capacitados[0].id;
-      textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${capacitados[0].nombre}\n\n`;
+  if (planType === 'pro') {
+    const preferido = await getEmpleadoPreferidoCliente(sesion.clienteId, servicioElegido.id);
+    if (preferido) {
+      sesion.empleadoId = preferido.empleado_id;
+      textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${preferido.empleado_nombre} (Tu especialista frecuente en ${servicioElegido.nombre})\n\n`;
     } else {
-      sesion.empleadoId = null; // Cualquier especialista disponible
+      const capacitados = await getEmpleadosPorServicio(servicioElegido.id);
+      if (capacitados.length === 1) {
+        sesion.empleadoId = capacitados[0].id;
+        textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${capacitados[0].nombre}\n\n`;
+      } else {
+        sesion.empleadoId = null; // Cualquier especialista disponible
+      }
     }
+  } else {
+    // Plan Básico (Barberías/Spas/Estéticas): Asignación directa ultra-rápida sin preguntas
+    sesion.empleadoId = null;
   }
 
   const precioTexto = servicioElegido.precio != null

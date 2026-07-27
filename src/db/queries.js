@@ -504,12 +504,27 @@ async function ensureRemindersSchema() {
         PRIMARY KEY (empleado_id, servicio_id)
       ) ENGINE=InnoDB
     `);
-    console.log('✅ Esquema MariaDB verificado (empleado_servicios)');
+
+    await pool.query(`
+      INSERT INTO config_negocio (clave, valor)
+      VALUES ('PLAN_TYPE', 'pro')
+      ON DUPLICATE KEY UPDATE valor = valor
+    `).catch(() => {});
+
+    console.log('✅ Esquema MariaDB verificado (empleado_servicios & PLAN_TYPE)');
   } catch (e) {
     console.warn('⚠️ Nota sobre esquema:', e.message);
   }
 }
 ensureRemindersSchema();
+
+/**
+ * Obtiene el plan activo del negocio ('basico' | 'pro').
+ */
+async function getPlanType() {
+  const plan = await getConfig('PLAN_TYPE');
+  return (plan || 'pro').toLowerCase();
+}
 
 /**
  * Obtiene el especialista preferido/frecuente de un cliente para un servicio dado (ej. Ortodoncia).
@@ -674,6 +689,7 @@ module.exports = {
   getCitasActivasCliente,
   getConfig,
   getAllConfig,
+  getPlanType,
   getEmpleados,
   guardarEmpleado,
   getEmpleadoPreferidoCliente,
