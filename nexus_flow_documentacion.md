@@ -1,6 +1,6 @@
 # Nexus-Flow — Documentación Maestra del Sistema
 
-> Versión: 2.1 · Última actualización: Julio 2026  
+> Versión: 2.2 · Última actualización: Julio 2026  
 > Repositorio: `nexus-engine` · Motor: Node.js + MariaDB + WhatsApp + React Native / Expo
 
 ---
@@ -33,7 +33,9 @@
    - [Comandos para Cambiar de Plan en la VPS](#92-comandos-para-cambiar-de-plan-en-la-vps)
 10. [Solución de Problemas Comunes](#10-solución-de-problemas-comunes)
 11. [Estrategia de Negocio y Competencia](#11-estrategia-de-negocio-y-competencia)
-12. [Formulario de Onboarding — Cliente](#12-formulario-de-onboarding--cliente)
+12. [Formularios de Onboarding (Básico y Pro)](#12-formularios-de-onboarding-básico-y-pro)
+    - [Formulario Plan Básico / Express](#121-formulario-plan-básico--express)
+    - [Formulario Plan Pro / Clínico](#122-formulario-plan-pro--clínico)
 
 ---
 
@@ -42,8 +44,6 @@
 **Nexus-Flow** es una plataforma B2B de automatización de citas y gestión de recepción para negocios locales (clínicas dentales, estéticas, barberías, consultorios, spas y talleres de detailing).
 
 A diferencia de los bots comunes basados en IA generativa o en formularios web estáticos, Nexus-Flow integra un **motor conversacional directo en WhatsApp** conectado en tiempo real a una base de datos MariaDB y a una **App móvil/web ejecutiva de recepción**.
-
-> **Propuesta de valor:** *"Atención automática las 24 horas del día, los 7 días de la semana, directo en WhatsApp sin costos por mensaje, combinada con una App móvil de recepción para controlar tus citas, tus empleados y tus ingresos en tiempo real."*
 
 ---
 
@@ -72,7 +72,7 @@ El sistema consta de **2 componentes principales** totalmente integrados:
 │                               ▼                                  │
 │                 ┌───────────────────────────┐                    │
 │                 │   Base de Datos MariaDB   │                    │
-│                 └───────────────────────────┘                    │
+│                 └─────────────┬─────────────┘                    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,163 +84,9 @@ El sistema consta de **2 componentes principales** totalmente integrados:
 
 El bot implementa una **Máquina de Estados Finitos (FSM)** que rastrea paso a paso a cada cliente. La sesión inactiva se resetea a los **30 minutos**.
 
-```
-[Cliente escribe cualquier mensaje]
-           ↓
-    IDLE → WELCOME
-    ┌──────────────────────────┐
-    │  ¿Es cliente nuevo?      │
-    │  Sí → pide nombre        │ → WAITING_NAME
-    │  No → menú directo       │ → MAIN_MENU
-    └──────────────────────────┘
-           ↓
-       MAIN_MENU (4 Opciones)
-    ┌─────────────────────────────────────────┐
-    │ 1️⃣ 📅 Agendar una cita                  │
-    │ 2️⃣ 📋 Ver mis citas                     │
-    │ 3️⃣ ❌ Cancelar una cita                 │
-    │ 4️⃣ ℹ️ Información y Horarios            │
-    └─────────────────────────────────────────┘
-           ↓ (Elige 1)
-    SERVICE_SELECT
-    Muestra catálogo de servicios con precio y duración
-           ↓
-    DATE_SELECT
-    Selección de fecha ("hoy", "mañana", "el lunes", "14/04")
-           ↓
-    TIME_SELECT
-    Muestra horarios libres calculados sin colisiones
-           ↓
-    REMINDER_SELECT (Solo en Plan Pro)
-    🔔 ¿Cuándo recibir recordatorio? (1h / 2h / 24h / Ninguno)
-           ↓
-    CONFIRMATION
-    Resumen completo + ¿Confirmas? (Sí / No)
-           ↓ (Sí)
-    ✅ Cita registrada en MariaDB
-       ├─ Notificación instantánea por WhatsApp al Empleado
-       └─ Regreso a MAIN_MENU
-```
-
-### 3.2 Opción 4: Información y Horarios
-
-El menú principal incluye la **Opción 4 (Información y Horarios)**. Además, mediante RegEx en `src/utils/regex.js`, el bot detecta automáticamente cuando un cliente pregunta por *"horarios"*, *"ubicación"*, *"dónde están"* o *"info"*:
-
-```text
-ℹ️ INFORMACIÓN Y HORARIOS DE ATENCIÓN
-
-⏰ Horarios de Atención:
-• Lunes a Viernes: 09:00 AM - 07:00 PM
-• Sábados: 09:00 AM - 02:00 PM
-• Domingos: Cerrado
-
-📍 Ubicación:
-Visítanos en nuestra sucursal principal.
-
-_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o "menú" para volver al inicio._
-```
-
-### 3.3 Sistema de Recordatorios Personalizados por el Cliente
-
-Antes de finalizar la reserva (en Plan Pro), el bot le ofrece al cliente elegir con cuánto tiempo de anticipación desea su recordatorio por WhatsApp:
-
-1. **1 hora antes** (`60` minutos).
-2. **2 horas antes** (`120` minutos - por defecto).
-3. **1 día antes (24 hrs)** (`1440` minutos).
-4. **Sin recordatorio** (`0` minutos).
-
-En **Plan Básico**, se asigna automáticamente 2 horas antes de forma silenciosa para acelerar la reserva.
-
-Un **motor en segundo plano (`src/bot/reminders.js`)** ejecuta un worker cada 60 segundos buscando citas confirmadas en MariaDB cuya fecha y hora de recordatorio ha llegado, enviando el mensaje por WhatsApp automáticamente.
-
----
-
-## 4. Componente B+C — Nexus-App (App Móvil & Web Ejecutiva)
-
-### 4.1 Diseño Visual "Obsidian Dark" & Vector Icons
-
-- **Tema de Diseño:** Fondo negro obsidiana (`#0B0F17`), tarjetas en pizarra oscura (`#111827`), bordes afilados (`#1F2937`) y acentos en índigo ejecutivo (`#6366F1`).
-- **Zero Emojis:** Removidos todos los emojis informales del sistema y reemplazados por íconos vectoriales nítidos de `@expo/vector-icons` (`Ionicons`).
-
-### 4.2 Agendamiento Manual con Calendario Nativo
-
-- Botón **`+ Agendar`** disponible tanto en la Agenda de Recepción como en el panel de Administración de Citas.
-- Abre el modal ejecutivo **`NuevaCitaModal.jsx`**:
-  - Selector de cliente y teléfono.
-  - Catálogo de servicios interactivo con precios actualizados en tiempo real.
-  - **Calendario Nativo Interactivo (`@react-native-community/datetimepicker`)** que despliega el pop-up nativo de Android/iOS/Web para seleccionar cualquier fecha del año.
-  - Chips rápidos de horarios (`09:00`, `10:00`, `11:00`, etc.) o entrada manual.
-
----
-
-## 5. Base de Datos — Nexus-Flow
-
-**Motor:** MariaDB / MySQL · **Nombre BD:** `nexus_flow`
-
-### 5.1 Esquema de Tablas Actualizado
-
-#### `config_negocio`
-Parámetros globales del negocio y suscripción.
-
-| Clave | Valor Típico | Descripción |
-|---|---|---|
-| `PLAN_TYPE` | `'pro'` o `'basico'` | **[NUEVO]** Nivel de suscripción activo |
-| `MIN_BOOKING_HOURS` | `'2'` | Horas mínimas de anticipación |
-| `MAX_BOOKING_DAYS` | `'30'` | Días máximos a futuro |
-| `BOT_NAME` | `'Asistente'` | Nombre comercial del bot |
-
-#### `empleado_servicios`
-Matriz de especialidades (relación M:N).
-
-| Campo | Tipo | Notas |
-|---|---|---|
-| `empleado_id` | INT UNSIGNED PK | ID del empleado |
-| `servicio_id` | INT UNSIGNED PK | ID del servicio autorizado |
-
----
-
-## 6. API REST (Endpoints Completos)
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/api/health` | Healthcheck básico de la API |
-| `GET` | `/api/auth/verify-pin` | Valida PIN de Admin/Recepción |
-| `GET` | `/api/citas/hoy` | Citas del día actual |
-| `GET` | `/api/citas/manana` | Citas del día de mañana |
-| `POST` | `/api/citas` | Agendamiento manual desde la App |
-| `PATCH` | `/api/citas/:id/estado` | Cambia estado de cita |
-| `GET` | `/api/servicios` | Catálogo de servicios activos |
-| `GET` | `/api/empleados` | Lista de empleados y sus teléfonos |
-| `POST` | `/api/empleados` | Crea o actualiza un empleado con sus especialidades |
-| `GET` | `/api/empleados/:id/servicios` | Obtiene servicios autorizados de un empleado |
-| `GET` | `/api/config` | Obtiene parámetros de configuración del sistema (incluye `PLAN_TYPE`) |
-
----
-
-## 7. Stack Tecnológico
-
-| Componente | Tecnología | Uso |
-|---|---|---|
-| **Bot WhatsApp** | `whatsapp-web.js` + `qrcode-terminal` | Integración conversacional sin costo por mensaje |
-| **Backend API** | Node.js + Express | Servidor REST en puerto 3001 |
-| **Base de Datos** | MariaDB / MySQL (`mysql2`) | Almacenamiento persistente |
-| **App Móvil/Web** | React Native + Expo Router + Expo Web | App multiplataforma (Android, iOS, Web) |
-
----
-
-## 8. Instalación y Despliegue en VPS
-
-```bash
-cd ~/nexus-engine
-git pull
-pm2 restart all
-```
-
 ---
 
 ## 9. Sistema de Niveles de Suscripción (Plan Básico vs Plan Pro)
-
-Nexus-Engine cuenta con un motor de suscripción de 2 niveles controlado por la clave `PLAN_TYPE` en MariaDB:
 
 ### 9.1 Diferencias entre Planes
 
@@ -255,13 +101,6 @@ Nexus-Engine cuenta con un motor de suscripción de 2 niveles controlado por la 
 
 ### 9.2 Comandos para Cambiar de Plan en la VPS
 
-Para consultar o cambiar el plan activo en la VPS desde la terminal SSH:
-
-#### 🔍 Consultar plan actual:
-```bash
-mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; SELECT * FROM config_negocio WHERE clave = 'PLAN_TYPE';"
-```
-
 #### 🟢 Cambiar a Plan Básico / Express (Barberías / Spas):
 ```bash
 mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET valor = 'basico' WHERE clave = 'PLAN_TYPE';"
@@ -272,30 +111,99 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET valor = 'pro' WHERE clave = 'PLAN_TYPE';"
 ```
 
-> **Nota:** Después de ejecutar el cambio en MariaDB, no requiere reiniciar PM2. El sistema consulta el plan en tiempo real.
+---
+
+## 12. Formularios de Onboarding (Básico y Pro)
+
+Estos son los cuestionarios oficiales listos para enviar por WhatsApp o correo al cliente antes de configurar su cuenta en Nexus-Engine.
 
 ---
 
-## 10. Solución de Problemas Comunes
+### 12.1 Formulario Plan Básico / Express
+*(Para Barberías, Salones de Belleza, Spas de Uñas, Lavado de Autos y Detailing)*
 
-* **El QR sale cortado en la terminal:** Reducir tamaño de fuente en SSH (`Ctrl` + `-`) o ejecutar `node src/bot/index.js` en pantalla completa.
-* **Proceso "Browser is already running":** Ejecutar `pm2 stop all && pkill -f chrome` y reiniciar.
-* **Desconexión de WhatsApp:** Eliminar credenciales con `rm -rf .wwebjs_auth .wwebjs_cache` y volver a escanear el QR.
+```text
+📋 FORMULARIO DE CONFIGURACIÓN — PLAN BÁSICO / EXPRESS
+
+¡Bienvenido a Nexus-Engine! Por favor completa este breve formulario para activar tu asistente inteligente de WhatsApp y tu App de Recepción:
+
+1️⃣ DATOS DEL NEGOCIO:
+• Nombre Comercial del Negocio:
+• Número de WhatsApp donde atenderá el Bot:
+• Ciudad / Sucursal:
+• Dirección Física (opcional para dar a los clientes):
+
+2️⃣ HORARIOS DE ATENCIÓN:
+• Días laborables (Ej. Lunes a Sábado):
+• Horario de Apertura y Cierre (Ej. 9:00 AM - 7:00 PM):
+• ¿Tienen horario de comida o descanso?:
+
+3️⃣ CATÁLOGO DE SERVICIOS:
+Favor de listar los servicios que el bot ofrecerá en WhatsApp:
+(Formato: Nombre del servicio | Duración aprox | Precio)
+Ejemplos:
+- Corte de Cabello | 30 min | $200 MXN
+- Barba Express | 20 min | $150 MXN
+- Combo Corte + Barba | 45 min | $300 MXN
+
+4️⃣ PERSONAL / ATENDIENTES:
+• Nombres del personal que atiende en el local (para asignar turnos):
+  - Empleado 1:
+  - Empleado 2:
+
+5️⃣ SEGURIDAD DE LA APP:
+• PIN secreto de 4 dígitos para acceder al modo Admin en tu App: [ ____ ]
+
+¡Listo! Con esta información configuraremos tu bot en menos de 24 horas. 🚀
+```
 
 ---
 
-## 11. Estrategia de Negocio y Competencia
+### 12.2 Formulario Plan Pro / Clínico
+*(Para Clínicas Dentales, Consultorios Médicos, Dermatología y Medicina Estética)*
 
-* **Plan Básico / Express:** **$1,500 MXN / mes** + $1,000 Setup.
-* **Plan Pro / Clínico:** **$3,500 MXN / mes** + $1,500 Setup.
-* **Ventaja competitiva:** Cero cobros por mensaje de WhatsApp Meta API (ahorro masivo para el cliente) + App Móvil/Web incluida.
+```text
+📋 FORMULARIO DE CONFIGURACIÓN — PLAN PRO / CLÍNICO
 
----
+¡Bienvenido a Nexus-Engine Pro! Por favor completa esta ficha técnica para configurar tu asistente clínico de WhatsApp, matriz de especialidades y alertas médicas:
 
-## 12. Formulario de Onboarding — Cliente
+1️⃣ DATOS DE LA CLÍNICA:
+• Nombre Oficial de la Clínica / Consultorio:
+• Nombre del Bot (Ej. Asistente Dental / Recepción Médica):
+• Número de WhatsApp donde atenderá el Bot:
+• Dirección Física completa y referencias:
 
-1. **Información del Negocio:** Nombre, ciudad, WhatsApp oficial.
-2. **Tipo de Plan:** Básico / Express o Pro / Clínico.
-3. **Servicios:** Lista de servicios, precios y duraciones.
-4. **Horarios de Atención:** Días hábiles y rangos de atención.
-5. **Empleados / Doctores:** Nombres, especialidades y teléfonos de WhatsApp para alertas.
+2️⃣ HORARIOS DE ATENCIÓN Y CITAS:
+• Días laborables de la clínica:
+• Horario de Atención (Ej. Lunes a Viernes 8:00 AM - 8:00 PM, Sábados 9:00 AM - 2:00 PM):
+• Horario de comida/descanso general:
+• Mínimo de anticipación para agendar (Ej. 2 horas antes):
+
+3️⃣ CATÁLOGO DE SERVICIOS Y TRATAMIENTOS:
+Favor de detallar los tratamientos que se pueden agendar por WhatsApp:
+(Formato: Tratamiento | Duración estimada | Precio base)
+Ejemplos:
+- Valoración Inicial / Diagnóstico | 30 min | $300 MXN
+- Limpieza / Profilaxis | 45 min | $600 MXN
+- Ajuste Mensual de Ortodoncia | 30 min | $500 MXN
+- Resina / Obturación | 45 min | $800 MXN
+- Extracción Simple | 60 min | $1,200 MXN
+
+4️⃣ DOCTORES Y ESPECIALISTAS (Notificaciones por WhatsApp):
+Favor de listar a los doctores, su WhatsApp personal y sus especialidades para activar la asignación automática de Médico de Cabecera:
+
+• Doctor 1:
+  - Nombre completo: Dr(a). 
+  - WhatsApp personal: +52 
+  - Especialidades/Servicios que realiza: 
+
+• Doctor 2:
+  - Nombre completo: Dr(a). 
+  - WhatsApp personal: +52 
+  - Especialidades/Servicios que realiza: 
+
+5️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
+• PIN secreto de 4 a 6 dígitos para acceder al panel de administración del dueño/director: [ ______ ]
+
+¡Muchas gracias! Con esta información daremos de alta la matriz médica y las alertas automáticas de tu clínica. 🩺🚀
+```
