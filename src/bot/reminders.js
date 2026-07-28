@@ -49,7 +49,6 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
       `🔔 *NUEVA CITA ASIGNADA*\n\n` +
       `Hola *${empleadoInfo.nombre}*, se agendó una nueva cita:\n\n` +
       `👤 Cliente: *${citaInfo.clienteNombre || 'Cliente'}*\n` +
-      `📱 Teléfono: *${citaInfo.clienteTelefono || 'No proporcionado'}*\n` +
       `🛎️ Servicio: *${citaInfo.servicioNombre}*\n` +
       `📅 Fecha: *${fechaTexto}*\n` +
       `⏰ Hora: *${horaTexto}*\n\n` +
