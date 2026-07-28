@@ -12,6 +12,25 @@ const { formatFechaEspanol } = require('../utils/slots');
 const config = require('../config');
 
 /**
+ * Obtiene el JID de WhatsApp válido para un número telefónico (resuelve LIDs de WhatsApp Web).
+ */
+async function getWhatsAppJid(client, telefonoRaw) {
+  if (!telefonoRaw) return null;
+  const cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
+  if (!cleanNumber) return null;
+
+  try {
+    const numberId = await client.getNumberId(cleanNumber);
+    if (numberId && numberId._serialized) {
+      return numberId._serialized;
+    }
+  } catch (e) {
+    // Si no se puede resolver en WhatsApp Web, se usa el fallback clásico @c.us
+  }
+  return `${cleanNumber}@c.us`;
+}
+
+/**
  * Notifica inmediatamente al empleado (o admin) por WhatsApp cuando se agenda una cita.
  */
 async function notificarNuevaCitaEmpleado(client, citaInfo) {
@@ -19,10 +38,8 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
     const empleadoInfo = await getTelefonoEmpleado(citaInfo.empleadoId);
     if (!empleadoInfo || !empleadoInfo.telefono) return;
 
-    let telefono = empleadoInfo.telefono.trim();
-    if (!telefono.includes('@c.us')) {
-      telefono = telefono.replace(/[^0-9]/g, '') + '@c.us';
-    }
+    const jid = await getWhatsAppJid(client, empleadoInfo.telefono);
+    if (!jid) return;
 
     const fechaObj = new Date(citaInfo.fechaInicio);
     const fechaTexto = formatFechaEspanol(fechaObj);
@@ -38,7 +55,7 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
       `⏰ Hora: *${horaTexto}*\n\n` +
       `_Registrado en Nexus-Engine._`;
 
-    await client.sendMessage(telefono, mensaje);
+    await client.sendMessage(jid, mensaje);
     console.log(`📲 Notificación de nueva cita enviada al empleado (${empleadoInfo.nombre})`);
   } catch (err) {
     console.warn('⚠️ No se pudo notificar al empleado por WhatsApp:', err.message);
@@ -56,11 +73,9 @@ function iniciarMotorRecordatorios(client) {
     try {
       const citasPendientes = await getCitasPendientesRecordatorio();
       for (const cita of citasPendientes) {
-        let clienteTel = cita.cliente_telefono?.trim();
-        if (!clienteTel) continue;
-        if (!clienteTel.includes('@c.us')) {
-          clienteTel = clienteTel.replace(/[^0-9]/g, '') + '@c.us';
-        }
+        if (!cita.cliente_telefono) continue;
+        const clienteJid = await getWhatsAppJid(client, cita.cliente_telefono);
+        if (!clienteJid) continue;
 
         const fechaObj = new Date(cita.fecha_inicio);
         const fechaTexto = formatFechaEspanol(fechaObj);
@@ -74,22 +89,23 @@ function iniciarMotorRecordatorios(client) {
           `⏰ Hora: *${horaTexto}*\n\n` +
           `📍 Te esperamos. Si necesitas cambiar tu horario, avísanos con anticipación. 😊`;
 
-        await client.sendMessage(clienteTel, msgCliente).catch(err => {
-          console.warn(`No se pudo enviar recordatorio a ${clienteTel}:`, err.message);
+        await client.sendMessage(clienteJid, msgCliente).catch(err => {
+          console.warn(`No se pudo enviar recordatorio a ${clienteJid}:`, err.message);
         });
 
         // Notificar también al empleado si tiene teléfono
         if (cita.empleado_telefono) {
-          let empTel = cita.empleado_telefono.trim();
-          if (!empTel.includes('@c.us')) empTel = empTel.replace(/[^0-9]/g, '') + '@c.us';
-          const msgEmp =
-            `⏰ *RECORDATORIO DE CITA (PRÓXIMA)*\n\n` +
-            `Hola *${cita.empleado_nombre}*, tienes una cita próxima:\n` +
-            `👤 Cliente: *${cita.cliente_nombre}*\n` +
-            `🛎️ Servicio: *${cita.servicio_nombre}*\n` +
-            `📅 Fecha: *${fechaTexto}*\n` +
-            `⏰ Hora: *${horaTexto}*`;
-          await client.sendMessage(empTel, msgEmp).catch(() => {});
+          const empJid = await getWhatsAppJid(client, cita.empleado_telefono);
+          if (empJid) {
+            const msgEmp =
+              `⏰ *RECORDATORIO DE CITA (PRÓXIMA)*\n\n` +
+              `Hola *${cita.empleado_nombre}*, tienes una cita próxima:\n` +
+              `👤 Cliente: *${cita.cliente_nombre}*\n` +
+              `🛎️ Servicio: *${cita.servicio_nombre}*\n` +
+              `📅 Fecha: *${fechaTexto}*\n` +
+              `⏰ Hora: *${horaTexto}*`;
+            await client.sendMessage(empJid, msgEmp).catch(() => {});
+          }
         }
 
         await markRecordatorioEnviado(cita.id);
