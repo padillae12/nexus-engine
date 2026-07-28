@@ -1,4 +1,4 @@
-// app/admin/configuracion.jsx — Pantalla Admin: configuración & gestión de empleados y especialidades
+// app/admin/configuracion.jsx — Pantalla Admin: gestión completa de empleados y especialidades
 // Diseño Profesional & Ejecutivo (Zero Emojis)
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +13,14 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getConfig, checkHealth, getEmpleados, guardarEmpleado, getServicios } from '../../services/api';
+import {
+  getConfig,
+  checkHealth,
+  getEmpleados,
+  guardarEmpleado,
+  getServicios,
+  getServiciosEmpleado,
+} from '../../services/api';
 
 function ConfigRow({ label, valor, descripcion }) {
   return (
@@ -36,11 +43,13 @@ export default function ConfiguracionScreen() {
   const [catServicios, setCatServicios] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Formulario nuevo empleado
+  // Formulario agregar / editar empleado
   const [showAddEmp, setShowAddEmp] = useState(false);
+  const [editingEmpId, setEditingEmpId] = useState(null);
   const [empNombre, setEmpNombre] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empTel, setEmpTel] = useState('');
+  const [empRol, setEmpRol] = useState('empleado');
   const [empServicioIds, setEmpServicioIds] = useState([]);
   const [savingEmp, setSavingEmp] = useState(false);
 
@@ -68,6 +77,32 @@ export default function ConfiguracionScreen() {
   const planType = (config?.PLAN_TYPE || 'pro').toLowerCase();
   const isPro = planType === 'pro';
 
+  const limpiarFormulario = () => {
+    setEditingEmpId(null);
+    setEmpNombre('');
+    setEmpEmail('');
+    setEmpTel('');
+    setEmpRol('empleado');
+    setEmpServicioIds([]);
+    setShowAddEmp(false);
+  };
+
+  const handleEditarEmpleado = async (emp) => {
+    setEditingEmpId(emp.id);
+    setEmpNombre(emp.nombre || '');
+    setEmpEmail(emp.email || '');
+    setEmpTel(emp.telefono || '');
+    setEmpRol(emp.rol || 'empleado');
+    setShowAddEmp(true);
+
+    try {
+      const srvIds = await getServiciosEmpleado(emp.id);
+      setEmpServicioIds(srvIds || []);
+    } catch {
+      setEmpServicioIds([]);
+    }
+  };
+
   const toggleServicio = (id) => {
     if (empServicioIds.includes(id)) {
       setEmpServicioIds(empServicioIds.filter(sId => sId !== id));
@@ -84,19 +119,21 @@ export default function ConfiguracionScreen() {
     setSavingEmp(true);
     try {
       await guardarEmpleado({
+        id: editingEmpId || undefined,
         nombre: empNombre.trim(),
         email: empEmail.trim() || `${empNombre.toLowerCase().replace(/\s+/g, '')}@negocio.com`,
         telefono: empTel.trim(),
-        rol: 'empleado',
+        rol: empRol,
         activo: 1,
         servicioIds: isPro ? empServicioIds : [],
       });
-      Alert.alert('Empleado Guardado', 'El registro del personal ha sido guardado exitosamente.');
-      setEmpNombre('');
-      setEmpEmail('');
-      setEmpTel('');
-      setEmpServicioIds([]);
-      setShowAddEmp(false);
+
+      const mensaje = editingEmpId
+        ? 'El empleado y sus especialidades han sido actualizados.'
+        : 'El nuevo empleado ha sido registrado exitosamente.';
+
+      Alert.alert('Registro Guardado', mensaje);
+      limpiarFormulario();
       cargarDatos();
     } catch (err) {
       Alert.alert('Error', err.message || 'No se pudo guardar el empleado');
@@ -137,7 +174,13 @@ export default function ConfiguracionScreen() {
         <Text style={styles.sectionTitle}>{isPro ? "ESPECIALISTAS Y SERVICIOS AUTORIZADOS" : "DIRECTORIO DE PERSONAL"}</Text>
         <TouchableOpacity
           style={styles.addEmpBtn}
-          onPress={() => setShowAddEmp(!showAddEmp)}
+          onPress={() => {
+            if (showAddEmp) {
+              limpiarFormulario();
+            } else {
+              setShowAddEmp(true);
+            }
+          }}
           activeOpacity={0.8}
         >
           <Ionicons name={showAddEmp ? "close" : "add-circle"} size={16} color="#FFFFFF" />
@@ -145,27 +188,31 @@ export default function ConfiguracionScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Formulario Agregar Empleado */}
+      {/* Formulario Agregar / Editar Empleado */}
       {showAddEmp && (
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>{isPro ? "Registrar Especialista" : "Registrar Personal"}</Text>
+          <Text style={styles.formTitle}>
+            {editingEmpId ? "Editar Información de Empleado" : isPro ? "Registrar Especialista" : "Registrar Personal"}
+          </Text>
 
+          {/* Nombre */}
           <View style={styles.inputWrap}>
             <Ionicons name="person-outline" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="Nombre completo *"
+              placeholder="Nombre completo (Ej. Dra. Teresa) *"
               placeholderTextColor="#6B7280"
               value={empNombre}
               onChangeText={setEmpNombre}
             />
           </View>
 
+          {/* WhatsApp */}
           <View style={styles.inputWrap}>
             <Ionicons name="logo-whatsapp" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="WhatsApp (+52 662 123 4567) *"
+              placeholder="WhatsApp (+52 686 225 5233) *"
               placeholderTextColor="#6B7280"
               keyboardType="phone-pad"
               value={empTel}
@@ -173,6 +220,7 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
+          {/* Correo */}
           <View style={styles.inputWrap}>
             <Ionicons name="mail-outline" size={16} color="#6B7280" />
             <TextInput
@@ -185,10 +233,30 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
+          {/* Selector de Rol */}
+          <Text style={styles.subTitleLabel}>ROL EN EL SISTEMA:</Text>
+          <View style={styles.rolRow}>
+            {['empleado', 'encargado', 'admin'].map(rolItem => {
+              const active = empRol === rolItem;
+              return (
+                <TouchableOpacity
+                  key={rolItem}
+                  style={[styles.rolChip, active && styles.rolChipActive]}
+                  onPress={() => setEmpRol(rolItem)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.rolChipText, active && styles.rolChipTextActive]}>
+                    {rolItem.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* Selector de Servicios Habilitados (Solo Plan Pro) */}
           {isPro && (
             <>
-              <Text style={styles.subTitleLabel}>SERVICIOS QUE REALIZA ESTE ESPECIALISTA:</Text>
+              <Text style={styles.subTitleLabel}>SERVICIOS / ESPECIALIDADES AUTORIZADAS:</Text>
               <View style={styles.servicesGrid}>
                 {catServicios.map(s => {
                   const checked = empServicioIds.includes(s.id);
@@ -214,6 +282,7 @@ export default function ConfiguracionScreen() {
             </>
           )}
 
+          {/* Botón Guardar / Actualizar */}
           <TouchableOpacity
             style={styles.saveEmpBtn}
             onPress={handleGuardarEmpleado}
@@ -225,20 +294,27 @@ export default function ConfiguracionScreen() {
             ) : (
               <>
                 <Ionicons name="checkmark-done" size={16} color="#FFFFFF" />
-                <Text style={styles.saveEmpBtnText}>Guardar Registro</Text>
+                <Text style={styles.saveEmpBtnText}>
+                  {editingEmpId ? "Actualizar Empleado" : "Guardar Empleado"}
+                </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Lista de Empleados */}
+      {/* Lista de Empleados con opción de toque para Editar */}
       <View style={styles.empList}>
         {empleados.length === 0 ? (
           <Text style={styles.emptyText}>Sin personal registrado</Text>
         ) : (
           empleados.map(emp => (
-            <View key={emp.id} style={styles.empCard}>
+            <TouchableOpacity
+              key={emp.id}
+              style={[styles.empCard, editingEmpId === emp.id && styles.empCardEditing]}
+              onPress={() => handleEditarEmpleado(emp)}
+              activeOpacity={0.8}
+            >
               <View style={styles.empAvatar}>
                 <Ionicons name={isPro ? "medkit-outline" : "person-outline"} size={18} color="#6366F1" />
               </View>
@@ -249,10 +325,13 @@ export default function ConfiguracionScreen() {
                   <Text style={styles.empTel}>{emp.telefono || 'Sin WhatsApp'}</Text>
                 </View>
               </View>
-              <View style={styles.empBadge}>
-                <Text style={styles.empBadgeText}>{emp.rol.toUpperCase()}</Text>
+              <View style={styles.empRightCol}>
+                <View style={styles.empBadge}>
+                  <Text style={styles.empBadgeText}>{emp.rol.toUpperCase()}</Text>
+                </View>
+                <Ionicons name="pencil" size={14} color="#6B7280" style={{ marginTop: 4 }} />
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
@@ -272,9 +351,7 @@ export default function ConfiguracionScreen() {
       )}
 
       <Text style={styles.hint}>
-        {isPro
-          ? "Modo Pro/Clínico Activo: Asignación automática de especialista preferido y notificaciones al WhatsApp del médico."
-          : "Modo Básico/Express Activo: Flujo de agendamiento ultra-rápido optimizado para locales comerciales."}
+        Tip: Haz clic en cualquier empleado de la lista para editar su información o modificar sus servicios autorizados.
       </Text>
     </ScrollView>
   );
@@ -360,7 +437,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Formulario agregar empleado
+  // Formulario agregar / editar empleado
   formCard: {
     backgroundColor: '#111827',
     borderRadius: 12,
@@ -383,6 +460,34 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 6,
   },
+  rolRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  rolChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 6,
+    paddingVertical: 6,
+  },
+  rolChipActive: {
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderColor: '#6366F1',
+  },
+  rolChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  rolChipTextActive: {
+    color: '#6366F1',
+    fontWeight: '700',
+  },
+
   servicesGrid: {
     gap: 6,
   },
@@ -455,6 +560,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F2937',
   },
+  empCardEditing: {
+    borderColor: '#6366F1',
+    backgroundColor: '#161E2E',
+  },
   empAvatar: {
     width: 36,
     height: 36,
@@ -466,6 +575,9 @@ const styles = StyleSheet.create({
   empNombre: { color: '#F9FAFB', fontSize: 13, fontWeight: '700' },
   empMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   empTel: { color: '#9CA3AF', fontSize: 11 },
+  empRightCol: {
+    alignItems: 'flex-end',
+  },
   empBadge: {
     backgroundColor: '#1F2937',
     paddingHorizontal: 8,
