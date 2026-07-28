@@ -76,7 +76,7 @@ client.on('ready', () => {
 //  MENSAJE ENTRANTE
 // ─────────────────────────────────────────────────────────────────
 client.on('message_create', async (msg) => {
-  if (msg.from.endsWith('@g.us')) return; // Ignorar grupos
+  if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return; // Ignorar grupos e historias
 
   // Si el mensaje viene de mí mismo y NO es un chat enviado a mí mismo, ignorar
   if (msg.fromMe && msg.to !== msg.from) return;

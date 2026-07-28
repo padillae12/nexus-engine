@@ -16,8 +16,13 @@ const config = require('../config');
  */
 async function getWhatsAppJid(client, telefonoRaw) {
   if (!telefonoRaw) return null;
-  const cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
+  let cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
   if (!cleanNumber) return null;
+
+  // Si el usuario ingresó un número local de 10 dígitos (ej. 6861234567), anteponer clave de país 52
+  if (cleanNumber.length === 10) {
+    cleanNumber = '52' + cleanNumber;
+  }
 
   try {
     const numberId = await client.getNumberId(cleanNumber);
