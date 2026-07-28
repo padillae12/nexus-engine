@@ -488,6 +488,18 @@ async function getConfig(clave) {
 }
 
 /**
+ * Obtiene toda la configuración del negocio como objeto clave: valor.
+ */
+async function getAllConfig() {
+  const [rows] = await pool.execute('SELECT clave, valor FROM config_negocio');
+  const configObj = {};
+  for (const row of rows) {
+    configObj[row.clave] = row.valor;
+  }
+  return configObj;
+}
+
+/**
  * Auto-migración silenciosa de columnas para recordatorios y teléfonos de empleados
  */
 async function ensureRemindersSchema() {
