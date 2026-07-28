@@ -12,12 +12,14 @@ const config = require('../../config');
  */
 async function handleWelcome(sesion, msg) {
   const { nombre } = sesion;
+  const { getConfig } = require('../../db/queries');
+  const businessName = await getConfig('BUSINESS_NAME').catch(() => null) || config.business.name || 'Dental Loquero';
 
   // Primera vez que escribe: pedir nombre
   if (!nombre) {
     return {
       respuesta:
-        `👋 ¡Hola! Bienvenido/a a *${config.business.name}*.\n\n` +
+        `👋 ¡Hola! Bienvenido/a a *${businessName}*.\n\n` +
         `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas. 😊\n\n` +
         `¿Me podrías decir tu nombre, por favor?`,
       nuevoEstado: 'WAITING_NAME',

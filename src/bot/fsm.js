@@ -168,12 +168,13 @@ async function handleMessage(telefono, mensaje) {
       } else if (opcion === '4' || quiereInfo(msg)) {
         const { getAllConfig } = require('../db/queries');
         const configNegocio = await getAllConfig().catch(() => ({}));
-        const horarioAtencion = configNegocio.HORARIO_ATENCION || '• Lunes a Viernes: 09:00 AM - 07:00 PM\n• Sábados: 09:00 AM - 02:00 PM\n• Domingos: Cerrado';
-        const ubicacion = configNegocio.UBICACION || 'Visítanos en nuestra sucursal principal.';
+        const nombreNegocio = configNegocio.BUSINESS_NAME || 'Dental Loquero';
+        const horarioAtencion = configNegocio.HORARIO_ATENCION || '• Lunes a Viernes: 08:00 AM - 06:00 PM\n• Sábados: 10:00 AM - 04:00 PM\n• Domingos: Cerrado (Hora de comida: 1:00 PM - 2:00 PM)';
+        const ubicacion = configNegocio.BUSINESS_ADDRESS || configNegocio.UBICACION || 'Orozco y Berra 2229, 21250 Colonia Constitución';
 
         result = {
           respuesta:
-            `ℹ️ *INFORMACIÓN Y HORARIOS DE ATENCIÓN*\n\n` +
+            `ℹ️ *INFORMACIÓN Y HORARIOS — ${nombreNegocio.toUpperCase()}*\n\n` +
             `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
             `📍 *Ubicación:*\n${ubicacion}\n\n` +
             `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
