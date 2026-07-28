@@ -9,6 +9,19 @@ async function runSeed() {
   try {
     await pool.query('SET FOREIGN_KEY_CHECKS = 0');
 
+    // 0. Asegurar que existan todas las columnas nuevas en MariaDB
+    await pool.query('ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(20) NULL').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS empleado_servicios (
+        empleado_id INT UNSIGNED NOT NULL,
+        servicio_id INT UNSIGNED NOT NULL,
+        PRIMARY KEY (empleado_id, servicio_id)
+      ) ENGINE=InnoDB
+    `).catch(() => {});
+
     // 1. Configuración del negocio
     const configs = [
       ['BOT_NAME', 'loqueron'],
