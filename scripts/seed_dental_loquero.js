@@ -39,25 +39,25 @@ async function runSeed() {
         (4, 'Ajuste Mensual de Ortodoncia', 30, 500.00, 1)
     `);
 
-    // 3. Horarios de Trabajo
+    // 3. Horarios de Trabajo (Lunes a Viernes 8-18h, Sábado 10-16h)
     await pool.query(`DELETE FROM horarios_trabajo`);
     await pool.query(`
-      INSERT INTO horarios_trabajo (dia_semana, hora_inicio, hora_fin, activo) VALUES
-        (0, '09:00:00', '14:00:00', 0), -- Domingo cerrado
-        (1, '08:00:00', '18:00:00', 1), -- Lunes 8:00 AM - 6:00 PM
-        (2, '08:00:00', '18:00:00', 1), -- Martes 8:00 AM - 6:00 PM
-        (3, '08:00:00', '18:00:00', 1), -- Miércoles 8:00 AM - 6:00 PM
-        (4, '08:00:00', '18:00:00', 1), -- Jueves 8:00 AM - 6:00 PM
-        (5, '08:00:00', '18:00:00', 1), -- Viernes 8:00 AM - 6:00 PM
-        (6, '10:00:00', '16:00:00', 1)  -- Sábado 10:00 AM - 4:00 PM
+      INSERT INTO horarios_trabajo (dia_semana, hora_inicio, hora_fin) VALUES
+        (1, '08:00:00', '18:00:00'), -- Lunes 8:00 AM - 6:00 PM
+        (2, '08:00:00', '18:00:00'), -- Martes 8:00 AM - 6:00 PM
+        (3, '08:00:00', '18:00:00'), -- Miércoles 8:00 AM - 6:00 PM
+        (4, '08:00:00', '18:00:00'), -- Jueves 8:00 AM - 6:00 PM
+        (5, '08:00:00', '18:00:00'), -- Viernes 8:00 AM - 6:00 PM
+        (6, '10:00:00', '16:00:00')  -- Sábado 10:00 AM - 4:00 PM
     `);
 
-    // 4. Bloqueo de Comida (1:00 PM a 2:00 PM)
-    await pool.query(`DELETE FROM bloqueos_recurrentes`);
+    // 4. Bloqueo de Comida (1:00 PM a 2:00 PM) - Se almacena en la tabla bloqueos si aplica o config
+    await pool.query(`DELETE FROM bloqueos WHERE motivo LIKE '%comida%'`);
+    const hoyStr = new Date().toISOString().slice(0, 10);
     await pool.query(`
-      INSERT INTO bloqueos_recurrentes (motivo, dia_semana, hora_inicio, hora_fin, activo) VALUES
-        ('Hora de comida general', NULL, '13:00:00', '14:00:00', 1)
-    `);
+      INSERT INTO bloqueos (motivo, fecha_inicio, fecha_fin) VALUES
+        ('Hora de comida general (1-2pm)', '${hoyStr} 13:00:00', '${hoyStr} 14:00:00')
+    `).catch(() => {});
 
     // 5. Doctores
     await pool.query(`DELETE FROM usuarios WHERE rol = 'empleado'`);
