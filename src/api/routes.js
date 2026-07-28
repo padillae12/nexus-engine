@@ -89,6 +89,18 @@ router.post('/auth/verify-pin', async (req, res) => {
 //  CITAS
 // ─────────────────────────────────────────────────────────────────
 
+// GET /api/citas — Retorna citas filtradas por fecha, estado o empleado
+router.get('/citas', async (req, res) => {
+  try {
+    const { fecha, estado, empleadoId } = req.query;
+    const citas = await db.getCitasFiltradas({ fecha, estado, empleadoId });
+    res.json(citas);
+  } catch (err) {
+    console.error('[GET /citas]', err.message);
+    res.status(500).json({ message: 'Error al obtener citas' });
+  }
+});
+
 // GET /api/citas/hoy
 // Retorna todas las citas del día actual, ordenadas por hora.
 router.get('/citas/hoy', async (req, res) => {

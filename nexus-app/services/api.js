@@ -82,6 +82,16 @@ export async function checkHealth() {
 // ══════════════════════════════════════════════════════════════════
 
 /**
+ * Obtiene la lista de citas filtradas por fecha, estado o empleado.
+ * @param {object} params - { fecha?, estado?, empleadoId? }
+ * @returns {Promise<Array>}
+ */
+export async function getCitas(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(`/citas${query ? `?${query}` : ''}`);
+}
+
+/**
  * Obtiene todas las citas del día actual.
  * @returns {Promise<Array>}
  */
