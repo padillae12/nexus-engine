@@ -66,9 +66,16 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
  */
 async function notificarConfirmacionCitaCliente(client, citaInfo) {
   try {
-    if (!client || !citaInfo.clienteTelefono) return;
+    console.log(`📡 Intentando enviar confirmación por WhatsApp a ${citaInfo.clienteTelefono}...`);
+    if (!client || !citaInfo.clienteTelefono) {
+      console.warn('⚠️ No hay cliente de WhatsApp activo o falta el teléfono del cliente.');
+      return;
+    }
     const jid = await getWhatsAppJid(client, citaInfo.clienteTelefono);
-    if (!jid) return;
+    if (!jid) {
+      console.warn(`⚠️ No se pudo obtener JID de WhatsApp para el número ${citaInfo.clienteTelefono}`);
+      return;
+    }
 
     const fechaObj = new Date(citaInfo.fechaInicio);
     const fechaTexto = formatFechaEspanol(fechaObj);
@@ -90,9 +97,9 @@ async function notificarConfirmacionCitaCliente(client, citaInfo) {
       `¡Te esperamos! Si necesitas cambiar tu cita, avísanos con anticipación. 😊`;
 
     await client.sendMessage(jid, mensaje);
-    console.log(`📲 Confirmación de cita enviada por WhatsApp al cliente (${citaInfo.clienteNombre})`);
+    console.log(`✅ Confirmación de cita enviada por WhatsApp a ${citaInfo.clienteNombre} (${jid})`);
   } catch (err) {
-    console.warn('⚠️ No se pudo enviar confirmación al cliente por WhatsApp:', err.message);
+    console.warn('⚠️ Error al enviar confirmación al cliente por WhatsApp:', err.message);
   }
 }
 
