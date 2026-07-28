@@ -7,6 +7,8 @@ async function runSeed() {
   console.log('⏳ Cargando configuración de Dental Loquero...');
 
   try {
+    await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+
     // 1. Configuración del negocio
     const configs = [
       ['BOT_NAME', 'loqueron'],
@@ -76,9 +78,12 @@ async function runSeed() {
         (11, 4)  -- Doctor 2 -> Ajuste Mensual de Ortodoncia
     `);
 
+    await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+
     console.log('✅ ¡Configuración de Dental Loquero cargada exitosamente en MariaDB!');
     process.exit(0);
   } catch (err) {
+    await pool.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {});
     console.error('❌ Error al cargar seed:', err.message);
     process.exit(1);
   }
