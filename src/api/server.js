@@ -17,6 +17,21 @@ app.use('/api', apiRoutes);
 // Puerto
 const PORT = process.env.API_PORT || 3001;
 
-app.listen(PORT, () => {
-  console.log(`🚀 API Nexus-Cockpit corriendo en el puerto ${PORT}`);
-});
+if (!global.apiServerInstance) {
+  try {
+    global.apiServerInstance = app.listen(PORT, () => {
+      console.log(`🚀 API Nexus-Cockpit corriendo en el puerto ${PORT}`);
+    });
+    global.apiServerInstance.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`ℹ️ API ya escuchando en puerto ${PORT}`);
+      } else {
+        console.error('❌ Error en API Server:', err.message);
+      }
+    });
+  } catch (e) {
+    // Si ya existe
+  }
+}
+
+module.exports = app;

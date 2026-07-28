@@ -12,6 +12,9 @@
 
 require('dotenv').config();
 
+// Cargar la API REST en el mismo proceso de Node.js para compartir whatsappClient
+require('../api/server');
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode                = require('qrcode-terminal');
 const fs                    = require('fs');
