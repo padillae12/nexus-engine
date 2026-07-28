@@ -108,8 +108,22 @@ export async function getCitasManana() {
 }
 
 /**
+ * Obtiene los horarios disponibles reales para una fecha, servicio y especialista.
+ * @param {string} fecha - 'YYYY-MM-DD'
+ * @param {number} servicioId
+ * @param {number|null} empleadoId
+ * @returns {Promise<Array<string>>}
+ */
+export async function getSlots(fecha, servicioId, empleadoId = null) {
+  const params = { fecha, servicioId };
+  if (empleadoId) params.empleadoId = empleadoId;
+  const query = new URLSearchParams(params).toString();
+  return request(`/slots?${query}`);
+}
+
+/**
  * Crea una nueva cita manualmente desde la app.
- * @param {object} datos - { nombreCliente, telefonoCliente, servicioId, fecha, hora }
+ * @param {object} datos - { nombreCliente, telefonoCliente, servicioId, empleadoId?, fecha, hora }
  * @returns {Promise<object>}
  */
 export async function crearCita(datos) {

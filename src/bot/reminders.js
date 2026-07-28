@@ -62,6 +62,41 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
 }
 
 /**
+ * Envía un mensaje formal de confirmación por WhatsApp al cliente cuando se agenda o confirma su cita desde la App.
+ */
+async function notificarConfirmacionCitaCliente(client, citaInfo) {
+  try {
+    if (!client || !citaInfo.clienteTelefono) return;
+    const jid = await getWhatsAppJid(client, citaInfo.clienteTelefono);
+    if (!jid) return;
+
+    const fechaObj = new Date(citaInfo.fechaInicio);
+    const fechaTexto = formatFechaEspanol(fechaObj);
+    const horaTexto = citaInfo.fechaInicio.split(' ')[1]?.slice(0, 5) || citaInfo.hora || '';
+
+    const { getAllConfig } = require('../db/queries');
+    const cfg = await getAllConfig().catch(() => ({}));
+    const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Loquero';
+    const ubicacion = cfg.BUSINESS_ADDRESS || cfg.UBICACION || '';
+    const ubicacionTexto = ubicacion ? `\n📍 Ubicación: *${ubicacion}*` : '';
+
+    const mensaje =
+      `✅ *CITA CONFIRMADA EN ${businessName.toUpperCase()}*\n\n` +
+      `Hola *${citaInfo.clienteNombre || 'Cliente'}*, tu cita ha sido registrada con éxito:\n\n` +
+      `🛎️ Servicio: *${citaInfo.servicioNombre}*\n` +
+      `📅 Fecha: *${fechaTexto}*\n` +
+      `⏰ Hora: *${horaTexto}*` +
+      ubicacionTexto + `\n\n` +
+      `¡Te esperamos! Si necesitas cambiar tu cita, avísanos con anticipación. 😊`;
+
+    await client.sendMessage(jid, mensaje);
+    console.log(`📲 Confirmación de cita enviada por WhatsApp al cliente (${citaInfo.clienteNombre})`);
+  } catch (err) {
+    console.warn('⚠️ No se pudo enviar confirmación al cliente por WhatsApp:', err.message);
+  }
+}
+
+/**
  * Inicia el temporizador en segundo plano que revisa cita por cita los recordatorios pendientes.
  */
 function iniciarMotorRecordatorios(client) {
@@ -119,4 +154,5 @@ function iniciarMotorRecordatorios(client) {
 module.exports = {
   iniciarMotorRecordatorios,
   notificarNuevaCitaEmpleado,
+  notificarConfirmacionCitaCliente,
 };

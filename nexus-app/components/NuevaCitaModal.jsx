@@ -1,6 +1,7 @@
 // components/NuevaCitaModal.jsx
 // ══════════════════════════════════════════════════════════════════
-//  Modal para Agendar Cita Manualmente — Con Calendario Nativo
+//  Modal para Agendar Cita Manualmente — Con Buscador de Clientes,
+//  Selección de Especialista y Slots Libres en Tiempo Real
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -18,65 +19,65 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getServicios, crearCita } from '../services/api';
-
-const HORARIOS_RAPIDOS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+import { getServicios, getEmpleados, getClientes, getSlots, crearCita } from '../services/api';
 
 export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [servicios, setServicios] = useState([]);
   const [servicioId, setServicioId] = useState(null);
+  const [empleados, setEmpleados] = useState([]);
+  const [empleadoId, setEmpleadoId] = useState(null);
+
+  // Lista de clientes para autocompletado
+  const [clientesBase, setClientesBase] = useState([]);
+  const [sugerenciasClientes, setSugerenciasClientes] = useState([]);
+  const [showSugerencias, setShowSugerencias] = useState(false);
 
   // Fecha seleccionada ('hoy' | 'manana' | 'custom')
   const [tipoFecha, setTipoFecha] = useState('hoy');
   const [customDate, setCustomDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Hora seleccionada
-  const [hora, setHora] = useState('10:00');
+  // Slots de horarios en tiempo real
+  const [slotsLibres, setSlotsLibres] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [hora, setHora] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [loadingServicios, setLoadingServicios] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cargar catálogo de servicios al abrir el modal
+  // Cargar catálogos iniciales al abrir modal
   useEffect(() => {
     if (visible) {
       setError(null);
       setLoadingServicios(true);
-      getServicios()
-        .then(data => {
-          setServicios(data);
-          if (data.length > 0) setServicioId(data[0].id);
+      Promise.all([
+        getServicios().catch(() => []),
+        getEmpleados().catch(() => []),
+        getClientes().catch(() => []),
+      ])
+        .then(([srvs, emps, clis]) => {
+          setServicios(srvs);
+          if (srvs.length > 0) setServicioId(srvs[0].id);
+          setEmpleados(emps);
+          setClientesBase(clis);
         })
-        .catch(err => setError('No se pudieron cargar los servicios'))
+        .catch(() => setError('No se pudieron cargar los datos'))
         .finally(() => setLoadingServicios(false));
     } else {
       // Limpiar campos al cerrar
       setNombre('');
       setTelefono('');
+      setEmpleadoId(null);
       setTipoFecha('hoy');
       setCustomDate(new Date());
       setShowDatePicker(false);
-      setHora('10:00');
+      setHora('');
+      setShowSugerencias(false);
     }
   }, [visible]);
-
-  // Manejar cambio de fecha en el Calendario Nativo
-  const handleDatePickerChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
-      setCustomDate(date);
-      setTipoFecha('custom');
-    }
-  };
-
-  // Abrir calendario al tocar "Otra Fecha"
-  const handleSelectOtraFecha = () => {
-    setTipoFecha('custom');
-    setShowDatePicker(true);
-  };
 
   // Obtener fecha en formato YYYY-MM-DD
   const getFechaFinal = () => {
@@ -92,7 +93,59 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
     return `${year}-${month}-${day}`;
   };
 
-  // Formato legible para mostrar fecha custom
+  // Cargar slots libres en tiempo real cuando cambia fecha, servicio o empleado
+  useEffect(() => {
+    if (visible && servicioId) {
+      const fechaStr = getFechaFinal();
+      setLoadingSlots(true);
+      getSlots(fechaStr, servicioId, empleadoId)
+        .then(slots => {
+          setSlotsLibres(slots);
+          if (slots.length > 0) {
+            setHora(slots[0]);
+          } else {
+            setHora('');
+          }
+        })
+        .catch(() => setSlotsLibres([]))
+        .finally(() => setLoadingSlots(false));
+    }
+  }, [visible, servicioId, empleadoId, tipoFecha, customDate]);
+
+  // Filtrar sugerencias de clientes al escribir
+  const handleNombreChange = (text) => {
+    setNombre(text);
+    if (text.trim().length >= 2) {
+      const q = text.toLowerCase().trim();
+      const filtrados = clientesBase.filter(
+        c => (c.nombre && c.nombre.toLowerCase().includes(q)) || (c.telefono && c.telefono.includes(q))
+      );
+      setSugerenciasClientes(filtrados.slice(0, 4));
+      setShowSugerencias(filtrados.length > 0);
+    } else {
+      setShowSugerencias(false);
+    }
+  };
+
+  const seleccionarClienteExistente = (cliente) => {
+    setNombre(cliente.nombre || '');
+    setTelefono(cliente.telefono || '');
+    setShowSugerencias(false);
+  };
+
+  const handleDatePickerChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setCustomDate(date);
+      setTipoFecha('custom');
+    }
+  };
+
+  const handleSelectOtraFecha = () => {
+    setTipoFecha('custom');
+    setShowDatePicker(true);
+  };
+
   const getFechaCustomLegible = () => {
     return customDate.toLocaleDateString('es-MX', {
       weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -109,7 +162,7 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
       return;
     }
     if (!hora.trim()) {
-      setError('Seleccione o escriba una hora');
+      setError('Seleccione una hora disponible');
       return;
     }
 
@@ -122,11 +175,15 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
         nombreCliente: nombre.trim(),
         telefonoCliente: telefono.trim(),
         servicioId,
+        empleadoId: empleadoId || undefined,
         fecha: fechaStr,
         hora: hora.trim(),
       });
 
-      Alert.alert('Cita Agendada', 'La cita fue registrada exitosamente en el sistema.');
+      Alert.alert(
+        '✅ Cita Registrada',
+        'La cita fue guardada exitosamente y se envió la confirmación por WhatsApp al cliente.'
+      );
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -137,12 +194,7 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           {/* Header */}
@@ -157,7 +209,6 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
           </View>
 
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-            {/* Error banner */}
             {error ? (
               <View style={styles.errorCard}>
                 <Ionicons name="alert-circle-outline" size={16} color="#EF4444" />
@@ -165,29 +216,48 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               </View>
             ) : null}
 
-            {/* Input: Nombre */}
+            {/* Input: Nombre con Buscador Autocompletado */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>NOMBRE DEL CLIENTE *</Text>
               <View style={styles.inputWrap}>
                 <Ionicons name="person-outline" size={16} color="#6B7280" />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Ej. Juan Pérez"
+                  placeholder="Ej. Juan Pérez (o busca un cliente previo)"
                   placeholderTextColor="#6B7280"
                   value={nombre}
-                  onChangeText={setNombre}
+                  onChangeText={handleNombreChange}
                 />
               </View>
+
+              {/* Popup de Sugerencias de Clientes */}
+              {showSugerencias && (
+                <View style={styles.sugerenciasCard}>
+                  <Text style={styles.sugerenciaTitle}>CLIENTES REGISTRADOS EN EL BOT:</Text>
+                  {sugerenciasClientes.map(cli => (
+                    <TouchableOpacity
+                      key={cli.id}
+                      style={styles.sugerenciaRow}
+                      onPress={() => seleccionarClienteExistente(cli)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="people-outline" size={14} color="#6366F1" />
+                      <Text style={styles.sugerenciaNombre}>{cli.nombre}</Text>
+                      <Text style={styles.sugerenciaTel}>{cli.telefono}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Input: Teléfono */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>TELÉFONO DE CONTACTO (OPCIONAL)</Text>
+              <Text style={styles.inputLabel}>WHATSAPP DEL CLIENTE (PARA NOTIFICACIÓN) *</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="call-outline" size={16} color="#6B7280" />
+                <Ionicons name="logo-whatsapp" size={16} color="#10B981" />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Ej. 6621234567"
+                  placeholder="Ej. 6861234567"
                   placeholderTextColor="#6B7280"
                   keyboardType="phone-pad"
                   value={telefono}
@@ -198,7 +268,7 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
 
             {/* Selector: Servicio */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>SERVICIO *</Text>
+              <Text style={styles.inputLabel}>SERVICIO / TRATAMIENTO *</Text>
               {loadingServicios ? (
                 <ActivityIndicator color="#6366F1" style={{ marginVertical: 12 }} />
               ) : (
@@ -228,9 +298,43 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               )}
             </View>
 
-            {/* Selector: Fecha con Calendario Nativo */}
+            {/* Selector: Especialista / Doctor (opcional) */}
+            {empleados.length > 0 && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>DOCTOR / ESPECIALISTA ASIGNADO</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horariosScroll}>
+                  <TouchableOpacity
+                    style={[styles.empChip, empleadoId === null && styles.empChipActive]}
+                    onPress={() => setEmpleadoId(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.empChipText, empleadoId === null && styles.empChipTextActive]}>
+                      Cualquiera libre
+                    </Text>
+                  </TouchableOpacity>
+                  {empleados.map(emp => {
+                    const isSelected = empleadoId === emp.id;
+                    return (
+                      <TouchableOpacity
+                        key={emp.id}
+                        style={[styles.empChip, isSelected && styles.empChipActive]}
+                        onPress={() => setEmpleadoId(emp.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="medkit-outline" size={12} color={isSelected ? "#FFFFFF" : "#6366F1"} />
+                        <Text style={[styles.empChipText, isSelected && styles.empChipTextActive]}>
+                          {emp.nombre}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Selector: Fecha */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>FECHA *</Text>
+              <Text style={styles.inputLabel}>FECHA DE ATENCIÓN *</Text>
               <View style={styles.segmentedRow}>
                 <TouchableOpacity
                   style={[styles.segmentBtn, tipoFecha === 'hoy' && styles.segmentBtnActive]}
@@ -258,12 +362,11 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.segmentText, tipoFecha === 'custom' && styles.segmentTextActive]}>
-                    Abrir Calendario
+                    Calendario
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Muestra la fecha seleccionada del calendario */}
               {tipoFecha === 'custom' && (
                 <TouchableOpacity
                   style={styles.calendarSelectedBox}
@@ -280,7 +383,6 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               )}
             </View>
 
-            {/* DateTimePicker Nativo (Pop-up de Calendario) */}
             {showDatePicker && (
               <DateTimePicker
                 value={customDate}
@@ -292,26 +394,38 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               />
             )}
 
-            {/* Selector: Hora */}
+            {/* Selector: Slots Libres en Tiempo Real */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>HORARIO *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horariosScroll}>
-                {HORARIOS_RAPIDOS.map(h => {
-                  const isSelected = hora === h;
-                  return (
-                    <TouchableOpacity
-                      key={h}
-                      style={[styles.horaChip, isSelected && styles.horaChipActive]}
-                      onPress={() => setHora(h)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.horaChipText, isSelected && styles.horaChipTextActive]}>
-                        {h}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+              <View style={styles.slotsLabelRow}>
+                <Text style={styles.inputLabel}>HORARIOS DISPONIBLES EN TIEMPO REAL *</Text>
+                {loadingSlots && <ActivityIndicator size="small" color="#6366F1" />}
+              </View>
+
+              {slotsLibres.length === 0 && !loadingSlots ? (
+                <View style={styles.noSlotsCard}>
+                  <Ionicons name="time-outline" size={16} color="#F59E0B" />
+                  <Text style={styles.noSlotsText}>No hay horarios disponibles para esta combinación de fecha/doctor.</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horariosScroll}>
+                  {slotsLibres.map(h => {
+                    const isSelected = hora === h;
+                    return (
+                      <TouchableOpacity
+                        key={h}
+                        style={[styles.horaChip, isSelected && styles.horaChipActive]}
+                        onPress={() => setHora(h)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.horaChipText, isSelected && styles.horaChipTextActive]}>
+                          {h}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
               <View style={[styles.inputWrap, { marginTop: 8 }]}>
                 <Ionicons name="time-outline" size={16} color="#6B7280" />
                 <TextInput
@@ -336,8 +450,8 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.submitBtnText}>Confirmar Cita</Text>
+                <Ionicons name="paper-plane" size={16} color="#FFFFFF" />
+                <Text style={styles.submitBtnText}>Confirmar y Notificar por WhatsApp</Text>
               </>
             )}
           </TouchableOpacity>
@@ -434,7 +548,42 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     color: '#F9FAFB',
-    fontSize: 14,
+    fontSize: 13,
+  },
+
+  // Sugerencias de clientes
+  sugerenciasCard: {
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#6366F1',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 6,
+    gap: 6,
+  },
+  sugerenciaTitle: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#6366F1',
+    letterSpacing: 1,
+  },
+  sugerenciaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1F2937',
+  },
+  sugerenciaNombre: {
+    color: '#F9FAFB',
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+  },
+  sugerenciaTel: {
+    color: '#9CA3AF',
+    fontSize: 11,
   },
 
   // Grid Servicios
@@ -529,10 +678,40 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
 
-  // Horarios Horizontales
+  // Horarios & Emp Chips Horizontales
+  slotsLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   horariosScroll: {
     gap: 8,
   },
+  empChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  empChipActive: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  empChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  empChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
   horaChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -555,6 +734,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  noSlotsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderRadius: 8,
+    padding: 10,
+  },
+  noSlotsText: {
+    color: '#F59E0B',
+    fontSize: 11,
+    fontWeight: '600',
+    flex: 1,
+  },
+
   // Submit
   submitBtn: {
     flexDirection: 'row',
@@ -567,7 +763,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

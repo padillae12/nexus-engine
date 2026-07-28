@@ -137,12 +137,36 @@ router.get('/servicios', async (req, res) => {
   }
 });
 
+// GET /api/slots — Retorna los horarios disponibles reales para una fecha y servicio
+router.get('/slots', async (req, res) => {
+  try {
+    const { fecha, servicioId, empleadoId } = req.query;
+    if (!fecha || !servicioId) {
+      return res.status(400).json({ message: 'Fecha y servicioId son requeridos' });
+    }
+    const servicio = await db.getServicioById(Number(servicioId));
+    if (!servicio) return res.status(404).json({ message: 'Servicio no encontrado' });
+
+    const { getSlotsDisponibles } = require('../utils/slots');
+    const dateObj = new Date(`${fecha}T00:00:00`);
+    const slots = await getSlotsDisponibles(
+      dateObj,
+      servicio.duracion_min,
+      empleadoId ? Number(empleadoId) : null
+    );
+
+    res.json(slots);
+  } catch (err) {
+    console.error('[GET /slots]', err.message);
+    res.status(500).json({ message: 'Error al calcular slots libres' });
+  }
+});
+
 // POST /api/citas
 // Permite agendar una nueva cita manualmente desde la Nexus-App.
-// Body: { nombreCliente, telefonoCliente, servicioId, fecha, hora }
 router.post('/citas', async (req, res) => {
   try {
-    const { nombreCliente, telefonoCliente, servicioId, fecha, hora } = req.body;
+    const { nombreCliente, telefonoCliente, servicioId, empleadoId, fecha, hora } = req.body;
 
     if (!nombreCliente || !servicioId || !fecha || !hora) {
       return res.status(400).json({ message: 'Nombre del cliente, servicio, fecha y hora son obligatorios.' });
@@ -167,13 +191,38 @@ router.post('/citas', async (req, res) => {
     const finMin = String(finDate.getMinutes()).padStart(2, '0');
     const fechaFinStr = `${fecha} ${finHora}:${finMin}:00`;
 
+    const empId = empleadoId ? Number(empleadoId) : null;
+
     const citaId = await db.createCita({
       clienteId: cliente.id,
       servicioId: Number(servicioId),
-      empleadoId: null,
+      empleadoId: empId,
       fechaInicio: fechaInicioStr,
       fechaFin: fechaFinStr,
     });
+
+    // Enviar confirmación instantánea por WhatsApp al Cliente y Notificación al Empleado
+    if (global.whatsappClient) {
+      const { notificarConfirmacionCitaCliente, notificarNuevaCitaEmpleado } = require('../bot/reminders');
+
+      notificarConfirmacionCitaCliente(global.whatsappClient, {
+        clienteNombre: nombreCliente.trim(),
+        clienteTelefono: tel,
+        servicioNombre: servicio.nombre,
+        fechaInicio: fechaInicioStr,
+        hora,
+      }).catch(() => {});
+
+      if (empId) {
+        notificarNuevaCitaEmpleado(global.whatsappClient, {
+          empleadoId: empId,
+          clienteNombre: nombreCliente.trim(),
+          clienteTelefono: tel,
+          servicioNombre: servicio.nombre,
+          fechaInicio: fechaInicioStr,
+        }).catch(() => {});
+      }
+    }
 
     res.json({ ok: true, citaId });
   } catch (err) {
@@ -186,7 +235,7 @@ router.post('/citas', async (req, res) => {
 });
 
 // PATCH /api/citas/:id/estado
-// Body: { estado: 'completada' | 'cancelada' | 'pendiente' }
+// Body: { estado: 'completada' | 'cancelada' | 'confirmada' | 'pendiente' }
 // Cambia el estado de una cita desde la app.
 router.patch('/citas/:id/estado', async (req, res) => {
   try {
@@ -200,6 +249,29 @@ router.patch('/citas/:id/estado', async (req, res) => {
 
     const ok = await db.updateEstadoCita(citaId, estado);
     if (!ok) return res.status(404).json({ message: 'Cita no encontrada' });
+
+    // Si la cita fue confirmada por el recepcionista, enviar notificación WhatsApp al cliente
+    if (estado === 'confirmada' && global.whatsappClient) {
+      const [citasDB] = await pool.execute(
+        `SELECT c.fecha_inicio, cl.nombre AS cliente_nombre, cl.telefono AS cliente_telefono, s.nombre AS servicio_nombre
+         FROM citas c
+         JOIN clientes cl ON c.cliente_id = cl.id
+         JOIN servicios s ON c.servicio_id = s.id
+         WHERE c.id = ?`,
+        [citaId]
+      ).catch(() => [[]]);
+
+      if (citasDB.length > 0) {
+        const c = citasDB[0];
+        const { notificarConfirmacionCitaCliente } = require('../bot/reminders');
+        notificarConfirmacionCitaCliente(global.whatsappClient, {
+          clienteNombre: c.cliente_nombre,
+          clienteTelefono: c.cliente_telefono,
+          servicioNombre: c.servicio_nombre,
+          fechaInicio: c.fecha_inicio,
+        }).catch(() => {});
+      }
+    }
 
     res.json({ ok: true, citaId, estado });
   } catch (err) {
