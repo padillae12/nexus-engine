@@ -287,20 +287,34 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 • Nombre Comercial del Negocio:
 • Número de WhatsApp donde atenderá el Bot:
 • Ciudad / Sucursal:
-• Dirección Física:
+• Dirección Física y Referencias:
 
 2️⃣ HORARIOS DE ATENCIÓN:
-• Días laborables:
-• Horario de Apertura y Cierre:
+• Días laborables (Ej. Lunes a Sábado):
+• Horario de Apertura y Cierre (Ej. 9:00 AM - 7:00 PM):
+• ¿Tienen horario de comida o descanso?:
 
 3️⃣ CATÁLOGO DE SERVICIOS:
-(Nombre del servicio | Duración aprox | Precio)
+Favor de listar los servicios que el bot ofrecerá en WhatsApp:
+(Formato: Nombre del servicio | Duración aprox | Precio | Descripción/Info corta)
+Ejemplos:
+- Corte de Cabello | 30 min | $200 MXN | Incluye lavado y peinado
+- Barba Express | 20 min | $150 MXN | Toalla caliente y perfilado
+- Combo Corte + Barba | 45 min | $300 MXN | Servicio completo VIP
 
 4️⃣ PERSONAL / ATENDIENTES:
-• Nombres del personal que atiende en el local:
+• Nombres del personal que atiende en el local (para asignar turnos):
+  - Empleado 1:
+  - Empleado 2:
 
-5️⃣ SEGURIDAD DE LA APP:
-• PIN secreto de 4 dígitos para acceder al modo Admin: [ ____ ]
+5️⃣ INFORMACIÓN EXTRA DEL LOCAL (Para cuando el cliente pida "Información u Horarios"):
+• Breve descripción de bienvenida del negocio:
+• Indicaciones de estacionamiento o referencias de llegada:
+• Políticas de servicio (Ej. "Llegar 5 min antes", "Se aceptan tarjetas de crédito"):
+• Redes sociales / Sitio Web (opcional):
+
+6️⃣ SEGURIDAD DE LA APP:
+• PIN secreto de 4 dígitos para acceder al modo Admin en tu App: [ ____ ]
 ```
 
 ---
@@ -312,26 +326,46 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 📋 FORMULARIO DE CONFIGURACIÓN — PLAN PRO / CLÍNICO
 
 1️⃣ DATOS DE LA CLÍNICA:
-• Nombre Oficial de la Clínica:
-• Nombre del Bot:
+• Nombre Oficial de la Clínica / Consultorio:
+• Nombre del Bot (Ej. Asistente Dental / Recepción Médica):
 • Número de WhatsApp del Bot:
-• Dirección Física completa:
+• Dirección Física completa y referencias de ubicación:
 
 2️⃣ HORARIOS DE ATENCIÓN Y CITAS:
-• Días laborables:
-• Horario de Atención:
-• Horario de comida:
-• Mínimo de anticipación para agendar:
+• Días laborables de la clínica:
+• Horario de Atención (Ej. Lunes a Viernes 8:00 AM - 8:00 PM, Sábados 9:00 AM - 2:00 PM):
+• Horario de comida/descanso general:
+• Mínimo de anticipación para agendar (Ej. 2 horas antes):
 
 3️⃣ CATÁLOGO DE SERVICIOS Y TRATAMIENTOS:
-(Tratamiento | Duración estimada | Precio base)
+Favor de detallar los tratamientos que se pueden agendar por WhatsApp:
+(Formato: Tratamiento | Duración estimada | Precio base | Información/Requisitos previos)
+Ejemplos:
+- Valoración Inicial / Diagnóstico | 30 min | $300 MXN | Incluye radiografía inicial
+- Limpieza / Profilaxis | 45 min | $600 MXN | Ultrasonido y pulido
+- Ajuste Mensual de Ortodoncia | 30 min | $500 MXN | Solo pacientes en tratamiento
+- Resina / Obturación | 45 min | $800 MXN | Por pieza dental
+- Extracción Simple | 60 min | $1,200 MXN | Requiere valoración previa
 
 4️⃣ DOCTORES Y ESPECIALISTAS (Notificaciones por WhatsApp):
-• Doctor(a):
-  - Nombre completo:
-  - WhatsApp personal:
-  - Especialidades/Servicios que realiza:
+Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
+• Doctor 1:
+  - Nombre completo: Dr(a). 
+  - WhatsApp personal: +52 
+  - Especialidades/Servicios que realiza: 
 
-5️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
-• PIN secreto para la App de administración: [ ______ ]
+• Doctor 2:
+  - Nombre completo: Dr(a). 
+  - WhatsApp personal: +52 
+  - Especialidades/Servicios que realiza: 
+
+5️⃣ INFORMACIÓN EXTRA Y POLÍTICAS CLÍNICAS (Para la Opción 4 del Bot "Información"):
+• Mensaje de bienvenida de la clínica:
+• Indicaciones de llegada / estacionamiento / piso / consultorio:
+• Requisitos de primera cita (Ej. Traer identificación, llegar 10 min antes):
+• Métodos de pago aceptados (Efectivo, Tarjeta, Transferencia, Aseguradoras):
+• Teléfono de emergencias médicas (opcional):
+
+6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
+• PIN secreto de 4 a 6 dígitos para acceder al panel de administración: [ ______ ]
 ```
