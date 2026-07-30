@@ -625,6 +625,7 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(20) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_inicio_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_fin_comida VARCHAR(10) NULL').catch(() => {});
+    await pool.query('ALTER TABLE servicios ADD COLUMN mostrar_precio TINYINT(1) NOT NULL DEFAULT 1').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});

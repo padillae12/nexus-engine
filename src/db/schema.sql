@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS servicios (
   nombre        VARCHAR(100)    NOT NULL,
   descripcion   TEXT            NULL,
   precio        DECIMAL(10,2)   NULL,
+  mostrar_precio TINYINT(1)     NOT NULL DEFAULT 1,
   duracion_min  SMALLINT        NOT NULL DEFAULT 60,
   activo        TINYINT(1)      NOT NULL DEFAULT 1,
   PRIMARY KEY (id)
