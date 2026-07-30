@@ -183,10 +183,7 @@ router.post('/citas', async (req, res) => {
       ? '52' + telRaw.replace(/[^0-9]/g, '')
       : telRaw;
 
-    const cliente = await db.findOrCreateCliente(tel);
-    if (nombreCliente) {
-      await db.updateClienteNombre(cliente.id, nombreCliente.trim());
-    }
+    const cliente = await db.findOrCreateCliente(tel, nombreCliente ? nombreCliente.trim() : null);
 
     const servicio = await db.getServicioById(Number(servicioId));
     if (!servicio) {
@@ -211,14 +208,10 @@ router.post('/citas', async (req, res) => {
       fechaFin: fechaFinStr,
     });
 
-    // Enviar confirmación instantánea por WhatsApp al Cliente y Notificación al Empleado
-    // IMPORTANTE: usar el teléfono/JID original de la DB (como fue guardado por el bot),
-    // no el del formulario, para garantizar que el mensaje llegue correctamente.
+    // Enviar confirmación por WhatsApp al Cliente y Notificación al Empleado
     if (global.whatsappClient) {
       const { notificarConfirmacionCitaCliente, notificarNuevaCitaEmpleado } = require('../bot/reminders');
 
-      // El cliente.telefono es el JID original (ej: "79650302734396@lid" o "521234567890@c.us")
-      // Si es un cliente nuevo (sin JID de bot), usar el tel normalizado del formulario
       const telefonoParaNotificar = cliente.telefono || tel;
 
       notificarConfirmacionCitaCliente(global.whatsappClient, {
@@ -229,15 +222,14 @@ router.post('/citas', async (req, res) => {
         hora,
       }).catch((e) => console.warn('[WA] Error enviando confirmación al cliente:', e.message));
 
-      if (empId) {
-        notificarNuevaCitaEmpleado(global.whatsappClient, {
-          empleadoId: empId,
-          clienteNombre: nombreCliente.trim(),
-          clienteTelefono: telefonoParaNotificar,
-          servicioNombre: servicio.nombre,
-          fechaInicio: fechaInicioStr,
-        }).catch(() => {});
-      }
+      // Notificar al empleado asignado o al admin del negocio
+      notificarNuevaCitaEmpleado(global.whatsappClient, {
+        empleadoId: empId,
+        clienteNombre: nombreCliente.trim(),
+        clienteTelefono: telefonoParaNotificar,
+        servicioNombre: servicio.nombre,
+        fechaInicio: fechaInicioStr,
+      }).catch((e) => console.warn('[WA] Error enviando notificación al empleado:', e.message));
     }
 
     res.json({ ok: true, citaId });

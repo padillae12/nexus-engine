@@ -24,18 +24,47 @@ const pool = require('./pool');
  * @param {string} telefono - Número con código de país ej: +526789012345
  * @returns {Promise<{id, telefono, nombre}>}
  */
-async function findOrCreateCliente(telefono) {
+async function findOrCreateCliente(telefono, nombre = null) {
+  let cleanTel = String(telefono || '').trim();
+  let searchDigits = cleanTel.replace(/[^0-9]/g, '');
+
+  if (searchDigits.length === 10) {
+    cleanTel = '52' + searchDigits;
+  }
+
+  // 1. Buscar por teléfono exacto
   const [rows] = await pool.execute(
     'SELECT id, telefono, nombre FROM clientes WHERE telefono = ?',
-    [telefono]
+    [cleanTel]
   );
-  if (rows.length > 0) return rows[0];
+  if (rows.length > 0) {
+    if (nombre && !rows[0].nombre) {
+      await updateClienteNombre(rows[0].id, nombre);
+      rows[0].nombre = nombre;
+    }
+    return rows[0];
+  }
 
+  // 2. Si hay nombre, buscar por nombre para reutilizar/actualizar cliente con teléfono viejo o LID
+  if (nombre) {
+    const [byName] = await pool.execute(
+      'SELECT id, telefono, nombre FROM clientes WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?)) LIMIT 1',
+      [nombre]
+    );
+    if (byName.length > 0) {
+      const clienteExistente = byName[0];
+      await pool.execute('UPDATE clientes SET telefono = ? WHERE id = ?', [cleanTel, clienteExistente.id]);
+      clienteExistente.telefono = cleanTel;
+      return clienteExistente;
+    }
+  }
+
+  // 3. Crear nuevo cliente
   const [result] = await pool.execute(
-    'INSERT INTO clientes (telefono) VALUES (?)',
-    [telefono]
+    'INSERT INTO clientes (telefono, nombre) VALUES (?, ?)',
+    [cleanTel, nombre || null]
   );
-  return { id: result.insertId, telefono, nombre: null };
+  return { id: result.insertId, telefono: cleanTel, nombre };
 }
 
 /**
@@ -381,7 +410,28 @@ async function getClientesLista() {
      ORDER BY cl.creado_en DESC
      LIMIT 500`
   );
-  return rows;
+
+  // Deduplicar por nombre (priorizando los que tienen teléfono real vs LID)
+  const mapaUnico = new Map();
+  for (const row of rows) {
+    const key = (row.nombre || '').toLowerCase().trim();
+    if (!key) {
+      mapaUnico.set(`id_${row.id}`, row);
+      continue;
+    }
+    if (!mapaUnico.has(key)) {
+      mapaUnico.set(key, row);
+    } else {
+      const existente = mapaUnico.get(key);
+      const telExistente = (existente.telefono || '').replace(/[^0-9]/g, '');
+      const telNuevo = (row.telefono || '').replace(/[^0-9]/g, '');
+      if (telExistente.length > 12 && telNuevo.length <= 12 && telNuevo.length >= 10) {
+        mapaUnico.set(key, row);
+      }
+    }
+  }
+
+  return Array.from(mapaUnico.values());
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -659,13 +709,17 @@ async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'e
  */
 async function getTelefonoEmpleado(empleadoId = null) {
   if (empleadoId) {
-    const [rows] = await pool.execute('SELECT telefono, nombre FROM usuarios WHERE id = ?', [empleadoId]);
+    const [rows] = await pool.execute(
+      "SELECT telefono, nombre FROM usuarios WHERE id = ? AND telefono IS NOT NULL AND telefono != ''",
+      [empleadoId]
+    );
     if (rows.length > 0 && rows[0].telefono) return rows[0];
   }
-  const [admins] = await pool.execute(
-    "SELECT telefono, nombre FROM usuarios WHERE rol = 'admin' AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
+  // Fallback: buscar cualquier usuario (admin o empleado) que tenga teléfono registrado
+  const [usuariosConTel] = await pool.execute(
+    "SELECT telefono, nombre FROM usuarios WHERE telefono IS NOT NULL AND telefono != '' ORDER BY (rol = 'admin') DESC, id ASC LIMIT 1"
   );
-  return admins[0] || null;
+  return usuariosConTel[0] || null;
 }
 
 /**
