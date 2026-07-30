@@ -84,16 +84,20 @@ client.on('message_create', async (msg) => {
   const texto = msg.body?.trim();
   if (!texto) return;
 
+  const { normalizarTelefono } = require('../utils/phone');
+
   // Obtener el número de teléfono real del contacto de WhatsApp
-  let telefono = msg.fromMe ? msg.to : msg.from;
+  let telefonoRaw = msg.fromMe ? msg.to : msg.from;
   try {
     const contact = await msg.getContact();
     if (contact && contact.number) {
-      telefono = contact.number;
+      telefonoRaw = contact.number;
     }
   } catch (e) {
     console.warn('⚠️ No se pudo resolver el contacto del mensaje:', e.message);
   }
+
+  const telefono = normalizarTelefono(telefonoRaw);
 
   console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono} (${msg.from}): ${texto}`);
 

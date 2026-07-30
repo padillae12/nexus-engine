@@ -28,47 +28,46 @@ function limpiarTelefonoDisplay(raw) {
   return str;
 }
 
+const { normalizarTelefono, formatTelefonoDisplay } = require('../utils/phone');
+
 /**
- * Obtiene el JID de WhatsApp válido para un número telefónico.
+ * Obtiene el JID de WhatsApp válido para un número telefónico (México, EE.UU. o Internacional).
  */
 async function getWhatsAppJid(client, telefonoRaw) {
   if (!client || !telefonoRaw) return null;
 
   // Si ya viene formateado como JID válido con dominio
-  if (typeof telefonoRaw === 'string' && (telefonoRaw.endsWith('@c.us') || telefonoRaw.endsWith('@s.whatsapp.net'))) {
-    return telefonoRaw;
-  }
-  if (typeof telefonoRaw === 'string' && telefonoRaw.endsWith('@lid')) {
+  if (typeof telefonoRaw === 'string' && (telefonoRaw.endsWith('@c.us') || telefonoRaw.endsWith('@s.whatsapp.net') || telefonoRaw.endsWith('@lid'))) {
     return telefonoRaw;
   }
 
-  let digits = String(telefonoRaw).replace(/[^0-9]/g, '');
-  if (!digits) return null;
+  let rawStr = String(telefonoRaw).trim();
+  let digitsOnly = rawStr.split('@')[0].replace(/[^0-9]/g, '');
+  if (!digitsOnly) return null;
 
-  // Si es un LID puro (14+ dígitos), intentar primero como @lid y luego getNumberId
-  if (digits.length > 13) {
-    return `${digits}@lid`;
+  // LIDs internos (14+ dígitos)
+  if (digitsOnly.length > 13) {
+    return `${digitsOnly}@lid`;
   }
 
-  // Si tiene 10 dígitos (ej. 6861234567), anteponer 52 (México)
-  if (digits.length === 10) {
-    digits = '52' + digits;
-  }
+  // Normalizar número telefónico (soporta +1 EE.UU., +52 México, etc.)
+  const cleanNumber = normalizarTelefono(telefonoRaw);
+  if (!cleanNumber) return null;
 
-  // Probar con getNumberId
+  // Probar resolución con getNumberId de WhatsApp Web
   try {
-    const numberId = await client.getNumberId(digits);
+    const numberId = await client.getNumberId(cleanNumber);
     if (numberId && numberId._serialized) {
-      console.log(`✅ JID resuelto para ${digits}: ${numberId._serialized}`);
+      console.log(`✅ JID resuelto para ${cleanNumber}: ${numberId._serialized}`);
       return numberId._serialized;
     }
   } catch (e) {
-    console.warn(`⚠️ getNumberId error para ${digits}:`, e.message);
+    console.warn(`⚠️ getNumberId error para ${cleanNumber}:`, e.message);
   }
 
-  // Para números de México de 12 dígitos (52XXXXXXXXXX), probar anteponiendo el '1' (521XXXXXXXXXX)
-  if (digits.length === 12 && digits.startsWith('52')) {
-    const digitsWith1 = '521' + digits.slice(2);
+  // Fallback si es de México (12 dígitos comenzando en 52), probar con '521'
+  if (cleanNumber.length === 12 && cleanNumber.startsWith('52')) {
+    const digitsWith1 = '521' + cleanNumber.slice(2);
     try {
       const numberId = await client.getNumberId(digitsWith1);
       if (numberId && numberId._serialized) {
@@ -79,7 +78,7 @@ async function getWhatsAppJid(client, telefonoRaw) {
     return `${digitsWith1}@c.us`;
   }
 
-  return `${digits}@c.us`;
+  return `${cleanNumber}@c.us`;
 }
 
 /**

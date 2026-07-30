@@ -128,14 +128,24 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
   };
 
   /**
-   * Limpia cualquier string de teléfono o JID para mostrar siempre los 10 dígitos locales.
+   * Limpia y formatea cualquier teléfono (México, EE.UU. e Internacionales) para la UI de la App.
    */
   const limpiarTelefono = (raw) => {
     if (!raw) return '';
-    let str = String(raw).split('@')[0].replace(/[^0-9]/g, '');
+    let str = String(raw).trim().split('@')[0].replace(/[^0-9]/g, '');
     if (!str) return '';
-    if (str.length === 13 && str.startsWith('521')) return str.slice(3);
-    if (str.length === 12 && str.startsWith('52')) return str.slice(2);
+    // EE.UU. / Canadá (11 dígitos empezando con 1) -> +1 442 367-0431
+    if (str.length === 11 && str.startsWith('1')) {
+      return `+1 ${str.slice(1, 4)} ${str.slice(4, 7)}-${str.slice(7)}`;
+    }
+    // México (12 dígitos empezando con 52) -> 6861234567
+    if (str.length === 12 && str.startsWith('52')) {
+      return str.slice(2);
+    }
+    // México (13 dígitos empezando con 521)
+    if (str.length === 13 && str.startsWith('521')) {
+      return str.slice(3);
+    }
     if (str.length === 10) return str;
     if (str.length >= 10) return str.slice(-10);
     return str;
