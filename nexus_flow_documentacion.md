@@ -210,25 +210,108 @@ En la pantalla **`Configuración → Modo Admin`**:
 
 ---
 
-## 8. Instalación, Despliegue y Escaneo de QR con PM2
+## 8. Instalación, Despliegue y Puesta en Marcha para un Nuevo Cliente (Guía Paso a Paso)
 
-### 8.1 Actualización rápida en la VPS:
+Esta sección te explica **exactamente cómo instalar y dar de alta a un nuevo cliente en tu VPS** en menos de 10 minutos.
 
+---
+
+### 8.1 Pasos de Despliegue Desde Cero (Paso a Paso):
+
+#### 1️⃣ **Crear la Base de Datos para el Cliente:**
+Ingresa a MariaDB/MySQL en tu VPS:
 ```bash
-cd ~/nexus-engine
-git pull
-pm2 restart all
+mysql -u root -p
+```
+Ejecuta la creación e importa el esquema maestro:
+```sql
+CREATE DATABASE nexus_cliente1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON nexus_cliente1.* TO 'nexus_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+Importa las tablas ejecutando:
+```bash
+mysql -u nexus_user -pPadAlex01 nexus_cliente1 < ~/nexus-engine/src/db/schema.sql
 ```
 
-### 8.2 Ver y Escanear el Código QR con PM2:
+---
 
-1. Ejecuta el comando en tu terminal SSH:
+#### 2️⃣ **Configurar el archivo de Variables de Entorno (`.env`):**
+En la carpeta del proyecto `~/nexus-engine/.env`, configura los datos del nuevo cliente:
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=nexus_user
+DB_PASSWORD=PadAlex01
+DB_NAME=nexus_cliente1
+
+BUSINESS_NAME="Clínica Dental Sonrisas"
+BOT_NAME="Nexus Dental"
+BOT_PHONE="+526861234567"
+API_PORT=3001
+```
+
+---
+
+#### 3️⃣ **Cargar el Catálogo de Servicios y Empleados (Onboarding):**
+Puedes insertar los servicios y doctores directamente en MariaDB o desde la **Nexus-App**:
+```sql
+-- Insertar servicios del cliente
+INSERT INTO servicios (nombre, duracion_min, precio, descripcion) VALUES
+('Valoración / Diagnóstico', 30, 300.00, 'Incluye evaluación y radiografía inicial'),
+('Limpieza Profilaxis', 45, 600.00, 'Ultrasonido y pulido dental'),
+('Resina Dental', 45, 800.00, 'Obturación por pieza');
+
+-- Insertar empleado/doctor con su WhatsApp
+INSERT INTO empleados (nombre, telefono, activo) VALUES
+('Dr. Alejandro Padilla', '+526861234567', 1);
+```
+
+---
+
+#### 4️⃣ **Desplegar el Servidor y Vincular WhatsApp (Escaneo de QR):**
+
+1. Arranca el servicio en PM2:
+   ```bash
+   pm2 start src/bot/index.js --name "nexus-engine"
+   pm2 save
+   ```
+
+2. Abre los logs para ver el código QR dibujado en pantalla:
    ```bash
    pm2 logs nexus-engine
    ```
-2. Al ver el código QR dibujado en la terminal, presiona `Ctrl` + `-` si se ve chueco para hacer la letra más pequeña hasta que el cuadrado se alinee bien.
-3. Abre WhatsApp en el celular → **Dispositivos vinculados → Vincular un dispositivo** y escanea el QR.
-4. En cuanto diga `✅ WhatsApp conectado`, presiona `Ctrl` + `C` para cerrar los logs sin apagar el bot.
+
+3. **Escanear el QR:**
+   - Toma el teléfono o el WhatsApp del cliente.
+   - Ve a **Ajustes ➔ Dispositivos vinculados ➔ Vincular un dispositivo**.
+   - Escanea el código QR que aparece en la terminal de la VPS.
+   - En cuanto aparezca `✅ WhatsApp conectado y bot escuchando`, presiona `Ctrl` + `C` para cerrar los logs.
+
+---
+
+#### 5️⃣ **Configurar la Respuesta Automática en Facebook e Instagram (Opcional - Meta Business Suite):**
+
+Para redirigir clientes de redes sociales al WhatsApp del bot:
+1. Entra a [business.facebook.com](https://business.facebook.com) ➔ **Automatizaciones ➔ Respuesta Instantánea**.
+2. Pega el siguiente mensaje predeterminado:
+   ```text
+   ¡Hola! 👋 Gracias por comunicarte con [Nombre del Negocio].
+
+   Para agendar tu cita las 24/7 en tiempo real con confirmación inmediata, habla con nuestro recepcionista virtual en WhatsApp aquí:
+
+   📲 https://wa.me/52686XXXXXXX?text=Hola%20quiero%20agendar%20una%20cita
+   ```
+
+---
+
+### 8.2 Comandos Útiles de Mantenimiento Diario:
+
+- **Reiniciar el bot y la API:** `pm2 restart all`
+- **Ver logs en tiempo real:** `pm2 logs nexus-engine`
+- **Ver estado del servidor:** `pm2 status`
+- **Actualizar código desde GitHub:** `cd ~/nexus-engine && git pull && pm2 restart all`
 
 ---
 
