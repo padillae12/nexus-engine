@@ -232,27 +232,29 @@ pm2 restart all
 
 ---
 
-## 9. Sistema de Niveles de Suscripción (Plan Básico vs Plan Pro)
+## 9. Estrategia de Comercialización & Modelo de Suscripción (3 Planes Oficiales)
 
-### 9.1 Diferencias entre Planes
+### 9.1 Tabla Comparativa de Planes Comerciales
 
-| Funcionalidad | Plan Básico / Express ($1,500/mes) | Plan Pro / Clínico ($3,500/mes) |
-|---|:---:|:---:|
-| **Público Objetivo** | Barberías, Spas, Estéticas | Clínicas Dentales, Consultorios |
-| **Flujo del Bot** | 4 pasos ultrarrápidos | Flujo completo personalizable |
-| **Asignación Médica** | Directa (Cualquiera libre) | **Médico de Cabecera Automático** |
-| **Matriz de Especialidades** | Oculta (interfaz limpia) | **Checkboxes por Doctor en App** |
-| **Selector de Recordatorio** | Asignación silenciosa 2h | **1h, 2h, 24h, Desactivado** |
-| **Notif. WhatsApp a Doctor** | No activa | **Alerta inmediata al celular del médico** |
+| Funcionalidad / Característica | Plan Básico / Express ($999 MXN/mes) | Plan Pro / Clínico Omnicanal ⭐ ($1,999 MXN/mes) | Plan Enterprise Multi-Sucursal ($3,999 MXN/mes) |
+|---|:---:|:---:|:---:|
+| **Público Objetivo** | Barberías, Terapeutas, Estéticas | Clínicas Dentales, Consultorios, Spas | Cadenas, Franquicias, Múltiples Locales |
+| **Canales Incluidos** | 1 Canal (WhatsApp) | **3 Canales (WhatsApp + Facebook + Instagram)** | **Canales Ilimitados + Multi-Sucursal** |
+| **Bot Bilingüe (US/MX)** | Básico (Español) | **Auto-detección (+1 EE.UU. / Inglés)** | **Auto-detección (+1 EE.UU. / Inglés)** |
+| **Horario Comida Empleado** | No incluido | **Individual por Doctor en App** | **Individual por Doctor en App** |
+| **CRM Historial Cliente** | Lista simple | **Ficha Completa + Historial Visitas** | **Ficha Completa + Historial Visitas** |
+| **Reportes Contables** | No incluido | **PDF Membretado (Logo) + Excel (.CSV)** | **PDF Membretado (Logo) + Excel (.CSV)** |
+| **Reenvío Confirmación WA** | No incluido | **Botón de 1 toque en App** | **Botón de 1 toque en App** |
+| **Costo Setup / Instalación** | $1,499 MXN (Pago único) | $2,999 MXN (Pago único) | $4,999 MXN (Pago único) |
 
 ### 9.2 Comandos para Cambiar de Plan en la VPS
 
-#### 🟢 Cambiar a Plan Básico / Express (Barberías / Spas):
+#### 🟢 Cambiar a Plan Básico / Express:
 ```bash
 mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET valor = 'basico' WHERE clave = 'PLAN_TYPE';"
 ```
 
-#### 👑 Cambiar a Plan Pro / Clínico (Clínicas Dentales):
+#### 👑 Cambiar a Plan Pro / Clínico:
 ```bash
 mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET valor = 'pro' WHERE clave = 'PLAN_TYPE';"
 ```
@@ -267,11 +269,14 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 
 ---
 
-## 11. Estrategia de Negocio y Competencia
+## 11. Estrategia de Venta & Posicionamiento (Mexicali / Mercado Fronterizo)
 
-* **Plan Básico / Express:** **$1,500 MXN / mes** + $1,000 Setup.
-* **Plan Pro / Clínico:** **$3,500 MXN / mes** + $1,500 Setup.
-* **Ventaja competitiva:** Cero cobros por mensaje de WhatsApp Meta API (ahorro masivo para el cliente) + App Móvil/Web incluida.
+* **Plan 1: BÁSICO / EXPRESS:** **$999 MXN / mes** + $1,499 Setup.
+* **Plan 2: PRO / CLÍNICO OMNICANAL:** **$1,999 a $2,499 MXN / mes** + $2,999 Setup.
+* **Plan 3: ENTERPRISE MULTI-SUCURSAL:** **$3,999 MXN / mes** + $4,999 Setup.
+* **Margen de Ganancia Neto:** **> 85%** (Costo de servidor ~$200 MXN/mes por cliente).
+* **Pitch de Venta Estrella en Mexicali:**
+  > *"Atiende a tus pacientes locales y de EE.UU. 24/7 en español e inglés por WhatsApp, Facebook e Instagram, bloquea tus horarios de comida automáticamente y genera tus reportes para el contador en PDF y Excel por $1,999 pesos al mes."*
 
 ---
 
