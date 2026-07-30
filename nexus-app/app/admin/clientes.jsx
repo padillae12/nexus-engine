@@ -1,7 +1,7 @@
 // app/admin/clientes.jsx — Pantalla Admin: lista de clientes registrados por el bot
 // Diseño Profesional & Ejecutivo (Zero Emojis)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { getClientes, getCitasCliente } from '../../services/api';
 
 function ClienteRow({ cliente, onPress }) {
@@ -57,9 +58,11 @@ export default function ClientesScreen() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    cargarClientes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarClientes();
+    }, [])
+  );
 
   const handleOpenCliente = (cliente) => {
     setSelectedCliente(cliente);

@@ -1,9 +1,9 @@
 // app/admin/citas.jsx — Pantalla Admin: lista de citas con filtros
 // Diseño Profesional & Ejecutivo (Zero Emojis)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import CitaCard from '../../components/CitaCard';
 import NuevaCitaModal from '../../components/NuevaCitaModal';
 import { getCitas, getEmpleados } from '../../services/api';
@@ -40,9 +40,11 @@ export default function CitasScreen() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    cargarCitas();
-  }, [filtro, selectedEmpId]);
+  useFocusEffect(
+    useCallback(() => {
+      cargarCitas();
+    }, [filtro, selectedEmpId])
+  );
 
   return (
     <View style={styles.container}>
