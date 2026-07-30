@@ -193,6 +193,58 @@ async function notificarConfirmacionCitaCliente(client, citaInfo) {
 }
 
 /**
+ * Envía un ticket / comprobante de atención por WhatsApp al cliente cuando se marca la cita como 'completada'.
+ */
+async function notificarTicketCompletadoCliente(client, citaInfo) {
+  try {
+    if (!client || !citaInfo || !citaInfo.clienteTelefono) return;
+
+    const jid = await getWhatsAppJid(client, citaInfo.clienteTelefono);
+    if (!jid) return;
+
+    const cleanNum = normalizarTelefono(citaInfo.clienteTelefono) || '';
+    const isEn = cleanNum.startsWith('1');
+
+    let fechaObj = citaInfo.fechaInicio instanceof Date ? citaInfo.fechaInicio : new Date(citaInfo.fechaInicio);
+    if (isNaN(fechaObj.getTime())) fechaObj = new Date();
+    const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
+
+    const { getAllConfig } = require('../db/queries');
+    const cfg = await getAllConfig().catch(() => ({}));
+    const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Loquero';
+
+    const precioNum = Number(citaInfo.precio || 0);
+    const precioFmt = `$${precioNum.toLocaleString('es-MX')} MXN`;
+
+    const notasTexto = citaInfo.notas ? (isEn ? `\n📝 Details: _${citaInfo.notas}_` : `\n📝 Detalles: _${citaInfo.notas}_`) : '';
+    const doctorTexto = citaInfo.empleadoNombre ? (isEn ? `\n👨‍⚕️ Specialist: *${citaInfo.empleadoNombre}*` : `\n👨‍⚕️ Especialista: *${citaInfo.empleadoNombre}*`) : '';
+
+    const mensaje = isEn
+      ? `🧾 *RECEIPT / ATTENTION SUMMARY - ${businessName.toUpperCase()}*\n\n` +
+        `Hello *${citaInfo.clienteNombre || 'Customer'}*, thank you for visiting us today!\n\n` +
+        `🛎️ Service: *${citaInfo.servicioNombre}*` +
+        notasTexto +
+        doctorTexto + `\n` +
+        `📅 Date: *${fechaTexto}*\n` +
+        `💰 Total Paid: *${precioFmt}*\n\n` +
+        `Thank you for choosing us! If you need to book a new appointment or follow-up, feel free to text us anytime. 😊`
+      : `🧾 *COMPROBANTE DE ATENCIÓN - ${businessName.toUpperCase()}*\n\n` +
+        `Hola *${citaInfo.clienteNombre || 'Cliente'}*, ¡muchas gracias por tu visita hoy!\n\n` +
+        `🛎️ Servicio: *${citaInfo.servicioNombre}*` +
+        notasTexto +
+        doctorTexto + `\n` +
+        `📅 Fecha: *${fechaTexto}*\n` +
+        `💰 Total Cobrado: *${precioFmt}*\n\n` +
+        `¡Agradecemos tu preferencia! Si necesitas agendar una nueva cita o seguimiento, sólo escríbenos por aquí. 😊`;
+
+    await client.sendMessage(jid, mensaje);
+    console.log(`🧾 Ticket de atención enviado por WhatsApp a ${citaInfo.clienteNombre} (${jid})`);
+  } catch (err) {
+    console.warn('⚠️ Error al enviar ticket de atención por WhatsApp:', err.message);
+  }
+}
+
+/**
  * Inicia el temporizador en segundo plano que revisa cita por cita los recordatorios pendientes.
  */
 function iniciarMotorRecordatorios(client) {
@@ -258,4 +310,5 @@ module.exports = {
   iniciarMotorRecordatorios,
   notificarNuevaCitaEmpleado,
   notificarConfirmacionCitaCliente,
+  notificarTicketCompletadoCliente,
 };

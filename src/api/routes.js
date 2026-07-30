@@ -313,6 +313,35 @@ router.patch('/citas/:id/estado', async (req, res) => {
       }
     }
 
+    // Si la cita fue marcada como COMPLETADA, enviar automáticamente el Ticket / Comprobante por WhatsApp
+    if (estado === 'completada' && global.whatsappClient) {
+      const [citasDB] = await pool.execute(
+        `SELECT c.fecha_inicio, COALESCE(c.precio, s.precio, 0) AS precio, c.notas,
+                cl.nombre AS cliente_nombre, cl.telefono AS cliente_telefono, 
+                s.nombre AS servicio_nombre, u.nombre AS empleado_nombre
+         FROM citas c
+         JOIN clientes cl ON c.cliente_id = cl.id
+         JOIN servicios s ON c.servicio_id = s.id
+         LEFT JOIN usuarios u ON c.empleado_id = u.id
+         WHERE c.id = ?`,
+        [citaId]
+      ).catch(() => [[]]);
+
+      if (citasDB.length > 0) {
+        const c = citasDB[0];
+        const { notificarTicketCompletadoCliente } = require('../bot/reminders');
+        notificarTicketCompletadoCliente(global.whatsappClient, {
+          clienteNombre: c.cliente_nombre,
+          clienteTelefono: c.cliente_telefono,
+          servicioNombre: c.servicio_nombre,
+          precio: c.precio,
+          notas: c.notas,
+          empleadoNombre: c.empleado_nombre,
+          fechaInicio: c.fecha_inicio,
+        }).catch(() => {});
+      }
+    }
+
     res.json({ ok: true, citaId, estado });
   } catch (err) {
     console.error('[PATCH /citas/:id/estado]', err.message);
