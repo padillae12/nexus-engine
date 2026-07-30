@@ -42,7 +42,8 @@ async function handleReminderSelect(sesion, msg) {
     `⏰ Hora: *${horaTexto}*\n` +
     `🔔 Recordatorio: *${text}*\n\n` +
     `¿Confirmas tu cita?\n` +
-    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.`;
+    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
+    `_Escribe *"atrás"* para volver a elegir el recordatorio._`;
 
   return {
     respuesta: resumen,
@@ -150,20 +151,34 @@ async function handleEditMenu(sesion, msg) {
 
   if (opcion === '1') {
     return {
-      respuesta: `📅 ¿Para qué día quieres tu cita?\nEscribe la fecha que prefieres.`,
+      respuesta:
+        `📅 ¿Para qué día quieres tu cita?\nEscribe la fecha que prefieres.\n` +
+        `_Escribe *"atrás"* para volver al resumen._`,
       nuevoEstado: 'DATE_SELECT',
     };
   }
   if (opcion === '2') {
-    // Volver a mostrar los slots del mismo día
-    const { formatSlotsParaWhatsApp, formatFechaEspanol } = require('../../utils/slots');
-    const slots     = sesion.slotsDisponibles || [];
-    const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
-    const fechaTexto = formatFechaEspanol(fechaObj);
+    // Re-obtener los slots de la fecha seleccionada (con filtro de hora actual si es hoy)
+    const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol } = require('../../utils/slots');
+    const fecha = new Date((sesion.fechaSeleccionada || new Date().toISOString().slice(0,10)) + 'T00:00:00');
+    const slots = await getSlotsDisponibles(fecha, sesion.duracionMin, sesion.empleadoId || null);
+    sesion.slotsDisponibles = slots; // Actualizar con slots frescos
+    const fechaTexto = formatFechaEspanol(fecha);
+
+    if (slots.length === 0) {
+      return {
+        respuesta:
+          `😕 Ya no hay horarios disponibles el *${fechaTexto}*.\n\n` +
+          `¿Quieres elegir otra fecha? Escribe *"1"* para cambiar la fecha.`,
+        nuevoEstado: 'EDIT_MENU',
+      };
+    }
+
     return {
       respuesta:
         `⏰ Elige otro horario para el *${fechaTexto}*:\n\n` +
-        formatSlotsParaWhatsApp(slots),
+        formatSlotsParaWhatsApp(slots) + '\n\n' +
+        `_Escribe *"atrás"* para volver al resumen._`,
       nuevoEstado: 'TIME_SELECT',
     };
   }
@@ -180,10 +195,14 @@ async function handleEditMenu(sesion, msg) {
   }
 
   return {
-    respuesta: `Por favor elige una opción del 1 al 4.`,
+    respuesta:
+      `Por favor elige una opción del 1 al 4.\n\n` +
+      `📅 *1.* Cambiar la fecha\n⏰ *2.* Cambiar la hora\n🛎️ *3.* Cambiar el servicio\n❌ *4.* Cancelar y salir\n\n` +
+      `_Escribe *"atrás"* para volver al resumen._`,
     nuevoEstado: 'EDIT_MENU',
   };
 }
+
 
 /**
  * Maneja el estado de cancelación: muestra las citas activas y deja cancelar.

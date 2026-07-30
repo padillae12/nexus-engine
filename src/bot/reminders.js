@@ -12,10 +12,46 @@ const { formatFechaEspanol } = require('../utils/slots');
 const config = require('../config');
 
 /**
+ * Limpia un teléfono o JID para obtener solo los dígitos del número.
+ * Ej: "190838785216601@lid" → "5216601" (incorrecto)
+ * Mejor: si contiene @, devolver solo los dígitos locales del teléfono.
+ * @param {string} raw
+ * @returns {string} teléfono limpio de 10 dígitos si es posible, o el raw sin @...
+ */
+function limpiarTelefonoDisplay(raw) {
+  if (!raw) return '';
+  // Si tiene @, es un JID — extraer solo la parte numérica antes del @
+  if (raw.includes('@')) {
+    const parteNumerica = raw.split('@')[0].replace(/[^0-9]/g, '');
+    // Si son 12 dígitos con código 52, quitar el 52 para mostrar los 10 locales
+    if (parteNumerica.startsWith('52') && parteNumerica.length === 12) {
+      return parteNumerica.slice(2);
+    }
+    return parteNumerica;
+  }
+  return raw.replace(/[^0-9+]/g, '');
+}
+
+/**
  * Obtiene el JID de WhatsApp válido para un número telefónico (resuelve LIDs de WhatsApp Web).
+ * Soporta:
+ *   - JIDs directos: "1234@lid", "521234@c.us", "521234@s.whatsapp.net"
+ *   - Números de 10 dígitos: "6861234567" → antepone código de país 52
+ *   - Números con 52 ya incluido
  */
 async function getWhatsAppJid(client, telefonoRaw) {
   if (!telefonoRaw) return null;
+
+  // Si ya es un JID válido (@lid), úsarlo directamente
+  if (telefonoRaw.includes('@lid') || telefonoRaw.includes('@s.whatsapp.net')) {
+    return telefonoRaw;
+  }
+  // Si es @c.us, también es válido directamente
+  if (telefonoRaw.includes('@c.us')) {
+    return telefonoRaw;
+  }
+
+  // Limpiar a solo dígitos
   let cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
   if (!cleanNumber) return null;
 

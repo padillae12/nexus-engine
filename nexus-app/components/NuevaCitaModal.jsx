@@ -127,9 +127,23 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
     }
   };
 
+  /**
+   * Limpia un JID de WhatsApp (@lid, @c.us) para mostrar solo los dígitos del número.
+   * "190838785216601@lid" → "6600000001" (últimos 10 si empieza con 52)
+   */
+  const limpiarTelefono = (raw) => {
+    if (!raw) return '';
+    if (raw.includes('@')) {
+      const digits = raw.split('@')[0].replace(/[^0-9]/g, '');
+      if (digits.startsWith('52') && digits.length === 12) return digits.slice(2);
+      return digits;
+    }
+    return raw.replace(/[^0-9+]/g, '');
+  };
+
   const seleccionarClienteExistente = (cliente) => {
     setNombre(cliente.nombre || '');
-    setTelefono(cliente.telefono || '');
+    setTelefono(limpiarTelefono(cliente.telefono));
     setShowSugerencias(false);
   };
 
@@ -243,7 +257,7 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
                     >
                       <Ionicons name="people-outline" size={14} color="#6366F1" />
                       <Text style={styles.sugerenciaNombre}>{cli.nombre}</Text>
-                      <Text style={styles.sugerenciaTel}>{cli.telefono}</Text>
+                      <Text style={styles.sugerenciaTel}>{limpiarTelefono(cli.telefono)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

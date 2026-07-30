@@ -15,7 +15,8 @@ async function handleTimeSelect(sesion, msg) {
     return {
       respuesta:
         `❓ Por favor elige un número del 1 al ${Math.min(slots.length, 10)}.\n\n` +
-        `Si ya no quieres agendar, escribe *"cancelar"*.`,
+        `Si ya no quieres agendar, escribe *"cancelar"*.\n` +
+        `Escribe *"atrás"* para elegir otra fecha.`,
       nuevoEstado: 'TIME_SELECT',
     };
   }
@@ -45,7 +46,8 @@ const { getPlanType } = require('../../db/queries');
         `2️⃣ 2 horas antes\n` +
         `3️⃣ 1 día antes (24 hrs)\n` +
         `4️⃣ Sin recordatorio\n\n` +
-        `_Escribe el número de la opción (1, 2, 3 o 4)._`,
+        `_Escribe el número de la opción (1, 2, 3 o 4)._\n` +
+        `_Escribe *"atrás"* para elegir otro horario._`,
       nuevoEstado: 'REMINDER_SELECT',
     };
   }
@@ -57,11 +59,12 @@ const { getPlanType } = require('../../db/queries');
   const resumen =
     `✅ *Resumen de tu cita:*\n\n` +
     `👤 Nombre: *${sesion.nombre}*\n` +
-    `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
+    `🛀️ Servicio: *${sesion.servicioNombre}*\n` +
     `📅 Fecha: *${fechaTexto}*\n` +
     `⏰ Hora: *${horaTexto}*\n\n` +
     `¿Confirmas tu cita?\n` +
-    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.`;
+    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
+    `_Escribe *"atrás"* para elegir otro horario._`;
 
   return {
     respuesta: resumen,

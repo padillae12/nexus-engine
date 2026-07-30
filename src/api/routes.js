@@ -172,7 +172,17 @@ router.post('/citas', async (req, res) => {
       return res.status(400).json({ message: 'Nombre del cliente, servicio, fecha y hora son obligatorios.' });
     }
 
-    const tel = (telefonoCliente && telefonoCliente.trim()) ? telefonoCliente.trim() : '0000000000';
+    // Normalizar teléfono: limpiar JIDs (@lid, @c.us) y agregar código de país si es de 10 dígitos
+    let telRaw = (telefonoCliente && telefonoCliente.trim()) ? telefonoCliente.trim() : '0000000000';
+    if (telRaw.includes('@')) {
+      // Es un JID de WhatsApp: extraer la parte numérica
+      telRaw = telRaw.split('@')[0].replace(/[^0-9]/g, '');
+    }
+    // Si son 10 dígitos locales, agregar código de país México (52)
+    const tel = (telRaw.replace(/[^0-9]/g, '').length === 10)
+      ? '52' + telRaw.replace(/[^0-9]/g, '')
+      : telRaw;
+
     const cliente = await db.findOrCreateCliente(tel);
     if (nombreCliente) {
       await db.updateClienteNombre(cliente.id, nombreCliente.trim());

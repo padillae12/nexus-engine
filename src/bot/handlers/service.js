@@ -37,8 +37,9 @@ async function handleServiceMenu(sesion, msg) {
 
   return {
     respuesta:
-      `¡Perfecto! ¿Qué servicio necesitas? 🛎️\n\n${lista}\n\n` +
-      `_Puedes escribir el número o el nombre del servicio._`,
+      `¡Perfecto! ¿Qué servicio necesitas? 🛀️\n\n${lista}\n\n` +
+      `_Puedes escribir el número o el nombre del servicio._\n` +
+      `_Escribe *"atrás"* para regresar al menú._`,
     nuevoEstado: 'SERVICE_SELECT',
   };
 }
@@ -98,7 +99,8 @@ async function handleServiceSelect(sesion, msg) {
       respuesta:
         `No entendí cuál servicio quieres 🤔\n\n` +
         `Puedes escribir el número o el nombre:\n\n${lista}\n\n` +
-        `_Escribe "más información" para ver duración y detalles._`,
+        `_Escribe *"más información"* para ver duración y detalles._\n` +
+        `_Escribe *"atrás"* para regresar al menú._`,
       nuevoEstado: 'SERVICE_SELECT',
     };
   }

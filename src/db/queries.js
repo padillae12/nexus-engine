@@ -225,7 +225,8 @@ async function cancelCita(citaId, telefono) {
  */
 async function getCitasActivasCliente(clienteId) {
   const [rows] = await pool.execute(
-    `SELECT c.id, s.nombre AS servicio, c.fecha_inicio, c.estado
+    `SELECT c.id, s.nombre AS servicio, s.id AS servicio_id, s.duracion_min,
+            c.fecha_inicio, c.estado, c.empleado_id
      FROM citas c
      JOIN servicios s ON c.servicio_id = s.id
      WHERE c.cliente_id = ?
@@ -235,6 +236,20 @@ async function getCitasActivasCliente(clienteId) {
     [clienteId]
   );
   return rows;
+}
+
+/**
+ * Actualiza la fecha/hora de una cita existente.
+ * @param {number} citaId
+ * @param {string} fechaInicio  - 'YYYY-MM-DD HH:mm:ss'
+ * @param {string} fechaFin     - 'YYYY-MM-DD HH:mm:ss'
+ */
+async function actualizarFechaHoraCita(citaId, fechaInicio, fechaFin) {
+  const [result] = await pool.execute(
+    `UPDATE citas SET fecha_inicio = ?, fecha_fin = ? WHERE id = ?`,
+    [fechaInicio, fechaFin, citaId]
+  );
+  return result.affectedRows > 0;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -719,4 +734,5 @@ module.exports = {
   getDashboardStats,
   getIngresosDiarios,
   crearBloqueo,
+  actualizarFechaHoraCita,
 };

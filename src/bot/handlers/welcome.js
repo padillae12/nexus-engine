@@ -37,7 +37,10 @@ async function handleWelcome(sesion, msg) {
  * Maneja el estado WAITING_NAME: guarda el nombre y muestra el menú.
  */
 async function handleWaitingName(sesion, msg) {
-  const nombreLimpio = msg.trim().split(' ').slice(0, 3).join(' '); // Máx 3 palabras
+  // Eliminar frases de presentación comunes antes de guardar el nombre
+  const PREFIJOS_NOMBRE = /^(soy|me llamo|mi nombre es|me dicen|soy el|soy la|mi nombre:|nombre:)\s+/i;
+  const rawName = msg.trim().replace(PREFIJOS_NOMBRE, '').trim();
+  const nombreLimpio = rawName.split(' ').slice(0, 3).join(' '); // Máx 3 palabras
 
   if (nombreLimpio.length < 2) {
     return {

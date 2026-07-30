@@ -51,19 +51,30 @@ async function getSlotsDisponibles(fecha, duracionMin, empleadoId = null) {
   const inicioMin = timeToMinutes(horario.hora_inicio);
   const finMin    = timeToMinutes(horario.hora_fin);
 
-  // 2. Generar todos los slots posibles (cada duracionMin minutos)
+  // 2. Calcular el mínimo de minutos permitido si la fecha es HOY
+  //    (buffer de 10 minutos para no mostrar slots que ya pasaron)
+  const ahora = new Date();
+  const hoy   = toDateStr(ahora);
+  let minMinutosPermitidos = -1; // -1 = sin restricción
+  if (fechaStr === hoy) {
+    minMinutosPermitidos = ahora.getHours() * 60 + ahora.getMinutes() + 10;
+  }
+
+  // 3. Generar todos los slots posibles (cada duracionMin minutos)
   const todoSlots = [];
   for (let min = inicioMin; min + duracionMin <= finMin; min += duracionMin) {
+    // Si es hoy, saltar slots que ya pasaron
+    if (minMinutosPermitidos >= 0 && min < minMinutosPermitidos) continue;
     const hh = String(Math.floor(min / 60)).padStart(2, '0');
     const mm = String(min % 60).padStart(2, '0');
     todoSlots.push(`${hh}:${mm}`);
   }
 
-  // 3. Obtener slots ya ocupados en la DB
+  // 4. Obtener slots ya ocupados en la DB
   const ocupados = await getSlotOcupados(fechaStr, empleadoId);
   const ocupadosSet = new Set(ocupados);
 
-  // 4. Filtrar slots ocupados y bloqueados
+  // 5. Filtrar slots ocupados y bloqueados
   const disponibles = [];
   for (const slot of todoSlots) {
     if (ocupadosSet.has(slot)) continue; // ya está reservado

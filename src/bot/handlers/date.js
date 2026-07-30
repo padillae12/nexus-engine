@@ -54,7 +54,8 @@ async function handleDateSelect(sesion, msg) {
       `📆 *${fechaTexto}*\n\n` +
       `Estos son los horarios disponibles:\n\n` +
       `${formatSlotsParaWhatsApp(slots)}\n\n` +
-      `_Responde con el número del horario que prefieres._`,
+      `_Responde con el número del horario que prefieres._\n` +
+      `_Escribe *"atrás"* para elegir otro servicio._`,
     nuevoEstado: 'TIME_SELECT',
   };
 }
