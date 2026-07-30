@@ -876,13 +876,18 @@ async function getCitasCliente(clienteId) {
        c.fecha_fin,
        c.estado,
        c.creado_en,
-       s.nombre AS servicio,
+       COALESCE(c.paciente_nombre, cl.nombre) AS paciente_nombre,
+       c.paciente_nombre                       AS paciente_especifico,
+       cl.nombre                              AS titular_nombre,
+       cl.telefono                            AS titular_telefono,
+       s.nombre                               AS servicio,
        c.servicio_id,
-       COALESCE(c.precio, s.precio) AS precio,
-       c.notas                      AS notas,
+       COALESCE(c.precio, s.precio)           AS precio,
+       c.notas                                AS notas,
        s.duracion_min,
-       u.nombre AS empleado
+       u.nombre                               AS empleado
      FROM citas c
+     JOIN clientes cl ON c.cliente_id = cl.id
      JOIN servicios s ON c.servicio_id = s.id
      LEFT JOIN usuarios u ON c.empleado_id = u.id
      WHERE c.cliente_id = ?

@@ -144,6 +144,33 @@ export default function ClientesScreen() {
               </View>
             </View>
 
+            {/* Personas / Pacientes Afiliados a este Número */}
+            {(() => {
+              const pacientesUnicos = Array.from(
+                new Set(historialCitas.map(c => c.paciente_especifico || c.paciente_nombre || selectedCliente?.nombre))
+              ).filter(Boolean);
+
+              if (pacientesUnicos.length === 0) return null;
+
+              return (
+                <View style={{ marginBottom: 14 }}>
+                  <Text style={[styles.historialTitle, { marginBottom: 6 }]}>PERSONAS ATENDIDAS EN ESTE NÚMERO</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {pacientesUnicos.map((p, idx) => {
+                      const esTitular = p.toLowerCase() === (selectedCliente?.nombre || '').toLowerCase();
+                      return (
+                        <View key={idx} style={{ backgroundColor: esTitular ? '#1F2937' : '#312E81', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: esTitular ? '#374151' : '#6366F1' }}>
+                          <Text style={{ color: esTitular ? '#9CA3AF' : '#818CF8', fontSize: 11, fontWeight: '600' }}>
+                            {esTitular ? `👤 Titular: ${p}` : `👶 Paciente: ${p}`}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })()}
+
             {/* Timeline Historial de Citas */}
             <Text style={styles.historialTitle}>HISTORIAL DE TRATAMIENTOS / VISITAS</Text>
 
@@ -161,6 +188,7 @@ export default function ClientesScreen() {
                     const isCompletada = c.estado === 'completada';
                     const isCancelada = c.estado === 'cancelada';
                     const colorState = isCompletada ? '#6366F1' : isCancelada ? '#EF4444' : '#10B981';
+                    const esOtraPersona = c.paciente_especifico && c.paciente_especifico.toLowerCase() !== (selectedCliente?.nombre || '').toLowerCase();
 
                     return (
                       <View key={c.id} style={styles.citaHistCard}>
@@ -170,13 +198,22 @@ export default function ClientesScreen() {
                             <Text style={[styles.badgeStateText, { color: colorState }]}>{c.estado.toUpperCase()}</Text>
                           </View>
                         </View>
+
+                        {/* Mostrar Paciente si fue agendado para otra persona */}
+                        {esOtraPersona ? (
+                          <View style={[styles.citaMetaRow, { marginBottom: 4 }]}>
+                            <Ionicons name="person" size={12} color="#818CF8" />
+                            <Text style={[styles.citaMetaText, { color: '#818CF8', fontWeight: 'bold' }]}>Paciente: {c.paciente_especifico}</Text>
+                          </View>
+                        ) : null}
+
                         <View style={styles.citaMetaRow}>
                           <Ionicons name="calendar-outline" size={12} color="#6B7280" />
                           <Text style={styles.citaMetaText}>{fechaStr} a las {horaStr}</Text>
                         </View>
                         {c.empleado ? (
                           <View style={styles.citaMetaRow}>
-                            <Ionicons name="person-outline" size={12} color="#6B7280" />
+                            <Ionicons name="medkit-outline" size={12} color="#6B7280" />
                             <Text style={styles.citaMetaText}>{c.empleado}</Text>
                           </View>
                         ) : null}

@@ -205,9 +205,9 @@ async function handleMessage(telefono, mensaje) {
       case 'DATE_SELECT':
         result = {
           respuesta:
-            `📅 ¿Para qué día quieres tu cita?\\n\\n` +
-            `Puedes decirme algo como:\\n` +
-            `• _"mañana"_\\n• _"el lunes"_\\n• _"14 de abril"_\\n• _"15/04"_`,
+            `📅 ¿Para qué día quieres tu cita?\n\n` +
+            `Puedes decirme algo como:\n` +
+            `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_`,
           nuevoEstado: 'DATE_SELECT',
         };
         break;
