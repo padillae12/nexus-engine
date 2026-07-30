@@ -48,9 +48,35 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
     ],
   },
 });
+
+// ── Watchdog de Salud (Health Check & Self-Healing) ──
+function iniciarWatchdog(client) {
+  setInterval(async () => {
+    try {
+      // Intentar obtener el estado de WhatsApp con timeout de 8 segundos
+      const statePromise = client.getState();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout de respuesta')), 8000)
+      );
+
+      const state = await Promise.race([statePromise, timeoutPromise]);
+      if (state !== 'CONNECTED') {
+        console.warn(`⚠️ [Watchdog] Estado de WhatsApp anormal: "${state}". Reiniciando para auto-recuperación...`);
+        process.exit(1);
+      }
+    } catch (err) {
+      console.warn(`⚠️ [Watchdog] Chromium / WhatsApp congelado o sin respuesta (${err.message}). Reiniciando para auto-recuperación...`);
+      process.exit(1);
+    }
+  }, 180000); // Revisar cada 3 minutos
+}
 
 // ─────────────────────────────────────────────────────────────────
 //  QR — solo cuando no hay sesión guardada
@@ -70,6 +96,7 @@ client.on('ready', () => {
   console.log('✅ Nexus-Engine conectado a WhatsApp.');
   console.log('🤖 Bot activo y escuchando mensajes...\n');
   iniciarMotorRecordatorios(client);
+  iniciarWatchdog(client);
 });
 
 // ─────────────────────────────────────────────────────────────────
