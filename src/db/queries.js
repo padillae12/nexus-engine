@@ -612,6 +612,8 @@ async function getAllConfig() {
 async function ensureRemindersSchema() {
   try {
     await pool.query('ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(20) NULL').catch(() => {});
+    await pool.query('ALTER TABLE usuarios ADD COLUMN hora_inicio_comida VARCHAR(10) NULL').catch(() => {});
+    await pool.query('ALTER TABLE usuarios ADD COLUMN hora_fin_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
@@ -622,7 +624,7 @@ async function ensureRemindersSchema() {
         servicio_id INT UNSIGNED NOT NULL,
         PRIMARY KEY (empleado_id, servicio_id)
       ) ENGINE=InnoDB
-    `);
+    `).catch(() => {});
 
     await pool.query(`
       INSERT INTO config_negocio (clave, valor)
@@ -630,7 +632,7 @@ async function ensureRemindersSchema() {
       ON DUPLICATE KEY UPDATE valor = valor
     `).catch(() => {});
 
-    console.log('✅ Esquema MariaDB verificado (empleado_servicios & PLAN_TYPE)');
+    console.log('✅ Esquema MariaDB verificado (empleado_servicios, horario comida & PLAN_TYPE)');
   } catch (e) {
     console.warn('⚠️ Nota sobre esquema:', e.message);
   }
