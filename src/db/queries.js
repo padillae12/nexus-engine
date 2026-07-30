@@ -70,12 +70,19 @@ async function findOrCreateCliente(telefono, nombre = null) {
     }
   }
 
-  // 3. Crear nuevo cliente
-  const [result] = await pool.execute(
-    'INSERT INTO clientes (telefono, nombre) VALUES (?, ?)',
-    [cleanTel, nombre || null]
-  );
-  return { id: result.insertId, telefono: cleanTel, nombre };
+  // 3. Crear nuevo cliente (con manejo seguro de duplicados)
+  try {
+    const [result] = await pool.execute(
+      'INSERT INTO clientes (telefono, nombre) VALUES (?, ?) ON DUPLICATE KEY UPDATE nombre = COALESCE(VALUES(nombre), clientes.nombre)',
+      [cleanTel, nombre]
+    );
+    const id = result.insertId || (await pool.execute('SELECT id FROM clientes WHERE telefono = ?', [cleanTel]))[0][0]?.id;
+    return { id, telefono: cleanTel, nombre };
+  } catch (err) {
+    const [existing] = await pool.execute('SELECT id, telefono, nombre FROM clientes WHERE telefono = ? OR telefono LIKE ?', [cleanTel, `%${last10}`]);
+    if (existing.length > 0) return existing[0];
+    throw err;
+  }
 }
 
 /**
