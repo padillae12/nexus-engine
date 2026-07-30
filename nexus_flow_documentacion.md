@@ -388,6 +388,39 @@ Para redirigir clientes de redes sociales al WhatsApp del bot:
 
 ---
 
+### 8.3 🛡️ BLINDAJE PERMANENTE DE PRODUCCIÓN (PROCEDIMIENTO ANTI-CAÍDAS 24/7)
+
+Para garantizar que el servidor **NUNCA se apague ni se detenga**, incluso si se cierra el terminal SSH (MobaXterm), se corta la conexión o se reinicia la máquina VPS completa, se debe ejecutar el siguiente protocolo de blindaje:
+
+#### Paso 1 — Encender y Guardar el Estado `online` en PM2:
+```bash
+pm2 start nexus-engine && pm2 save
+```
+
+#### Paso 2 — Registrar PM2 como Servicio del Sistema Operativo Linux (Systemd):
+```bash
+pm2 startup
+```
+*(Si la terminal genera un comando con `sudo env PATH=...`, copiarlo completo, pegarlo en la terminal y presionar Enter).*
+
+#### Paso 3 — Verificación de Blindaje Activo:
+Ejecutar `pm2 status`. La columna `status` debe mostrar **online** (en color verde 🟢):
+
+```text
+┌──────────────┬──────────┬─────────┬─────────┬──────────┬────────┬──────────┐
+│ App name     │ id       │ mode    │ status  │ cpu      │ memory │ user     │
+├──────────────┼──────────┼─────────┼─────────┼──────────┼────────┼──────────┤
+│ nexus-engine │ 0        │ fork    │ online  │ 0.3%     │ 115MB  │ padilla  │
+└──────────────┴──────────┴─────────┴─────────┴──────────┴────────┴──────────┘
+```
+
+#### 🛡️ Garantías de este procedimiento:
+1. **Desacoplamiento Total:** Puedes cerrar MobaXterm o apagar tu computadora y el bot seguirá operando 24/7 en segundo plano.
+2. **Resurrección por Reinicio de VPS:** Si el proveedor de la VPS reinicia el servidor por mantenimiento, Linux volverá a encender el bot automáticamente al arrancar.
+3. **Autocuración Watchdog:** Si WhatsApp Web pierde conexión o Chromium se congela, el sistema se reinicia solo en 1.5 segundos.
+
+---
+
 ## 9. Estrategia de Comercialización & Modelo de Suscripción (3 Planes Oficiales)
 
 ### 9.1 Tabla Comparativa de Planes Comerciales
