@@ -957,7 +957,27 @@ async function updateCitaServicioPrecio(citaId, { servicioId, precio, notas }) {
   );
 }
 
+/**
+ * Verifica si un número telefónico pertenece a un empleado o administrador registrado.
+ * @param {string} telefono
+ * @returns {Promise<object|null>}
+ */
+async function esEmpleadoOAdmin(telefono) {
+  if (!telefono) return null;
+  let rawStr = String(telefono).trim().split('@')[0];
+  let searchDigits = rawStr.replace(/[^0-9]/g, '');
+  if (searchDigits.length < 7) return null;
+  const last10 = searchDigits.length >= 10 ? searchDigits.slice(-10) : searchDigits;
+
+  const [rows] = await pool.execute(
+    'SELECT id, nombre, rol FROM usuarios WHERE (telefono = ? OR telefono LIKE ?) AND activo = 1 LIMIT 1',
+    [searchDigits, `%${last10}`]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
 module.exports = {
+  esEmpleadoOAdmin,
   // Bot
   findOrCreateCliente,
   updateClienteNombre,

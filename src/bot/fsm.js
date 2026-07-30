@@ -121,6 +121,14 @@ async function handleMessage(telefono, mensaje) {
   const msg    = mensaje.trim();
   const sesion = getOrCreateSession(telefono);
 
+  // ── Ignorar mensajes de doctores y empleados del negocio ─────────
+  const { esEmpleadoOAdmin } = require('../db/queries');
+  const esPersonal = await esEmpleadoOAdmin(telefono);
+  if (esPersonal) {
+    console.log(`ℹ️ [Bot] Mensaje ignorado de ${telefono} (${esPersonal.nombre}) por ser personal/doctor del negocio.`);
+    return null;
+  }
+
   // ── Registrar/recuperar cliente de la DB ──────────────────────
   if (!sesion.clienteId) {
     const cliente     = await findOrCreateCliente(telefono);
