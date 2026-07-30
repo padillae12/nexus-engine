@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS citas (
   fecha_fin                     DATETIME      NOT NULL,
   estado                        ENUM('pendiente', 'confirmada', 'cancelada', 'completada') NOT NULL DEFAULT 'confirmada',
   precio                        DECIMAL(10,2) NULL,
+  paciente_nombre               VARCHAR(100)  NULL,
   notas                         TEXT          NULL,
   recordatorio_mins             INT UNSIGNED  NOT NULL DEFAULT 120,
   recordatorio_enviado          TINYINT(1)    NOT NULL DEFAULT 0,

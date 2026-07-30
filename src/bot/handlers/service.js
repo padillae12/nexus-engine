@@ -1,5 +1,5 @@
 // src/bot/handlers/service.js
-// Estado SERVICE_SELECT: muestra lista de servicios y captura la elección.
+// Estado SERVICE_SELECT, FOR_WHOM_SELECT y PATIENT_NAME_SELECT
 
 const { getServicios } = require('../../db/queries');
 const { extraerNumeroOpcion } = require('../../utils/regex');
@@ -58,7 +58,7 @@ async function handleServiceMenu(sesion, msg) {
 }
 
 /**
- * Captura la elección del servicio y avanza al estado de fecha.
+ * Captura la elección del servicio y avanza a preguntar para quién es la cita.
  */
 async function handleServiceSelect(sesion, msg) {
   const catalogo = sesion.catalogoServicios || [];
@@ -154,16 +154,92 @@ async function handleServiceSelect(sesion, msg) {
 
   return {
     respuesta: isEn
-      ? `Selected: *${servicioElegido.nombre}*\n` +
-        `${textoEspecialista}` +
-        `📅 For what date would you like your appointment?\n\n` +
+      ? `Selected: *${servicioElegido.nombre}*\n${textoEspecialista}` +
+        `Who is this appointment for?\n\n` +
+        `1. 👤 For me (*${sesion.nombre || 'myself'}*)\n` +
+        `2. 👨‍👩‍👧 For someone else (child, spouse, relative)\n\n` +
+        `_Reply with 1 or 2._`
+      : `Seleccionado: *${servicioElegido.nombre}*\n${textoEspecialista}` +
+        `¿Para quién es esta cita?\n\n` +
+        `1. 👤 Para mí (*${sesion.nombre || 'mí'}*)\n` +
+        `2. 👨‍👩‍👧 Para otra persona (hijo/a, familiar, etc.)\n\n` +
+        `_Responde con 1 o 2._`,
+    nuevoEstado: 'FOR_WHOM_SELECT',
+  };
+}
+
+/**
+ * Maneja la pregunta de para quién es la cita.
+ */
+async function handleForWhomSelect(sesion, msg) {
+  const isEn = sesion.idioma === 'en';
+  const opcion = extraerNumeroOpcion(msg);
+  const msgLower = msg.toLowerCase().trim();
+
+  // Opción 1: Para mí
+  if (opcion === 1 || /^(yo|m[ií]|para m[ií]|me|for me|myself)$/i.test(msgLower)) {
+    sesion.pacienteNombre = sesion.nombre;
+    return {
+      respuesta: isEn
+        ? `📅 For what date would you like your appointment?\n\n` +
+          `_Examples: "tomorrow", "Monday", "April 14"_`
+        : `📅 ¿Para qué día te gustaría tu cita?\n\n` +
+          `_Ejemplos: "mañana", "el lunes", "14 de abril"_`,
+      nuevoEstado: 'DATE_SELECT',
+    };
+  }
+
+  // Opción 2: Para otra persona
+  if (opcion === 2 || /^(otra|otro|alguien|hijo|hija|esposo|esposa|familiar|someone|child|other)$/i.test(msgLower)) {
+    return {
+      respuesta: isEn
+        ? `What is the name of the person attending the appointment?`
+        : `¿Cómo se llama la persona que asistirá a la cita?`,
+      nuevoEstado: 'PATIENT_NAME_SELECT',
+    };
+  }
+
+  return {
+    respuesta: isEn
+      ? `Please reply with 1 or 2:\n1. 👤 For me (*${sesion.nombre || 'myself'}*)\n2. 👨‍👩‍👧 For someone else`
+      : `Por favor responde con 1 o 2:\n1. 👤 Para mí (*${sesion.nombre || 'mí'}*)\n2. 👨‍👩‍👧 Para otra persona`,
+    nuevoEstado: 'FOR_WHOM_SELECT',
+  };
+}
+
+/**
+ * Captura el nombre de la otra persona que asistirá a la cita.
+ */
+async function handlePatientNameSelect(sesion, msg) {
+  const isEn = sesion.idioma === 'en';
+  const PREFIJOS = /^(se llama|su nombre es|es para|para|mi hijo|mi hija|mi esposo|mi esposa|his name is|her name is|for)\s+/i;
+  const rawName = msg.trim().replace(PREFIJOS, '').trim();
+  const nombreLimpio = rawName.split(' ').slice(0, 3).join(' ');
+
+  if (nombreLimpio.length < 2) {
+    return {
+      respuesta: isEn
+        ? "Please write the name of the person attending:"
+        : 'Por favor escribe el nombre de la persona que asistirá:',
+      nuevoEstado: 'PATIENT_NAME_SELECT',
+    };
+  }
+
+  sesion.pacienteNombre = nombreLimpio;
+
+  return {
+    respuesta: isEn
+      ? `Patient: *${nombreLimpio}*\n\n📅 For what date would you like the appointment?\n\n` +
         `_Examples: "tomorrow", "Monday", "April 14"_`
-      : `Seleccionado: *${servicioElegido.nombre}*\n` +
-        `${textoEspecialista}` +
-        `📅 ¿Para qué día te gustaría tu cita?\n\n` +
+      : `Paciente: *${nombreLimpio}*\n\n📅 ¿Para qué día te gustaría la cita?\n\n` +
         `_Ejemplos: "mañana", "el lunes", "14 de abril"_`,
     nuevoEstado: 'DATE_SELECT',
   };
 }
 
-module.exports = { handleServiceMenu, handleServiceSelect };
+module.exports = {
+  handleServiceMenu,
+  handleServiceSelect,
+  handleForWhomSelect,
+  handlePatientNameSelect,
+};

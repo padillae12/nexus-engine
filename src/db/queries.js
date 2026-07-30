@@ -262,12 +262,13 @@ async function isBloqueado(fechaHora, empleadoId = null) {
  * @param {number} [datos.recordatorioMins] - Minutos de anticipación para el recordatorio (ej. 60, 120, 1440)
  * @returns {Promise<number>} ID de la cita creada
  */
-async function createCita({ clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins = 120 }) {
+async function createCita({ clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins = 120, pacienteNombre = null }) {
   try {
+    let notasPaciente = pacienteNombre ? `Paciente: ${pacienteNombre}` : null;
     const [result] = await pool.execute(
-      `INSERT INTO citas (cliente_id, servicio_id, empleado_id, fecha_inicio, fecha_fin, estado, recordatorio_mins)
-       VALUES (?, ?, ?, ?, ?, 'confirmada', ?)`,
-      [clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins]
+      `INSERT INTO citas (cliente_id, servicio_id, empleado_id, fecha_inicio, fecha_fin, estado, recordatorio_mins, paciente_nombre, notas)
+       VALUES (?, ?, ?, ?, ?, 'confirmada', ?, ?, ?)`,
+      [clienteId, servicioId, empleadoId, fechaInicio, fechaFin, recordatorioMins, pacienteNombre, notasPaciente]
     );
     return result.insertId;
   } catch (err) {
@@ -630,6 +631,7 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN precio DECIMAL(10,2) NULL').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN paciente_nombre VARCHAR(100) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notas TEXT NULL').catch(() => {});
     
     await pool.query(`

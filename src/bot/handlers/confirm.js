@@ -37,9 +37,14 @@ async function handleReminderSelect(sesion, msg) {
   const fechaObj   = new Date(sesion.fechaSeleccionada + 'T00:00:00');
   const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
 
+  const esOtraPersona = sesion.pacienteNombre && sesion.pacienteNombre.toLowerCase() !== sesion.nombre?.toLowerCase();
+  const pacienteTexto = esOtraPersona
+    ? (isEn ? `👤 Booked by: *${sesion.nombre}*\n👶 Patient: *${sesion.pacienteNombre}*` : `👤 Agendado por: *${sesion.nombre}*\n👶 Paciente: *${sesion.pacienteNombre}*`)
+    : (isEn ? `👤 Name: *${sesion.nombre}*` : `👤 Nombre: *${sesion.nombre}*`);
+
   const resumen = isEn
     ? `✅ *Appointment Summary:*\n\n` +
-      `👤 Name: *${sesion.nombre}*\n` +
+      `${pacienteTexto}\n` +
       `🛎️ Service: *${sesion.servicioNombre}*\n` +
       `📅 Date: *${fechaTexto}*\n` +
       `⏰ Time: *${horaTexto}*\n` +
@@ -48,7 +53,7 @@ async function handleReminderSelect(sesion, msg) {
       `Reply *"yes"* to confirm or *"no"* to change something.\n` +
       `_Type *"back"* to return._`
     : `✅ *Resumen de tu cita:*\n\n` +
-      `👤 Nombre: *${sesion.nombre}*\n` +
+      `${pacienteTexto}\n` +
       `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
       `📅 Fecha: *${fechaTexto}*\n` +
       `⏰ Hora: *${horaTexto}*\n` +
@@ -82,12 +87,13 @@ async function handleConfirmation(sesion, msg) {
 
     try {
       const citaId = await createCita({
-        clienteId:   sesion.clienteId,
-        servicioId:  sesion.servicioId,
-        empleadoId:  sesion.empleadoId || null,
+        clienteId:        sesion.clienteId,
+        servicioId:       sesion.servicioId,
+        empleadoId:       sesion.empleadoId || null,
         fechaInicio,
         fechaFin,
         recordatorioMins: sesion.recordatorioMins ?? 120,
+        pacienteNombre:   sesion.pacienteNombre || null,
       });
 
       // Notificar al empleado/admin por WhatsApp si aplica (asíncrono)

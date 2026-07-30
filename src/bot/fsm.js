@@ -6,7 +6,7 @@
 
 const { findOrCreateCliente, updateClienteNombre } = require('../db/queries');
 const { handleWelcome, handleWaitingName, handleWaitingNameChange, buildMenuPrincipal } = require('./handlers/welcome');
-const { handleServiceMenu, handleServiceSelect }               = require('./handlers/service');
+const { handleServiceMenu, handleServiceSelect, handleForWhomSelect, handlePatientNameSelect } = require('./handlers/service');
 const { handleDateSelect }                  = require('./handlers/date');
 const { handleTimeSelect }                  = require('./handlers/time');
 const { handleConfirmation, handleEditMenu, handleCancelFlow, handleCancelSelect, handleReminderSelect } = require('./handlers/confirm');
@@ -496,6 +496,18 @@ async function handleMessage(telefono, mensaje) {
     case 'SERVICE_SELECT':
       pushHistory(sesion);
       result = await handleServiceSelect(sesion, msg);
+      break;
+
+    // ── FOR_WHOM_SELECT: ¿Para quién es la cita? ─────────────────
+    case 'FOR_WHOM_SELECT':
+      pushHistory(sesion);
+      result = await handleForWhomSelect(sesion, msg);
+      break;
+
+    // ── PATIENT_NAME_SELECT: capturando nombre del paciente ──────
+    case 'PATIENT_NAME_SELECT':
+      pushHistory(sesion);
+      result = await handlePatientNameSelect(sesion, msg);
       break;
 
     // ── DATE_SELECT: eligiendo fecha ─────────────────────────────
