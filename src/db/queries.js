@@ -359,8 +359,9 @@ async function getCitasPorFecha(fecha) {
        cl.nombre   AS cliente,
        cl.telefono,
        s.nombre    AS servicio,
+       c.servicio_id,
        s.duracion_min,
-       s.precio,
+       COALESCE(c.precio, s.precio) AS precio,
        u.nombre    AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
@@ -399,8 +400,9 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        cl.nombre   AS cliente,
        cl.telefono,
        s.nombre    AS servicio,
+       c.servicio_id,
        s.duracion_min,
-       s.precio,
+       COALESCE(c.precio, s.precio) AS precio,
        u.nombre    AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
@@ -519,7 +521,7 @@ async function getDashboardStats() {
 
   // Ingresos del día — solo citas marcadas como completada
   const [[{ ingresosHoy }]] = await pool.execute(
-    `SELECT COALESCE(SUM(s.precio), 0) AS ingresosHoy
+    `SELECT COALESCE(SUM(COALESCE(c.precio, s.precio)), 0) AS ingresosHoy
      FROM citas c
      JOIN servicios s ON c.servicio_id = s.id
      WHERE DATE(c.fecha_inicio) = CURDATE() AND c.estado = 'completada'`
@@ -548,7 +550,7 @@ async function getIngresosDiarios() {
     `SELECT
        DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d') AS fecha,
        COUNT(c.id)                             AS citas_completadas,
-       COALESCE(SUM(s.precio), 0)              AS total
+       COALESCE(SUM(COALESCE(c.precio, s.precio)), 0) AS total
      FROM citas c
      JOIN servicios s ON c.servicio_id = s.id
      WHERE c.estado = 'completada'
@@ -617,6 +619,7 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN precio DECIMAL(10,2) NULL').catch(() => {});
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empleado_servicios (
@@ -857,7 +860,8 @@ async function getCitasCliente(clienteId) {
        c.estado,
        c.creado_en,
        s.nombre AS servicio,
-       s.precio,
+       c.servicio_id,
+       COALESCE(c.precio, s.precio) AS precio,
        s.duracion_min,
        u.nombre AS empleado
      FROM citas c
@@ -881,10 +885,11 @@ async function getCitaFullInfo(citaId) {
        c.fecha_fin,
        c.estado,
        c.creado_en,
+       c.servicio_id,
        cl.nombre AS cliente_nombre,
        cl.telefono AS cliente_telefono,
        s.nombre AS servicio_nombre,
-       s.precio,
+       COALESCE(c.precio, s.precio) AS precio,
        u.nombre AS empleado_nombre,
        u.id AS empleado_id
      FROM citas c
@@ -909,7 +914,7 @@ async function getReporteIngresosMensual(mesStr) {
        cl.nombre AS cliente,
        cl.telefono,
        s.nombre AS servicio,
-       COALESCE(s.precio, 0) AS precio,
+       COALESCE(c.precio, s.precio, 0) AS precio,
        COALESCE(u.nombre, 'Sin asignar') AS empleado
      FROM citas c
      JOIN clientes cl ON c.cliente_id = cl.id
@@ -921,6 +926,20 @@ async function getReporteIngresosMensual(mesStr) {
     [mesStr]
   );
   return rows;
+}
+
+/**
+ * Actualiza el servicio y/o precio personalizado de una cita existente.
+ */
+async function updateCitaServicioPrecio(citaId, { servicioId, precio }) {
+  const numPrecio = (precio != null && precio !== '') ? Number(precio) : null;
+  await pool.execute(
+    `UPDATE citas 
+     SET servicio_id = COALESCE(?, servicio_id),
+         precio = ?
+     WHERE id = ?`,
+    [servicioId || null, numPrecio, citaId]
+  );
 }
 
 module.exports = {
@@ -953,6 +972,7 @@ module.exports = {
   getCitasCliente,
   getCitaFullInfo,
   getReporteIngresosMensual,
+  updateCitaServicioPrecio,
   // API REST (Nexus-App)
   getCitasPorFecha,
   getCitasFiltradas,

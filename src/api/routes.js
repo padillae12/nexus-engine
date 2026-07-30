@@ -453,6 +453,18 @@ router.get('/config', async (req, res) => {
 //  HISTORIAL CLIENTE, REENVIAR WHATSAPP & REPORTES PDF
 // ─────────────────────────────────────────────────────────────────
 
+// PATCH /api/citas/:id/servicio-precio — Modifica el servicio y/o precio de una cita
+router.patch('/citas/:id/servicio-precio', async (req, res) => {
+  try {
+    const { servicioId, precio } = req.body;
+    await db.updateCitaServicioPrecio(req.params.id, { servicioId, precio });
+    res.json({ ok: true, message: 'Servicio y precio actualizados correctamente' });
+  } catch (err) {
+    console.error('[PATCH /citas/:id/servicio-precio]', err.message);
+    res.status(500).json({ message: 'Error al actualizar servicio o precio' });
+  }
+});
+
 // GET /api/clientes/:id/citas — Historial completo de citas de un cliente
 router.get('/clientes/:id/citas', async (req, res) => {
   try {

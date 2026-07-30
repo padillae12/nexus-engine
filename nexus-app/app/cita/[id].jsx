@@ -3,15 +3,15 @@
 //  Detalle de Cita — Diseño Profesional con Íconos Vectoriales
 // ══════════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView,
+  Alert, ActivityIndicator, ScrollView, Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { updateEstadoCita, reenviarWhatsApp } from '../../services/api';
+import { updateEstadoCita, reenviarWhatsApp, getServicios, updateCitaServicioPrecio } from '../../services/api';
 
 const ESTADO_CONFIG = {
   confirmada: { color: '#10B981', bg: 'rgba(16, 185, 129, 0.08)', label: 'CONFIRMADA' },
@@ -52,6 +52,53 @@ export default function DetalleCitaScreen() {
   const [estado,  setEstado]  = useState(estadoInicial ?? 'confirmada');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+
+  // Estados editables de servicio y precio
+  const [servicioNombre, setServicioNombre] = useState(servicio ?? '');
+  const [precioValor, setPrecioValor] = useState(precio ?? '');
+
+  // Modal Edición de servicio / precio
+  const [modalEditar, setModalEditar] = useState(false);
+  const [catServicios, setCatServicios] = useState([]);
+  const [selectedServicioObj, setSelectedServicioObj] = useState(null);
+  const [precioInput, setPrecioInput] = useState(String(precio ?? ''));
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const handleOpenModalEditar = () => {
+    getServicios()
+      .then(servs => {
+        setCatServicios(servs);
+        const actual = servs.find(s => s.nombre === servicioNombre);
+        if (actual) setSelectedServicioObj(actual);
+      })
+      .catch(console.warn);
+    setPrecioInput(String(precioValor ?? ''));
+    setModalEditar(true);
+  };
+
+  const handleGuardarServicioPrecio = async () => {
+    setSavingEdit(true);
+    try {
+      const servicioId = selectedServicioObj?.id || null;
+      const numPrecio = precioInput.trim() !== '' ? Number(precioInput) : null;
+
+      await updateCitaServicioPrecio(Number(id), {
+        servicioId,
+        precio: numPrecio,
+      });
+
+      if (selectedServicioObj?.nombre) {
+        setServicioNombre(selectedServicioObj.nombre);
+      }
+      setPrecioValor(numPrecio !== null ? String(numPrecio) : '');
+      setModalEditar(false);
+      Alert.alert('¡Actualizado!', 'El servicio y precio final de la cita han sido actualizados.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handleReenviarWhatsApp = async () => {
     setResending(true);
@@ -155,7 +202,7 @@ export default function DetalleCitaScreen() {
                 <Text style={styles.infoLabel}>PRECIO</Text>
               </View>
               <Text style={styles.infoValue}>
-                {precio && precio !== '' ? `$${Number(precio).toLocaleString('es-MX')}` : 'N/D'}
+                {precioValor && precioValor !== '' ? `$${Number(precioValor).toLocaleString('es-MX')}` : 'N/D'}
               </Text>
             </View>
           </View>
@@ -168,7 +215,17 @@ export default function DetalleCitaScreen() {
               <Ionicons name="medical-outline" size={12} color="#6B7280" />
               <Text style={styles.infoLabel}>SERVICIO</Text>
             </View>
-            <Text style={styles.infoValueLg}>{servicio}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.infoValueLg}>{servicioNombre}</Text>
+              <TouchableOpacity
+                style={styles.editServicioChip}
+                onPress={handleOpenModalEditar}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="pencil" size={12} color="#6366F1" />
+                <Text style={styles.editServicioChipText}>Editar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {empleado ? (
@@ -234,6 +291,73 @@ export default function DetalleCitaScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Edición de Servicio y Precio */}
+      <Modal visible={modalEditar} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ajustar Servicio / Precio</Text>
+              <TouchableOpacity style={styles.closeBtn} onPress={() => setModalEditar(false)}>
+                <Ionicons name="close" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>SELECCIONAR SERVICIO ATENDIDO:</Text>
+            <ScrollView style={{ maxHeight: 200, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+              {catServicios.map(srv => {
+                const isSel = selectedServicioObj?.id === srv.id;
+                return (
+                  <TouchableOpacity
+                    key={srv.id}
+                    style={[styles.srvOptionRow, isSel && styles.srvOptionRowSelected]}
+                    onPress={() => {
+                      setSelectedServicioObj(srv);
+                      if (srv.precio != null) setPrecioInput(String(srv.precio));
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={isSel ? "radio-button-on" : "radio-button-off"}
+                      size={16}
+                      color={isSel ? "#6366F1" : "#6B7280"}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.srvOptionName, isSel && styles.srvOptionNameSelected]}>{srv.nombre}</Text>
+                      <Text style={styles.srvOptionPrice}>
+                        ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'} · {srv.duracion_min || 60} min
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <Text style={styles.inputLabel}>PRECIO FINAL A COBRAR ($ MXN):</Text>
+            <TextInput
+              style={styles.precioInput}
+              value={precioInput}
+              onChangeText={setPrecioInput}
+              keyboardType="numeric"
+              placeholder="Ej. 800"
+              placeholderTextColor="#6B7280"
+            />
+
+            <TouchableOpacity
+              style={styles.saveModalBtn}
+              onPress={handleGuardarServicioPrecio}
+              disabled={savingEdit}
+              activeOpacity={0.8}
+            >
+              {savingEdit ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.saveModalBtnText}>Guardar Cambios</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -305,6 +429,19 @@ const styles = StyleSheet.create({
   infoValueLg: { fontSize: 15, fontWeight: '600', color: '#F3F4F6', marginTop: 1 },
   infoSubText: { fontSize: 13, fontWeight: '500', color: '#9CA3AF', marginTop: 1 },
 
+  editServicioChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  editServicioChipText: { color: '#6366F1', fontSize: 11, fontWeight: '700' },
+
   // Acciones
   accionesContainer: { gap: 8 },
   accionesTitle: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1.2, marginBottom: 4 },
@@ -335,4 +472,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#111827',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '85%',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: { color: '#F9FAFB', fontSize: 16, fontWeight: '700' },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputLabel: { color: '#6B7280', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8 },
+  srvOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    backgroundColor: '#161E2E',
+    borderRadius: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  srvOptionRowSelected: {
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderColor: '#6366F1',
+  },
+  srvOptionName: { color: '#F3F4F6', fontSize: 13, fontWeight: '600' },
+  srvOptionNameSelected: { color: '#6366F1', fontWeight: '700' },
+  srvOptionPrice: { color: '#9CA3AF', fontSize: 11, marginTop: 2 },
+  precioInput: {
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 10,
+    color: '#F9FAFB',
+    fontSize: 16,
+    fontWeight: '700',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  saveModalBtn: {
+    backgroundColor: '#6366F1',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  saveModalBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 });

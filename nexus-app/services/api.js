@@ -182,6 +182,18 @@ export async function updateEstadoCita(citaId, estado) {
   });
 }
 
+/**
+ * Modifica el servicio y/o precio final de una cita.
+ * @param {number} citaId
+ * @param {object} params - { servicioId, precio }
+ */
+export async function updateCitaServicioPrecio(citaId, { servicioId, precio }) {
+  return request(`/citas/${citaId}/servicio-precio`, {
+    method: 'PATCH',
+    body: JSON.stringify({ servicioId, precio }),
+  });
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  CLIENTES
 // ══════════════════════════════════════════════════════════════════
