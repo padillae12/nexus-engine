@@ -1,7 +1,7 @@
 // src/bot/handlers/service.js
 // Estado SERVICE_SELECT: muestra lista de servicios y captura la elección.
 
-const { getServicios, getServicioById } = require('../../db/queries');
+const { getServicios } = require('../../db/queries');
 const { extraerNumeroOpcion } = require('../../utils/regex');
 
 // Palabras clave que indican que el cliente quiere más info del servicio
@@ -20,8 +20,8 @@ async function handleServiceMenu(sesion, msg) {
   if (servicios.length === 0) {
     return {
       respuesta: isEn
-        ? '⚠️ No services are available at this time. Please contact us directly.'
-        : '⚠️ No hay servicios disponibles en este momento. Por favor contáctanos directamente.',
+        ? 'No services are available at this time. Please contact us directly.'
+        : 'No hay servicios disponibles en este momento. Por favor contáctanos directamente.',
       nuevoEstado: 'IDLE',
     };
   }
@@ -41,7 +41,7 @@ async function handleServiceMenu(sesion, msg) {
   if (isEn) {
     return {
       respuesta:
-        `Great! Which service do you need? 🛀️\n\n${lista}\n\n` +
+        `Which service do you need?\n\n${lista}\n\n` +
         `_Reply with the number or service name._\n` +
         `_Type *"back"* to return to the menu._`,
       nuevoEstado: 'SERVICE_SELECT',
@@ -50,7 +50,7 @@ async function handleServiceMenu(sesion, msg) {
 
   return {
     respuesta:
-      `¡Perfecto! ¿Qué servicio necesitas? 🛀️\n\n${lista}\n\n` +
+      `¿Qué servicio necesitas?\n\n${lista}\n\n` +
       `_Puedes escribir el número o el nombre del servicio._\n` +
       `_Escribe *"atrás"* para regresar al menú._`,
     nuevoEstado: 'SERVICE_SELECT',
@@ -72,7 +72,7 @@ async function handleServiceSelect(sesion, msg) {
       .map((s, i) => {
         const precio   = s.precio != null ? `$${Number(s.precio).toLocaleString('es-MX')}` : 'Variable';
         const duracion = `${s.duracion_min} min`;
-        return `*${i + 1}.* ${s.nombre}\n   💰 ${precio}  ⏱ ${duracion}`;
+        return `*${i + 1}.* ${s.nombre}\n   Precio: ${precio} | Duración: ${duracion}`;
       })
       .join('\n\n');
 
@@ -109,11 +109,11 @@ async function handleServiceSelect(sesion, msg) {
       .join('\n');
     return {
       respuesta: isEn
-        ? `I didn't recognize that service option 🤔\n\n` +
+        ? `I didn't recognize that service option.\n\n` +
           `You can type the number or service name:\n\n${lista}\n\n` +
           `_Type *"more info"* to view duration & details._\n` +
           `_Type *"back"* to return to the menu._`
-        : `No entendí cuál servicio quieres 🤔\n\n` +
+        : `No entendí cuál servicio quieres.\n\n` +
           `Puedes escribir el número o el nombre:\n\n${lista}\n\n` +
           `_Escribe *"más información"* para ver duración y detalles._\n` +
           `_Escribe *"atrás"* para regresar al menú._`,
@@ -135,15 +135,15 @@ async function handleServiceSelect(sesion, msg) {
     if (preferido) {
       sesion.empleadoId = preferido.empleado_id;
       textoEspecialista = isEn
-        ? `👨‍⚕️ *Assigned Specialist:* ${preferido.empleado_nombre} (Your frequent specialist for ${servicioElegido.nombre})\n\n`
-        : `👨‍⚕️ *Especialista Asignado:* ${preferido.empleado_nombre} (Tu especialista frecuente en ${servicioElegido.nombre})\n\n`;
+        ? `Especialista asignado: *${preferido.empleado_nombre}*\n\n`
+        : `Especialista asignado: *${preferido.empleado_nombre}*\n\n`;
     } else {
       const capacitados = await getEmpleadosPorServicio(servicioElegido.id);
       if (capacitados.length === 1) {
         sesion.empleadoId = capacitados[0].id;
         textoEspecialista = isEn
-          ? `👨‍⚕️ *Assigned Specialist:* ${capacitados[0].nombre}\n\n`
-          : `👨‍⚕️ *Especialista Asignado:* ${capacitados[0].nombre}\n\n`;
+          ? `Especialista asignado: *${capacitados[0].nombre}*\n\n`
+          : `Especialista asignado: *${capacitados[0].nombre}*\n\n`;
       } else {
         sesion.empleadoId = null;
       }
@@ -152,31 +152,16 @@ async function handleServiceSelect(sesion, msg) {
     sesion.empleadoId = null;
   }
 
-  const precioTexto = servicioElegido.precio != null
-    ? ` · *$${Number(servicioElegido.precio).toLocaleString('es-MX')}*`
-    : '';
-
-  if (isEn) {
-    return {
-      respuesta:
-        `✅ Selected *${servicioElegido.nombre}*${precioTexto}.\n\n` +
-        textoEspecialista +
-        `📅 What day would you like your appointment?\n\n` +
-        `You can reply with something like:\n` +
-        `• _"tomorrow"_\n• _"on Monday"_\n• _"April 14"_\n• _"15/04"_\n\n` +
-        `_Type *"back"* to return._`,
-      nuevoEstado: 'DATE_SELECT',
-    };
-  }
-
   return {
-    respuesta:
-      `✅ *${servicioElegido.nombre}* seleccionado${precioTexto}.\n\n` +
-      textoEspecialista +
-      `📅 ¿Para qué día quieres tu cita?\n\n` +
-      `Puedes decirme algo como:\n` +
-      `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_\n\n` +
-      `_Escribe *"atrás"* para regresar._`,
+    respuesta: isEn
+      ? `Selected: *${servicioElegido.nombre}*\n` +
+        `${textoEspecialista}` +
+        `📅 For what date would you like your appointment?\n\n` +
+        `_Examples: "tomorrow", "Monday", "April 14"_`
+      : `Seleccionado: *${servicioElegido.nombre}*\n` +
+        `${textoEspecialista}` +
+        `📅 ¿Para qué día te gustaría tu cita?\n\n` +
+        `_Ejemplos: "mañana", "el lunes", "14 de abril"_`,
     nuevoEstado: 'DATE_SELECT',
   };
 }

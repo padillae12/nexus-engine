@@ -13,7 +13,7 @@ const config = require('../../config');
 async function handleWelcome(sesion, msg) {
   const { nombre, idioma } = sesion;
   const { getConfig } = require('../../db/queries');
-  const businessName = await getConfig('BUSINESS_NAME').catch(() => null) || config.business.name || 'Dental Loquero';
+  const businessName = await getConfig('BUSINESS_NAME').catch(() => null) || config.business.name || 'Nexus';
 
   const isEn = idioma === 'en';
 
@@ -21,11 +21,11 @@ async function handleWelcome(sesion, msg) {
   if (!nombre) {
     return {
       respuesta: isEn
-        ? `👋 Hello! Welcome to *${businessName}*.\n\n` +
-          `I am your virtual assistant and I can help you book, check, or cancel appointments. 😊\n\n` +
+        ? `Hello! Welcome to *${businessName}*.\n\n` +
+          `I am your virtual assistant and I can help you book, check, or cancel appointments.\n\n` +
           `Could you please tell me your name?`
-        : `👋 ¡Hola! Bienvenido/a a *${businessName}*.\n\n` +
-          `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas. 😊\n\n` +
+        : `¡Hola! Bienvenido/a a *${businessName}*.\n\n` +
+          `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas.\n\n` +
           `¿Me podrías decir tu nombre, por favor?`,
       nuevoEstado: 'WAITING_NAME',
     };
@@ -51,8 +51,8 @@ async function handleWaitingName(sesion, msg) {
   if (nombreLimpio.length < 2) {
     return {
       respuesta: isEn
-        ? "🤔 I didn't quite catch your name. What is your name?"
-        : '🤔 No entendí bien tu nombre. ¿Cómo te llamas?',
+        ? "I didn't quite catch your name. What is your name?"
+        : 'No entendí bien tu nombre. ¿Cómo te llamas?',
       nuevoEstado: 'WAITING_NAME',
     };
   }
@@ -62,8 +62,8 @@ async function handleWaitingName(sesion, msg) {
   sesion.nombre = nombreLimpio;
 
   const saludo = isEn
-    ? `Nice to meet you, *${nombreLimpio}*! 🤝\n\n${buildMenuPrincipal(nombreLimpio, 'en')}`
-    : `¡Mucho gusto, *${nombreLimpio}*! 🤝\n\n${buildMenuPrincipal(nombreLimpio, 'es')}`;
+    ? `Nice to meet you, *${nombreLimpio}*!\n\n${buildMenuPrincipal(nombreLimpio, 'en')}`
+    : `¡Mucho gusto, *${nombreLimpio}*!\n\n${buildMenuPrincipal(nombreLimpio, 'es')}`;
 
   return {
     respuesta: saludo,
@@ -74,22 +74,22 @@ async function handleWaitingName(sesion, msg) {
 function buildMenuPrincipal(nombre, idioma = 'es') {
   if (idioma === 'en') {
     return (
-      `How can I help you today, *${nombre}*? 😊\n\n` +
-      `1️⃣ 📅 *Book* an appointment\n` +
-      `2️⃣ 📋 *View* my appointments\n` +
-      `3️⃣ ❌ *Cancel* an appointment\n` +
-      `4️⃣ ℹ️ *Info & Business Hours*\n` +
-      `5️⃣ 🌐 *Español*\n\n` +
+      `How can I help you today, *${nombre}*?\n\n` +
+      `1. 📅 *Book* an appointment\n` +
+      `2. 📋 *View* my appointments\n` +
+      `3. ❌ *Cancel* an appointment\n` +
+      `4. ℹ️ *Info & Business Hours*\n` +
+      `5. 🌐 *Español*\n\n` +
       `_Reply with the option number (1, 2, 3, 4, 5) or tell me what you need._`
     );
   }
   return (
-    `¿En qué te puedo ayudar hoy, *${nombre}*? 😊\n\n` +
-    `1️⃣ 📅 *Agendar* una cita\n` +
-    `2️⃣ 📋 *Ver* mis citas\n` +
-    `3️⃣ ❌ *Cancelar* una cita\n` +
-    `4️⃣ ℹ️ *Información y Horarios*\n` +
-    `5️⃣ 🌐 *English*\n\n` +
+    `¿En qué te puedo ayudar hoy, *${nombre}*?\n\n` +
+    `1. 📅 *Agendar* una cita\n` +
+    `2. 📋 *Ver* mis citas\n` +
+    `3. ❌ *Cancelar* una cita\n` +
+    `4. ℹ️ *Información y Horarios*\n` +
+    `5. 🌐 *English*\n\n` +
     `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3, 4 o 5)._`
   );
 }
