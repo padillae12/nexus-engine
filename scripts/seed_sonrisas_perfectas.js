@@ -43,6 +43,7 @@ async function runSeed() {
       ['MIN_BOOKING_HOURS', '4'],
       ['MAX_BOOKING_DAYS', '30'],
       ['CANCEL_HOURS_LIMIT', '24'],
+      ['MAX_ACTIVE_APPOINTMENTS', '2'],
       ['ADMIN_PIN', '2026'],
       ['PLAN_TYPE', 'pro'],
       ['EMERGENCY_PHONE', '662 987 6543'],

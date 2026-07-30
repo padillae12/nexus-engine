@@ -26,6 +26,25 @@ async function handleServiceMenu(sesion, msg) {
     };
   }
 
+  // ── Filtro Anti-Spam / Anti-Troll: Verificar si el cliente ya tiene demasiadas citas activas ──
+  const { getCitasActivasCliente, getConfig } = require('../../db/queries');
+  const maxCitasPermitidas = Number(await getConfig('MAX_ACTIVE_APPOINTMENTS').catch(() => null)) || 2;
+  const citasActivas = await getCitasActivasCliente(sesion.clienteId).catch(() => []);
+
+  if (citasActivas.length >= maxCitasPermitidas) {
+    const emergencyPhone = await getConfig('EMERGENCY_PHONE').catch(() => null) || 'recepción';
+    return {
+      respuesta: isEn
+        ? `⚠️ Hello *${sesion.nombre || 'Customer'}*, you currently have *${citasActivas.length} active appointments* booked.\n\n` +
+          `To ensure availability and prevent abuse, automatic booking via WhatsApp is limited to ${maxCitasPermitidas} active appointments per client.\n\n` +
+          `If you need an additional appointment or specialized attention, please contact reception directly at *${emergencyPhone}*. 😊`
+        : `⚠️ Hola *${sesion.nombre || 'cliente'}*, actualmente ya tienes *${citasActivas.length} citas activas* agendadas.\n\n` +
+          `Para garantizar la disponibilidad de horarios y evitar bloqueos falsos, el agendamiento automático por WhatsApp está limitado a ${maxCitasPermitidas} citas activas por cliente.\n\n` +
+          `Si necesitas agendar una cita adicional o atención especial, por favor comunícate directamente con recepción al *${emergencyPhone}*. 😊`,
+      nuevoEstado: 'MAIN_MENU',
+    };
+  }
+
   // Guardar catálogo en sesión para usarlo al recibir la opción
   sesion.catalogoServicios = servicios;
 
