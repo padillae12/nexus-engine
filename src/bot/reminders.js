@@ -92,9 +92,23 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
     const jid = await getWhatsAppJid(client, empleadoInfo.telefono);
     if (!jid) return;
 
-    const fechaObj = new Date(citaInfo.fechaInicio);
+    let fechaObj = citaInfo.fechaInicio instanceof Date ? citaInfo.fechaInicio : new Date(citaInfo.fechaInicio);
+    if (isNaN(fechaObj.getTime())) fechaObj = new Date();
     const fechaTexto = formatFechaEspanol(fechaObj);
-    const horaTexto = citaInfo.fechaInicio.split(' ')[1]?.slice(0, 5) || '';
+
+    let horaTexto = citaInfo.hora || '';
+    if (!horaTexto) {
+      const rawStr = String(citaInfo.fechaInicio || '');
+      if (rawStr.includes(' ')) {
+        horaTexto = rawStr.split(' ')[1]?.slice(0, 5) || '';
+      } else if (rawStr.includes('T')) {
+        horaTexto = rawStr.split('T')[1]?.slice(0, 5) || '';
+      } else if (citaInfo.fechaInicio instanceof Date) {
+        const h = String(citaInfo.fechaInicio.getHours()).padStart(2, '0');
+        const m = String(citaInfo.fechaInicio.getMinutes()).padStart(2, '0');
+        horaTexto = `${h}:${m}`;
+      }
+    }
 
     const mensaje =
       `🔔 *NUEVA CITA ASIGNADA*\n\n` +
