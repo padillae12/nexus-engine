@@ -8,7 +8,8 @@
     "start:bot": "node src/bot/index.js",
     "start:api": "node src/api/server.js",
     "dev:bot": "node --watch src/bot/index.js",
-    "dev:api": "node --watch src/api/server.js"
+    "dev:api": "node --watch src/api/server.js",
+    "seed:sonrisas": "node scripts/seed_sonrisas_perfectas.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
