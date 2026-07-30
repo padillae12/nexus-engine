@@ -14,7 +14,7 @@ import {
   Vibration,
 } from 'react-native';
 
-const PIN_LENGTH = 5;
+const PIN_LENGTH = 4;
 
 export default function PinModal({ visible, onClose, onSubmit, loading, error }) {
   const [pin, setPin] = useState('');
@@ -55,7 +55,7 @@ export default function PinModal({ visible, onClose, onSubmit, loading, error })
         <View style={styles.card}>
           <Text style={styles.badgeLabel}>SEGURIDAD</Text>
           <Text style={styles.title}>Autenticación de Administrador</Text>
-          <Text style={styles.subtitle}>Ingrese su PIN de 5 dígitos para continuar</Text>
+          <Text style={styles.subtitle}>Ingrese su PIN de 4 dígitos para continuar</Text>
 
           {/* Indicadores de PIN */}
           <View style={styles.dotsRow}>

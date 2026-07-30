@@ -456,7 +456,7 @@ Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
 • Teléfono de emergencias médicas (opcional):
 
 6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
-• NIP / PIN secreto de 4 a 6 dígitos para acceder al modo Admin en tu App: [ ______ ]
+• PIN secreto de 4 dígitos para acceder al modo Admin en tu App: [ ____ ]
 ```
 
 ---
