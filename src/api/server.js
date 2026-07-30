@@ -4,6 +4,7 @@ const cors = require('cors');
 
 // Importar rutas
 const apiRoutes = require('./routes');
+const facebookRoutes = require('./facebookWebhook');
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Montar rutas
 app.use('/api', apiRoutes);
+app.use('/api', facebookRoutes);
 
 // Puerto
 const PORT = process.env.API_PORT || 3001;

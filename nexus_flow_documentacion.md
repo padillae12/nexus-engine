@@ -371,7 +371,41 @@ Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
 • Requisitos de primera cita (Ej. Traer identificación, llegar 10 min antes):
 • Métodos de pago aceptados (Efectivo, Tarjeta, Transferencia, Aseguradoras):
 • Teléfono de emergencias médicas (opcional):
+```
+
+---
+
+## 13. Integración de Facebook Messenger e Instagram Direct (Guía Paso a Paso)
+
+Nexus-Engine cuenta con un motor omnicanal que conecta **Facebook Messenger** e **Instagram Direct** al mismo bot bilingüe y a la misma base de datos de citas.
+
+### 13.1 Pasos en Meta Developers Portal:
+
+1. **Crear App en Meta:**
+   - Ve a [developers.facebook.com](https://developers.facebook.com) y crea una App de tipo **"Empresa" / "Business"**.
+2. **Agregar el producto Messenger:**
+   - En la sección de productos, agrega **Messenger** e **Instagram Graph API**.
+3. **Vincular la Página de Facebook e Instagram:**
+   - Selecciona la Página de Facebook oficial del cliente e Instagram empresarial vinculado.
+   - Genera el **Page Access Token**.
+4. **Configurar el Webhook:**
+   - **URL del Webhook:** `https://tu-dominio-o-ip-vps/api/webhooks/facebook`
+   - **Verify Token:** `nexus_secret_verify_token` (o el token personalizado configurado en tu `.env`).
+   - Suscribir a los eventos: `messages`, `messaging_postbacks`, `instagram_manage_messages`.
+
+### 13.2 Configuración de Variables de Entorno en el VPS (`.env`):
+
+Agrega las siguientes variables en tu archivo `~/nexus-engine/.env`:
+
+```env
+FB_VERIFY_TOKEN=nexus_secret_verify_token
+FB_PAGE_ACCESS_TOKEN=EAAB...tu_token_aqui...
+```
+
+Reinicia el servidor para aplicar:
+```bash
+pm2 restart all
+```
 
 6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
 • PIN secreto de 4 a 6 dígitos para acceder al panel de administración: [ ______ ]
-```
