@@ -489,6 +489,8 @@ router.post('/citas/:id/reenviar-whatsapp', async (req, res) => {
   }
 });
 
+const { LOGO_BASE64 } = require('../utils/logo');
+
 // GET /api/reportes/ingresos/html — Genera plantilla PDF/Imprimible membretada
 router.get('/reportes/ingresos/html', async (req, res) => {
   try {
@@ -499,7 +501,7 @@ router.get('/reportes/ingresos/html', async (req, res) => {
     const nombreNegocio = config.BUSINESS_NAME || 'Dental Loquero';
     const direccion = config.BUSINESS_ADDRESS || config.UBICACION || 'Orozco y Berra 2229, Col. Constitución';
     const telefono = config.BUSINESS_PHONE || '686 271 8911';
-    const logoUrl = config.BUSINESS_LOGO_URL || '';
+    const logoUrl = config.BUSINESS_LOGO_URL || LOGO_BASE64;
 
     const totalIngresos = citas.reduce((sum, c) => sum + Number(c.precio || 0), 0);
     const totalCitas = citas.length;
@@ -509,7 +511,7 @@ router.get('/reportes/ingresos/html', async (req, res) => {
     const nombreMes = dateObj.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
 
     const logoHtml = logoUrl 
-      ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; max-width: 180px; object-fit: contain;" />`
+      ? `<img src="${logoUrl}" alt="Logo" style="max-height: 70px; max-width: 220px; object-fit: contain;" />`
       : `<div style="font-size: 20px; font-weight: 800; color: #4F46E5; letter-spacing: 1px;">${nombreNegocio.toUpperCase()}</div>`;
 
     const filasHtml = citas.map((c, i) => `
@@ -626,6 +628,45 @@ router.get('/reportes/ingresos/html', async (req, res) => {
   } catch (err) {
     console.error('[GET /reportes/ingresos/html]', err.message);
     res.status(500).send('Error al generar el reporte contable');
+  }
+});
+router.get('/reportes/ingresos/excel', async (req, res) => {
+  try {
+    const mesStr = req.query.mes || new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+    const citas = await db.getReporteIngresosMensual(mesStr);
+    const config = await db.getAllConfig().catch(() => ({}));
+    const nombreNegocio = config.BUSINESS_NAME || 'Dental Loquero';
+
+    const [y, m] = mesStr.split('-');
+    const dateObj = new Date(Number(y), Number(m) - 1, 1);
+    const nombreMes = dateObj.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
+
+    // UTF-8 BOM (\uFEFF) para apertura directa y perfecta en Microsoft Excel
+    let csv = '\uFEFF';
+    csv += `REPORTE CONTABLE DE INGRESOS - ${nombreNegocio.toUpperCase()}\n`;
+    csv += `PERIODO: ${nombreMes}\n\n`;
+    csv += `FECHA Y HORA,CLIENTE,TELEFONO,SERVICIO,ESPECIALISTA,MONTO (MXN)\n`;
+
+    let totalIngresos = 0;
+    citas.forEach(c => {
+      const precioNum = Number(c.precio || 0);
+      totalIngresos += precioNum;
+      const clienteEsc = `"${(c.cliente || '').replace(/"/g, '""')}"`;
+      const servicioEsc = `"${(c.servicio || '').replace(/"/g, '""')}"`;
+      const empleadoEsc = `"${(c.empleado || '').replace(/"/g, '""')}"`;
+      csv += `"${c.fecha}",${clienteEsc},"${c.telefono || ''}",${servicioEsc},${empleadoEsc},${precioNum}\n`;
+    });
+
+    csv += `\n`;
+    csv += `TOTAL CITAS COMPLETADAS,${citas.length}\n`;
+    csv += `TOTAL INGRESOS,$${totalIngresos.toLocaleString('es-MX')} MXN\n`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Reporte_Ingresos_${nombreNegocio.replace(/\s+/g, '_')}_${mesStr}.csv"`);
+    res.status(200).send(csv);
+  } catch (err) {
+    console.error('[GET /reportes/ingresos/excel]', err.message);
+    res.status(500).send('Error al generar el reporte en Excel');
   }
 });
 

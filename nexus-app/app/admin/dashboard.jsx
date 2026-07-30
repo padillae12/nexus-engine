@@ -9,7 +9,7 @@ import {
   TouchableOpacity, RefreshControl, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getDashboardStats, getIngresosDiarios, getReportePdfUrl } from '../../services/api';
+import { getDashboardStats, getIngresosDiarios, getReportePdfUrl, getReporteExcelUrl } from '../../services/api';
 
 // Tarjeta de métrica ejecutiva
 function StatCard({ label, value, trend, color }) {
@@ -58,12 +58,27 @@ function IngresoRow({ fecha, citas, total, isHoy }) {
   );
 }
 
+const getUltimosMeses = () => {
+  const meses = [];
+  const hoy = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+    meses.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return meses;
+};
+
 export default function DashboardScreen() {
   const [stats,    setStats]    = useState(null);
   const [ingresos, setIngresos] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedMes, setSelectedMes] = useState(new Date().toISOString().slice(0, 7));
+
+  const listaMeses = getUltimosMeses();
 
   const cargarDatos = useCallback(async () => {
     try {
@@ -140,17 +155,55 @@ export default function DashboardScreen() {
             ${totalMes.toLocaleString('es-MX')} MXN
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.pdfBtn}
-          onPress={() => {
-            const url = getReportePdfUrl();
-            Linking.openURL(url);
-          }}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="document-text-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.pdfBtnText}>Reporte PDF</Text>
-        </TouchableOpacity>
+      </View>
+
+      {/* ── Selector de Mes y Exportación de Reportes ────────── */}
+      <View style={styles.reportesCard}>
+        <Text style={styles.reportesTitle}>EXPORTAR REPORTES CONTABLES</Text>
+        <Text style={styles.reportesSub}>Selecciona el mes para descargar o imprimir:</Text>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mesScroll} contentContainerStyle={styles.mesContainer}>
+          {listaMeses.map(m => {
+            const active = selectedMes === m.key;
+            return (
+              <TouchableOpacity
+                key={m.key}
+                style={[styles.mesChip, active && styles.mesChipActive]}
+                onPress={() => setSelectedMes(m.key)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={12} color={active ? '#6366F1' : '#6B7280'} />
+                <Text style={[styles.mesChipText, active && styles.mesChipTextActive]}>{m.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.reporteActionsRow}>
+          <TouchableOpacity
+            style={styles.pdfBtn}
+            onPress={() => {
+              const url = getReportePdfUrl(selectedMes);
+              Linking.openURL(url);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="document-text-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.pdfBtnText}>Descargar PDF</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.excelBtn}
+            onPress={() => {
+              const url = getReporteExcelUrl(selectedMes);
+              Linking.openURL(url);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="stats-chart-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.excelBtnText}>Descargar Excel</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Historial por día ─────────────────────────────────── */}
@@ -300,16 +353,65 @@ const styles = StyleSheet.create({
   emptyText: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', marginBottom: 4 },
   emptyHint: { color: '#6B7280', fontSize: 12, textAlign: 'center' },
 
-  pdfBtn: {
+  // Reportes Card & Month Selector
+  reportesCard: {
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    marginBottom: 24,
+  },
+  reportesTitle: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1.2 },
+  reportesSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2, marginBottom: 12 },
+
+  mesScroll: { maxHeight: 36, marginBottom: 14 },
+  mesContainer: { gap: 8, alignItems: 'center' },
+  mesChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#4F46E5',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#161E2E',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  mesChipActive: {
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderColor: '#6366F1',
+  },
+  mesChipText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
+  mesChipTextActive: { color: '#6366F1', fontWeight: '700' },
+
+  reporteActionsRow: { flexDirection: 'row', gap: 10 },
+  pdfBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#4F46E5',
+    paddingVertical: 10,
     borderRadius: 8,
   },
   pdfBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  excelBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  excelBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',

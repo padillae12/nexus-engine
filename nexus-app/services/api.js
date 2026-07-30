@@ -204,6 +204,15 @@ export function getReportePdfUrl(mesStr) {
 }
 
 /**
+ * Obtiene la URL pública para descargar el reporte contable en Excel/CSV.
+ * @param {string} mesStr Ej: '2026-07'
+ */
+export function getReporteExcelUrl(mesStr) {
+  const mes = mesStr || new Date().toISOString().slice(0, 7);
+  return `${BASE_URL}/reportes/ingresos/excel?mes=${mes}`;
+}
+
+/**
  * Obtiene el historial completo de citas de un cliente.
  * @param {number} clienteId
  */
