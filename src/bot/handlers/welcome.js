@@ -71,6 +71,37 @@ async function handleWaitingName(sesion, msg) {
   };
 }
 
+/**
+ * Maneja el cambio de nombre solicitado por el cliente.
+ */
+async function handleWaitingNameChange(sesion, msg) {
+  const isEn = sesion.idioma === 'en';
+  const PREFIJOS_NOMBRE = /^(soy|me llamo|mi nombre es|me dicen|soy el|soy la|mi nombre:|nombre:|i am|my name is|i'm|im)\s+/i;
+  const rawName = msg.trim().replace(PREFIJOS_NOMBRE, '').trim();
+  const nombreLimpio = rawName.split(' ').slice(0, 3).join(' ');
+
+  if (nombreLimpio.length < 2) {
+    return {
+      respuesta: isEn
+        ? 'Please write your new name:'
+        : 'Por favor escribe tu nuevo nombre:',
+      nuevoEstado: 'WAITING_NAME_CHANGE',
+    };
+  }
+
+  await updateClienteNombre(sesion.clienteId, nombreLimpio);
+  sesion.nombre = nombreLimpio;
+
+  const respuesta = isEn
+    ? `Done! Your name has been updated to *${nombreLimpio}*.\n\n${buildMenuPrincipal(nombreLimpio, 'en')}`
+    : `¡Listo! Tu nombre ha sido actualizado a *${nombreLimpio}*.\n\n${buildMenuPrincipal(nombreLimpio, 'es')}`;
+
+  return {
+    respuesta,
+    nuevoEstado: 'MAIN_MENU',
+  };
+}
+
 function buildMenuPrincipal(nombre, idioma = 'es') {
   if (idioma === 'en') {
     return (
@@ -79,8 +110,9 @@ function buildMenuPrincipal(nombre, idioma = 'es') {
       `2. 📋 *View* my appointments\n` +
       `3. ❌ *Cancel* an appointment\n` +
       `4. ℹ️ *Info & Business Hours*\n` +
-      `5. 🌐 *Español*\n\n` +
-      `_Reply with the option number (1, 2, 3, 4, 5) or tell me what you need._`
+      `5. ✏️ *Change my name*\n` +
+      `6. 🌐 *Español*\n\n` +
+      `_Reply with the option number (1, 2, 3, 4, 5, 6) or tell me what you need._`
     );
   }
   return (
@@ -89,9 +121,10 @@ function buildMenuPrincipal(nombre, idioma = 'es') {
     `2. 📋 *Ver* mis citas\n` +
     `3. ❌ *Cancelar* una cita\n` +
     `4. ℹ️ *Información y Horarios*\n` +
-    `5. 🌐 *English*\n\n` +
-    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3, 4 o 5)._`
+    `5. ✏️ *Cambiar mi nombre*\n` +
+    `6. 🌐 *English*\n\n` +
+    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3, 4, 5 o 6)._`
   );
 }
 
-module.exports = { handleWelcome, handleWaitingName, buildMenuPrincipal };
+module.exports = { handleWelcome, handleWaitingName, handleWaitingNameChange, buildMenuPrincipal };

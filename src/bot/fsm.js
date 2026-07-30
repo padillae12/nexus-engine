@@ -4,8 +4,8 @@
 //  Punto central que recibe CADA mensaje y decide qué hacer.
 // ══════════════════════════════════════════════════════════════════
 
-const { findOrCreateCliente }               = require('../db/queries');
-const { handleWelcome, handleWaitingName, buildMenuPrincipal } = require('./handlers/welcome');
+const { findOrCreateCliente, updateClienteNombre } = require('../db/queries');
+const { handleWelcome, handleWaitingName, handleWaitingNameChange, buildMenuPrincipal } = require('./handlers/welcome');
 const { handleServiceMenu, handleServiceSelect }               = require('./handlers/service');
 const { handleDateSelect }                  = require('./handlers/date');
 const { handleTimeSelect }                  = require('./handlers/time');
@@ -150,6 +150,24 @@ async function handleMessage(telefono, mensaje) {
     return `🌐 Idioma cambiado a *Español*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'amigo/a', 'es');
   }
 
+  // ── Comando "cambiar nombre" en cualquier estado ───────────────
+  if (/^(cambiar\s+nombre|cambiar\s+mi\s+nombre|change\s+name|change\s+my\s+name|mi\s+nombre\s+es|me\s+llamo)\b/i.test(msg)) {
+    const PREFIJOS = /^(cambiar\s+nombre|cambiar\s+mi\s+nombre|change\s+name|change\s+my\s+name|mi\s+nombre\s+es|me\s+llamo)\s*/i;
+    const posibleNombre = msg.replace(PREFIJOS, '').trim();
+    if (posibleNombre.length >= 2) {
+      await updateClienteNombre(sesion.clienteId, posibleNombre);
+      sesion.nombre = posibleNombre;
+      const isEn = sesion.idioma === 'en';
+      return isEn
+        ? `Done! Your name has been updated to *${posibleNombre}*.\n\n${buildMenuPrincipal(posibleNombre, 'en')}`
+        : `¡Listo! Tu nombre ha sido actualizado a *${posibleNombre}*.\n\n${buildMenuPrincipal(posibleNombre, 'es')}`;
+    }
+
+    sesion.state = 'WAITING_NAME_CHANGE';
+    const isEn = sesion.idioma === 'en';
+    return isEn ? `What is your new name?` : `¿Cuál es tu nuevo nombre?`;
+  }
+
   // ── Comando "atrás" — navega al estado anterior ───────────────
   if (esAtras(msg)) {
     const hist = sesion.stateHistory || [];
@@ -262,7 +280,12 @@ async function handleMessage(telefono, mensaje) {
       result = await handleWaitingName(sesion, msg);
       break;
 
-    // ── MAIN_MENU: el usuario elige 1, 2, 3 o 4 ─────────────────
+    // ── WAITING_NAME_CHANGE: cambiando nombre del usuario ─────────
+    case 'WAITING_NAME_CHANGE':
+      result = await handleWaitingNameChange(sesion, msg);
+      break;
+
+    // ── MAIN_MENU: el usuario elige opciones del menú ─────────────
     case 'MAIN_MENU': {
       const opcion = msg.trim();
       if (opcion === '1' || quiereAgendar(msg)) {
@@ -324,7 +347,14 @@ async function handleMessage(telefono, mensaje) {
               `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
           nuevoEstado: 'MAIN_MENU'
         };
-      } else if (opcion === '5' || /^(english|ingl[eé]s|espa[nñ]ol|spanish|idioma|language)$/i.test(msg)) {
+      } else if (opcion === '5' || /^(cambiar\s+nombre|cambiar\s+mi\s+nombre|change\s+name|change\s+my\s+name|nombre)$/i.test(msg)) {
+        sesion.state = 'WAITING_NAME_CHANGE';
+        const isEn = sesion.idioma === 'en';
+        result = {
+          respuesta: isEn ? `What is your new name?` : `¿Cuál es tu nuevo nombre?`,
+          nuevoEstado: 'WAITING_NAME_CHANGE'
+        };
+      } else if (opcion === '6' || /^(english|ingl[eé]s|espa[nñ]ol|spanish|idioma|language)$/i.test(msg)) {
         sesion.idioma = sesion.idioma === 'en' ? 'es' : 'en';
         const msgConfirmacion = sesion.idioma === 'en'
           ? `🌐 Language changed to *English*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'friend', 'en')
