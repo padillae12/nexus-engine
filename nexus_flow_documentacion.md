@@ -65,6 +65,7 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 - **RF-12 (Gestión de Perfil / Cambio de Nombre):** Permitir al cliente actualizar su nombre registrado mediante la Opción 5 o el comando *"cambiar nombre"*.
 - **RF-13 (Filtro Inteligente de Personal):** Detectar automáticamente a los doctores y empleados registrados para que el bot no intente agendarlos como clientes ni genere errores.
 - **RF-14 (Seguridad App Admin con PIN Estándar de 4 Dígitos):** Proteger el panel administrativo en la App mediante un PIN secreto de 4 dígitos.
+- **RF-15 (Límite Configurable de Citas Activas Anti-Troll):** El dueño/administrador del negocio puede definir el límite máximo de citas activas que un cliente puede tener agendadas por WhatsApp (parámetro `MAX_ACTIVE_APPOINTMENTS`, por defecto 2). Si el cliente alcanza el límite, el bot detiene el flujo automático y sugiere contactar a recepción por llamada o presencial.
 
 ---
 
@@ -108,6 +109,11 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
   - **Actor:** Recepcionista / Administrador de la Clínica.
   - **Flujo:** Ingresa a la App ➔ Toca el logo 5 veces ➔ Ingresa PIN de 4 dígitos ➔ Visualiza citas del día, agenda manual o exporta reporte contable PDF/CSV.
   - **Resultado:** Control absoluto de la agenda del negocio en tiempo real.
+
+- **CU-07 (Protección Anti-Spam / Límite de Citas Activas):**
+  - **Actor:** Cliente con 2 o más citas activas pendientes.
+  - **Flujo:** Intenta agender una 3ra cita por WhatsApp ➔ El bot detecta que superó el parámetro `MAX_ACTIVE_APPOINTMENTS`.
+  - **Resultado:** El bot emite una alerta cortés indicando que alcanzó el límite de citas automáticas y proporciona el número telefónico de recepción para agendar por llamada o en persona.
 
 ---
 
@@ -470,6 +476,9 @@ Ejemplos:
 
 6️⃣ SEGURIDAD DE LA APP:
 • PIN secreto de 4 dígitos para acceder al modo Admin en tu App: [ ____ ]
+
+7️⃣ POLÍTICA ANTI-SPAM:
+• Límite de citas activas por cliente en el bot: [ 2 (Recomendado) / 3 / Ilimitado ]
 ```
 
 ---
@@ -524,6 +533,9 @@ Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
 
 6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
 • PIN secreto de 4 dígitos para acceder al modo Admin en tu App: [ ____ ]
+
+7️⃣ POLÍTICA ANTI-SPAM Y LÍMITE DE CITAS ACTIVAS:
+• Máximo de citas activas simultáneas que un cliente puede agendar por el bot: [ 2 (Recomendado) / 3 / Ilimitado ]
 ```
 
 ---
