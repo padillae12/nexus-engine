@@ -119,8 +119,27 @@ function formatSlotsParaWhatsApp(slots) {
  * Ejemplo: "lunes 14 de abril de 2026"
  * @param {Date} date
  */
+/**
+ * Formatea una fecha Date como texto legible en español.
+ * Ejemplo: "lunes 14 de abril de 2026"
+ * @param {Date} date
+ */
 function formatFechaEspanol(date) {
   return date.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year:    'numeric',
+    month:   'long',
+    day:     'numeric',
+  });
+}
+
+/**
+ * Formatea una fecha Date como texto legible en inglés.
+ * Ejemplo: "Monday, April 14, 2026"
+ * @param {Date} date
+ */
+function formatFechaIngles(date) {
+  return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year:    'numeric',
     month:   'long',
@@ -132,6 +151,7 @@ module.exports = {
   getSlotsDisponibles,
   formatSlotsParaWhatsApp,
   formatFechaEspanol,
+  formatFechaIngles,
   toDateStr,
   toTimeStr,
 };

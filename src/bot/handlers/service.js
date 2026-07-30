@@ -7,18 +7,21 @@ const { extraerNumeroOpcion } = require('../../utils/regex');
 // Palabras clave que indican que el cliente quiere más info del servicio
 const PALABRAS_MAS_INFO = ['más información', 'mas informacion', 'más info', 'mas info',
   'detalles', 'cuánto dura', 'cuanto dura', 'duración', 'duracion',
-  'cuánto tiempo', 'cuanto tiempo', 'info', 'información', 'informacion'];
+  'cuánto tiempo', 'cuanto tiempo', 'info', 'información', 'informacion',
+  'more info', 'details', 'how long', 'duration', 'information'];
 
 /**
  * Muestra la lista de servicios disponibles con precio.
- * La duración solo se muestra si el cliente pide más información.
  */
 async function handleServiceMenu(sesion, msg) {
   const servicios = await getServicios();
+  const isEn = sesion.idioma === 'en';
 
   if (servicios.length === 0) {
     return {
-      respuesta: '⚠️ No hay servicios disponibles en este momento. Por favor contáctanos directamente.',
+      respuesta: isEn
+        ? '⚠️ No services are available at this time. Please contact us directly.'
+        : '⚠️ No hay servicios disponibles en este momento. Por favor contáctanos directamente.',
       nuevoEstado: 'IDLE',
     };
   }
@@ -35,6 +38,16 @@ async function handleServiceMenu(sesion, msg) {
     })
     .join('\n');
 
+  if (isEn) {
+    return {
+      respuesta:
+        `Great! Which service do you need? 🛀️\n\n${lista}\n\n` +
+        `_Reply with the number or service name._\n` +
+        `_Type *"back"* to return to the menu._`,
+      nuevoEstado: 'SERVICE_SELECT',
+    };
+  }
+
   return {
     respuesta:
       `¡Perfecto! ¿Qué servicio necesitas? 🛀️\n\n${lista}\n\n` +
@@ -46,12 +59,11 @@ async function handleServiceMenu(sesion, msg) {
 
 /**
  * Captura la elección del servicio y avanza al estado de fecha.
- * Acepta: número de opción (1, 2, 3...) o nombre del servicio.
- * Si el cliente pide más información, muestra duración y detalles.
  */
 async function handleServiceSelect(sesion, msg) {
   const catalogo = sesion.catalogoServicios || [];
   const msgLower = msg.toLowerCase().trim();
+  const isEn = sesion.idioma === 'en';
 
   // ── ¿El cliente pide más información? ───────────────────────────
   const pideMasInfo = PALABRAS_MAS_INFO.some(p => msgLower.includes(p));
@@ -65,9 +77,9 @@ async function handleServiceSelect(sesion, msg) {
       .join('\n\n');
 
     return {
-      respuesta:
-        `Aquí tienes los detalles de nuestros servicios:\n\n${detalles}\n\n` +
-        `_¿Cuál te gustaría agendar?_`,
+      respuesta: isEn
+        ? `Here are the details for our services:\n\n${detalles}\n\n_Which one would you like to book?_`
+        : `Aquí tienes los detalles de nuestros servicios:\n\n${detalles}\n\n_¿Cuál te gustaría agendar?_`,
       nuevoEstado: 'SERVICE_SELECT',
     };
   }
@@ -96,11 +108,15 @@ async function handleServiceSelect(sesion, msg) {
       })
       .join('\n');
     return {
-      respuesta:
-        `No entendí cuál servicio quieres 🤔\n\n` +
-        `Puedes escribir el número o el nombre:\n\n${lista}\n\n` +
-        `_Escribe *"más información"* para ver duración y detalles._\n` +
-        `_Escribe *"atrás"* para regresar al menú._`,
+      respuesta: isEn
+        ? `I didn't recognize that service option 🤔\n\n` +
+          `You can type the number or service name:\n\n${lista}\n\n` +
+          `_Type *"more info"* to view duration & details._\n` +
+          `_Type *"back"* to return to the menu._`
+        : `No entendí cuál servicio quieres 🤔\n\n` +
+          `Puedes escribir el número o el nombre:\n\n${lista}\n\n` +
+          `_Escribe *"más información"* para ver duración y detalles._\n` +
+          `_Escribe *"atrás"* para regresar al menú._`,
       nuevoEstado: 'SERVICE_SELECT',
     };
   }
@@ -109,7 +125,7 @@ async function handleServiceSelect(sesion, msg) {
   sesion.servicioNombre = servicioElegido.nombre;
   sesion.duracionMin    = servicioElegido.duracion_min;
 
-  // ── Detección de Especialista Frecuente / Capacitado (Solo Plan Pro) ─
+  // ── Detección de Especialista ─
   const { getEmpleadoPreferidoCliente, getEmpleadosPorServicio, getPlanType } = require('../../db/queries');
   const planType = await getPlanType();
   let textoEspecialista = '';
@@ -118,18 +134,21 @@ async function handleServiceSelect(sesion, msg) {
     const preferido = await getEmpleadoPreferidoCliente(sesion.clienteId, servicioElegido.id);
     if (preferido) {
       sesion.empleadoId = preferido.empleado_id;
-      textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${preferido.empleado_nombre} (Tu especialista frecuente en ${servicioElegido.nombre})\n\n`;
+      textoEspecialista = isEn
+        ? `👨‍⚕️ *Assigned Specialist:* ${preferido.empleado_nombre} (Your frequent specialist for ${servicioElegido.nombre})\n\n`
+        : `👨‍⚕️ *Especialista Asignado:* ${preferido.empleado_nombre} (Tu especialista frecuente en ${servicioElegido.nombre})\n\n`;
     } else {
       const capacitados = await getEmpleadosPorServicio(servicioElegido.id);
       if (capacitados.length === 1) {
         sesion.empleadoId = capacitados[0].id;
-        textoEspecialista = `👨‍⚕️ *Especialista Asignado:* ${capacitados[0].nombre}\n\n`;
+        textoEspecialista = isEn
+          ? `👨‍⚕️ *Assigned Specialist:* ${capacitados[0].nombre}\n\n`
+          : `👨‍⚕️ *Especialista Asignado:* ${capacitados[0].nombre}\n\n`;
       } else {
-        sesion.empleadoId = null; // Cualquier especialista disponible
+        sesion.empleadoId = null;
       }
     }
   } else {
-    // Plan Básico (Barberías/Spas/Estéticas): Asignación directa ultra-rápida sin preguntas
     sesion.empleadoId = null;
   }
 
@@ -137,13 +156,27 @@ async function handleServiceSelect(sesion, msg) {
     ? ` · *$${Number(servicioElegido.precio).toLocaleString('es-MX')}*`
     : '';
 
+  if (isEn) {
+    return {
+      respuesta:
+        `✅ Selected *${servicioElegido.nombre}*${precioTexto}.\n\n` +
+        textoEspecialista +
+        `📅 What day would you like your appointment?\n\n` +
+        `You can reply with something like:\n` +
+        `• _"tomorrow"_\n• _"on Monday"_\n• _"April 14"_\n• _"15/04"_\n\n` +
+        `_Type *"back"* to return._`,
+      nuevoEstado: 'DATE_SELECT',
+    };
+  }
+
   return {
     respuesta:
       `✅ *${servicioElegido.nombre}* seleccionado${precioTexto}.\n\n` +
       textoEspecialista +
       `📅 ¿Para qué día quieres tu cita?\n\n` +
       `Puedes decirme algo como:\n` +
-      `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_`,
+      `• _"mañana"_\n• _"el lunes"_\n• _"14 de abril"_\n• _"15/04"_\n\n` +
+      `_Escribe *"atrás"* para regresar._`,
     nuevoEstado: 'DATE_SELECT',
   };
 }

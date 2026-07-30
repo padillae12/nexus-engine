@@ -42,9 +42,13 @@ function getOrCreateSession(telefono) {
   }
 
   // Sesión nueva
+  // Detectar idioma inicial por el número de teléfono: Si empieza con '1' (EE.UU./Canadá), por defecto inglés ('en')
+  const defaultIdioma = (telefono && (telefono.startsWith('1') || telefono.startsWith('+1'))) ? 'en' : 'es';
+
   const sesion = {
     state:        'IDLE',
     telefono,
+    idioma:       defaultIdioma,
     clienteId:    null,
     nombre:       null,
     // Datos de la cita en progreso:
@@ -130,6 +134,20 @@ async function handleMessage(telefono, mensaje) {
     const result = await handleWelcome(sesion, msg);
     sesion.state = result.nuevoEstado;
     return result.respuesta;
+  }
+
+  // ── Cambiar idioma directamente con comandos "english" o "español" ─
+  if (/^(english|ingl[eé]s|in english|en)$/i.test(msg)) {
+    sesion.idioma = 'en';
+    limpiarDatosCita(sesion);
+    sesion.state = 'MAIN_MENU';
+    return `🌐 Language changed to *English*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'friend', 'en');
+  }
+  if (/^(espa[nñ]ol|spanish|in spanish|es)$/i.test(msg)) {
+    sesion.idioma = 'es';
+    limpiarDatosCita(sesion);
+    sesion.state = 'MAIN_MENU';
+    return `🌐 Idioma cambiado a *Español*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'amigo/a', 'es');
   }
 
   // ── Comando "atrás" — navega al estado anterior ───────────────
@@ -254,23 +272,32 @@ async function handleMessage(telefono, mensaje) {
         pushHistory(sesion);
         const { getCitasActivasCliente } = require('../db/queries');
         const citas = await getCitasActivasCliente(sesion.clienteId);
+        const isEn = sesion.idioma === 'en';
+        const { formatFechaIngles } = require('../utils/slots');
         if (citas.length === 0) {
           result = {
-            respuesta: `No tienes citas próximas, *${sesion.nombre || 'amigo/a'}*. 😊\n\n¿Quieres *agendar* una nueva cita?`,
+            respuesta: isEn
+              ? `You have no upcoming appointments, *${sesion.nombre || 'friend'}*. 😊\n\nWould you like to *book* a new appointment?`
+              : `No tienes citas próximas, *${sesion.nombre || 'amigo/a'}*. 😊\n\n¿Quieres *agendar* una nueva cita?`,
             nuevoEstado: 'MAIN_MENU'
           };
         } else {
-          sesion.citasVista = citas; // guardamos para edición posterior
+          sesion.citasVista = citas;
           const lista = citas.map((c, i) => {
             const f = new Date(c.fecha_inicio);
-            return `*${i + 1}.* ${c.servicio} — ${f.toLocaleDateString('es-MX')} ${f.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+            const fechaStr = isEn ? formatFechaIngles(f) : f.toLocaleDateString('es-MX');
+            return `*${i + 1}.* ${c.servicio} — ${fechaStr} ${f.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
           }).join('\n');
           result = {
-            respuesta:
-              `📋 *Tus próximas citas:*\n\n${lista}\n\n` +
-              `¿Qué deseas hacer?\n` +
-              `• Escribe el *número* de la cita para cambiar su fecha/hora\n` +
-              `• Escribe *"menú"* para volver al inicio`,
+            respuesta: isEn
+              ? `📋 *Your upcoming appointments:*\n\n${lista}\n\n` +
+                `What would you like to do?\n` +
+                `• Reply with the appointment *number* to change date/time\n` +
+                `• Type *"menu"* to return to main menu`
+              : `📋 *Tus próximas citas:*\n\n${lista}\n\n` +
+                `¿Qué deseas hacer?\n` +
+                `• Escribe el *número* de la cita para cambiar su fecha/hora\n` +
+                `• Escribe *"menú"* para volver al inicio`,
             nuevoEstado: 'VIEW_CITAS'
           };
         }
@@ -282,20 +309,33 @@ async function handleMessage(telefono, mensaje) {
         const { getAllConfig } = require('../db/queries');
         const configNegocio = await getAllConfig().catch(() => ({}));
         const nombreNegocio = configNegocio.BUSINESS_NAME || 'Dental Loquero';
-        const horarioAtencion = configNegocio.HORARIO_ATENCION || '• Lunes a Viernes: 08:00 AM - 06:00 PM\n• Sábados: 10:00 AM - 04:00 PM\n• Domingos: Cerrado';
-        const ubicacion = configNegocio.BUSINESS_ADDRESS || configNegocio.UBICACION || 'Consulta directamente con nosotros';
+        const horarioAtencion = configNegocio.HORARIO_ATENCION || (sesion.idioma === 'en' ? '• Monday to Friday: 08:00 AM - 06:00 PM\n• Saturdays: 10:00 AM - 04:00 PM\n• Sundays: Closed' : '• Lunes a Viernes: 08:00 AM - 06:00 PM\n• Sábados: 10:00 AM - 04:00 PM\n• Domingos: Cerrado');
+        const ubicacion = configNegocio.BUSINESS_ADDRESS || configNegocio.UBICACION || 'Consult directly with us';
 
         result = {
-          respuesta:
-            `ℹ️ *INFORMACIÓN Y HORARIOS — ${nombreNegocio.toUpperCase()}*\n\n` +
-            `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
-            `📍 *Ubicación:*\n${ubicacion}\n\n` +
-            `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
+          respuesta: sesion.idioma === 'en'
+            ? `ℹ️ *INFO & BUSINESS HOURS — ${nombreNegocio.toUpperCase()}*\n\n` +
+              `⏰ *Business Hours:*\n${horarioAtencion}\n\n` +
+              `📍 *Location:*\n${ubicacion}\n\n` +
+              `_Need anything else? Reply with the option number (1, 2, 3) or *"menu"* to return._`
+            : `ℹ️ *INFORMACIÓN Y HORARIOS — ${nombreNegocio.toUpperCase()}*\n\n` +
+              `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
+              `📍 *Ubicación:*\n${ubicacion}\n\n` +
+              `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
+          nuevoEstado: 'MAIN_MENU'
+        };
+      } else if (opcion === '5' || /^(english|ingl[eé]s|espa[nñ]ol|spanish|idioma|language)$/i.test(msg)) {
+        sesion.idioma = sesion.idioma === 'en' ? 'es' : 'en';
+        const msgConfirmacion = sesion.idioma === 'en'
+          ? `🌐 Language changed to *English*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'friend', 'en')
+          : `🌐 Idioma cambiado a *Español*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'amigo/a', 'es');
+        result = {
+          respuesta: msgConfirmacion,
           nuevoEstado: 'MAIN_MENU'
         };
       } else {
         result = {
-          respuesta: buildMenuPrincipal(sesion.nombre || 'amigo/a'),
+          respuesta: buildMenuPrincipal(sesion.nombre || (sesion.idioma === 'en' ? 'friend' : 'amigo/a'), sesion.idioma),
           nuevoEstado: 'MAIN_MENU',
         };
       }

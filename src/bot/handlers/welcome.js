@@ -11,24 +11,29 @@ const config = require('../../config');
  * - Si ya tiene nombre: muestra el menú principal.
  */
 async function handleWelcome(sesion, msg) {
-  const { nombre } = sesion;
+  const { nombre, idioma } = sesion;
   const { getConfig } = require('../../db/queries');
   const businessName = await getConfig('BUSINESS_NAME').catch(() => null) || config.business.name || 'Dental Loquero';
+
+  const isEn = idioma === 'en';
 
   // Primera vez que escribe: pedir nombre
   if (!nombre) {
     return {
-      respuesta:
-        `👋 ¡Hola! Bienvenido/a a *${businessName}*.\n\n` +
-        `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas. 😊\n\n` +
-        `¿Me podrías decir tu nombre, por favor?`,
+      respuesta: isEn
+        ? `👋 Hello! Welcome to *${businessName}*.\n\n` +
+          `I am your virtual assistant and I can help you book, check, or cancel appointments. 😊\n\n` +
+          `Could you please tell me your name?`
+        : `👋 ¡Hola! Bienvenido/a a *${businessName}*.\n\n` +
+          `Soy tu asistente virtual y puedo ayudarte a agendar, consultar o cancelar citas. 😊\n\n` +
+          `¿Me podrías decir tu nombre, por favor?`,
       nuevoEstado: 'WAITING_NAME',
     };
   }
 
   // Ya tiene nombre: ir directo al menú
   return {
-    respuesta: buildMenuPrincipal(nombre),
+    respuesta: buildMenuPrincipal(nombre, idioma),
     nuevoEstado: 'MAIN_MENU',
   };
 }
@@ -37,14 +42,17 @@ async function handleWelcome(sesion, msg) {
  * Maneja el estado WAITING_NAME: guarda el nombre y muestra el menú.
  */
 async function handleWaitingName(sesion, msg) {
+  const isEn = sesion.idioma === 'en';
   // Eliminar frases de presentación comunes antes de guardar el nombre
-  const PREFIJOS_NOMBRE = /^(soy|me llamo|mi nombre es|me dicen|soy el|soy la|mi nombre:|nombre:)\s+/i;
+  const PREFIJOS_NOMBRE = /^(soy|me llamo|mi nombre es|me dicen|soy el|soy la|mi nombre:|nombre:|i am|my name is|i'm|im)\s+/i;
   const rawName = msg.trim().replace(PREFIJOS_NOMBRE, '').trim();
   const nombreLimpio = rawName.split(' ').slice(0, 3).join(' '); // Máx 3 palabras
 
   if (nombreLimpio.length < 2) {
     return {
-      respuesta: '🤔 No entendí bien tu nombre. ¿Cómo te llamas?',
+      respuesta: isEn
+        ? "🤔 I didn't quite catch your name. What is your name?"
+        : '🤔 No entendí bien tu nombre. ¿Cómo te llamas?',
       nuevoEstado: 'WAITING_NAME',
     };
   }
@@ -53,20 +61,36 @@ async function handleWaitingName(sesion, msg) {
   await updateClienteNombre(sesion.clienteId, nombreLimpio);
   sesion.nombre = nombreLimpio;
 
+  const saludo = isEn
+    ? `Nice to meet you, *${nombreLimpio}*! 🤝\n\n${buildMenuPrincipal(nombreLimpio, 'en')}`
+    : `¡Mucho gusto, *${nombreLimpio}*! 🤝\n\n${buildMenuPrincipal(nombreLimpio, 'es')}`;
+
   return {
-    respuesta: `¡Mucho gusto, *${nombreLimpio}*! 🤝\n\n${buildMenuPrincipal(nombreLimpio)}`,
+    respuesta: saludo,
     nuevoEstado: 'MAIN_MENU',
   };
 }
 
-function buildMenuPrincipal(nombre) {
+function buildMenuPrincipal(nombre, idioma = 'es') {
+  if (idioma === 'en') {
+    return (
+      `How can I help you today, *${nombre}*? 😊\n\n` +
+      `1️⃣ 📅 *Book* an appointment\n` +
+      `2️⃣ 📋 *View* my appointments\n` +
+      `3️⃣ ❌ *Cancel* an appointment\n` +
+      `4️⃣ ℹ️ *Info & Business Hours*\n` +
+      `5️⃣ 🌐 *Español*\n\n` +
+      `_Reply with the option number (1, 2, 3, 4, 5) or tell me what you need._`
+    );
+  }
   return (
     `¿En qué te puedo ayudar hoy, *${nombre}*? 😊\n\n` +
     `1️⃣ 📅 *Agendar* una cita\n` +
     `2️⃣ 📋 *Ver* mis citas\n` +
     `3️⃣ ❌ *Cancelar* una cita\n` +
-    `4️⃣ ℹ️ *Información y Horarios*\n\n` +
-    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3 o 4)._`
+    `4️⃣ ℹ️ *Información y Horarios*\n` +
+    `5️⃣ 🌐 *English*\n\n` +
+    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3, 4 o 5)._`
   );
 }
 

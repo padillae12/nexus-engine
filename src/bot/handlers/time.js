@@ -1,8 +1,5 @@
-// src/bot/handlers/time.js
-// Estado TIME_SELECT: el usuario elige un horario de la lista y se genera el resumen.
-
 const { extraerNumeroOpcion } = require('../../utils/regex');
-const { formatFechaEspanol } = require('../../utils/slots');
+const { formatFechaEspanol, formatFechaIngles } = require('../../utils/slots');
 
 /**
  * Captura el número de slot elegido y arma el resumen para confirmación.
@@ -10,13 +7,17 @@ const { formatFechaEspanol } = require('../../utils/slots');
 async function handleTimeSelect(sesion, msg) {
   const opcion = extraerNumeroOpcion(msg);
   const slots  = sesion.slotsDisponibles || [];
+  const isEn   = sesion.idioma === 'en';
 
   if (!opcion || opcion < 1 || opcion > slots.length) {
     return {
-      respuesta:
-        `❓ Por favor elige un número del 1 al ${Math.min(slots.length, 10)}.\n\n` +
-        `Si ya no quieres agendar, escribe *"cancelar"*.\n` +
-        `Escribe *"atrás"* para elegir otra fecha.`,
+      respuesta: isEn
+        ? `❓ Please reply with a number between 1 and ${Math.min(slots.length, 10)}.\n\n` +
+          `If you don't want to book, type *"cancel"*.\n` +
+          `Type *"back"* to choose another date.`
+        : `❓ Por favor elige un número del 1 al ${Math.min(slots.length, 10)}.\n\n` +
+          `Si ya no quieres agendar, escribe *"cancelar"*.\n` +
+          `Escribe *"atrás"* para elegir otra fecha.`,
       nuevoEstado: 'TIME_SELECT',
     };
   }
@@ -31,40 +32,54 @@ async function handleTimeSelect(sesion, msg) {
   const h12     = h > 12 ? h - 12 : h === 0 ? 12 : h;
   const horaTexto = `${h12}:${String(m).padStart(2, '0')}${periodo}`;
 
-  const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
-  const fechaTexto = formatFechaEspanol(fechaObj);
+  const fechaObj   = new Date(sesion.fechaSeleccionada + 'T00:00:00');
+  const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
 
-const { getPlanType } = require('../../db/queries');
-
+  const { getPlanType } = require('../../db/queries');
   const planType = await getPlanType();
 
   if (planType === 'pro') {
     return {
-      respuesta:
-        `🔔 *¿Con cuánto tiempo de anticipación te gustaría recibir un recordatorio por WhatsApp?*\n\n` +
-        `1️⃣ 1 hora antes\n` +
-        `2️⃣ 2 horas antes\n` +
-        `3️⃣ 1 día antes (24 hrs)\n` +
-        `4️⃣ Sin recordatorio\n\n` +
-        `_Escribe el número de la opción (1, 2, 3 o 4)._\n` +
-        `_Escribe *"atrás"* para elegir otro horario._`,
+      respuesta: isEn
+        ? `🔔 *How far in advance would you like a WhatsApp reminder?*\n\n` +
+          `1️⃣ 1 hour before\n` +
+          `2️⃣ 2 hours before\n` +
+          `3️⃣ 1 day before (24 hrs)\n` +
+          `4️⃣ No reminder\n\n` +
+          `_Reply with the option number (1, 2, 3 or 4)._\n` +
+          `_Type *"back"* to choose another time slot._`
+        : `🔔 *¿Con cuánto tiempo de anticipación te gustaría recibir un recordatorio por WhatsApp?*\n\n` +
+          `1️⃣ 1 hora antes\n` +
+          `2️⃣ 2 horas antes\n` +
+          `3️⃣ 1 día antes (24 hrs)\n` +
+          `4️⃣ Sin recordatorio\n\n` +
+          `_Escribe el número de la opción (1, 2, 3 o 4)._\n` +
+          `_Escribe *"atrás"* para elegir otro horario._`,
       nuevoEstado: 'REMINDER_SELECT',
     };
   }
 
   // Plan Básico: Asignación automática de recordatorio (2h antes) y paso directo a confirmación
   sesion.recordatorioMins = 120;
-  sesion.recordatorioTexto = '2 horas antes';
+  sesion.recordatorioTexto = isEn ? '2 hours before' : '2 horas antes';
 
-  const resumen =
-    `✅ *Resumen de tu cita:*\n\n` +
-    `👤 Nombre: *${sesion.nombre}*\n` +
-    `🛀️ Servicio: *${sesion.servicioNombre}*\n` +
-    `📅 Fecha: *${fechaTexto}*\n` +
-    `⏰ Hora: *${horaTexto}*\n\n` +
-    `¿Confirmas tu cita?\n` +
-    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
-    `_Escribe *"atrás"* para elegir otro horario._`;
+  const resumen = isEn
+    ? `✅ *Appointment Summary:*\n\n` +
+      `👤 Name: *${sesion.nombre}*\n` +
+      `🛀️ Service: *${sesion.servicioNombre}*\n` +
+      `📅 Date: *${fechaTexto}*\n` +
+      `⏰ Time: *${horaTexto}*\n\n` +
+      `Do you confirm your appointment?\n` +
+      `Reply *"yes"* to confirm or *"no"* to change something.\n` +
+      `_Type *"back"* to choose another time slot._`
+    : `✅ *Resumen de tu cita:*\n\n` +
+      `👤 Nombre: *${sesion.nombre}*\n` +
+      `🛀️ Servicio: *${sesion.servicioNombre}*\n` +
+      `📅 Fecha: *${fechaTexto}*\n` +
+      `⏰ Hora: *${horaTexto}*\n\n` +
+      `¿Confirmas tu cita?\n` +
+      `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
+      `_Escribe *"atrás"* para elegir otro horario._`;
 
   return {
     respuesta: resumen,

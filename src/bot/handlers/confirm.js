@@ -1,6 +1,6 @@
 const { createCita, getCitasActivasCliente } = require('../../db/queries');
 const { esConfirmacion, esNegacion, extraerNumeroOpcion } = require('../../utils/regex');
-const { formatFechaEspanol } = require('../../utils/slots');
+const { formatFechaEspanol, formatFechaIngles } = require('../../utils/slots');
 const { notificarNuevaCitaEmpleado } = require('../reminders');
 
 /**
@@ -8,17 +8,20 @@ const { notificarNuevaCitaEmpleado } = require('../reminders');
  */
 async function handleReminderSelect(sesion, msg) {
   const opcion = extraerNumeroOpcion(msg);
+  const isEn   = sesion.idioma === 'en';
 
   let mins = 120;
-  let text = '2 horas antes';
+  let text = isEn ? '2 hours before' : '2 horas antes';
 
-  if (opcion === 1) { mins = 60; text = '1 hora antes'; }
-  else if (opcion === 2) { mins = 120; text = '2 horas antes'; }
-  else if (opcion === 3) { mins = 1440; text = '1 día antes (24 hrs)'; }
-  else if (opcion === 4) { mins = 0; text = 'Desactivado'; }
+  if (opcion === 1) { mins = 60; text = isEn ? '1 hour before' : '1 hora antes'; }
+  else if (opcion === 2) { mins = 120; text = isEn ? '2 hours before' : '2 horas antes'; }
+  else if (opcion === 3) { mins = 1440; text = isEn ? '1 day before (24 hrs)' : '1 día antes (24 hrs)'; }
+  else if (opcion === 4) { mins = 0; text = isEn ? 'Off' : 'Desactivado'; }
   else {
     return {
-      respuesta: `Por favor elige un número del 1 al 4 para seleccionar cuándo deseas tu recordatorio.`,
+      respuesta: isEn
+        ? `Please reply with a number between 1 and 4 to select your reminder timing.`
+        : `Por favor elige un número del 1 al 4 para seleccionar cuándo deseas tu recordatorio.`,
       nuevoEstado: 'REMINDER_SELECT',
     };
   }
@@ -31,19 +34,28 @@ async function handleReminderSelect(sesion, msg) {
   const h12     = h > 12 ? h - 12 : h === 0 ? 12 : h;
   const horaTexto = `${h12}:${String(m).padStart(2, '0')}${periodo}`;
 
-  const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
-  const fechaTexto = formatFechaEspanol(fechaObj);
+  const fechaObj   = new Date(sesion.fechaSeleccionada + 'T00:00:00');
+  const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
 
-  const resumen =
-    `✅ *Resumen de tu cita:*\n\n` +
-    `👤 Nombre: *${sesion.nombre}*\n` +
-    `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
-    `📅 Fecha: *${fechaTexto}*\n` +
-    `⏰ Hora: *${horaTexto}*\n` +
-    `🔔 Recordatorio: *${text}*\n\n` +
-    `¿Confirmas tu cita?\n` +
-    `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
-    `_Escribe *"atrás"* para volver a elegir el recordatorio._`;
+  const resumen = isEn
+    ? `✅ *Appointment Summary:*\n\n` +
+      `👤 Name: *${sesion.nombre}*\n` +
+      `🛎️ Service: *${sesion.servicioNombre}*\n` +
+      `📅 Date: *${fechaTexto}*\n` +
+      `⏰ Time: *${horaTexto}*\n` +
+      `🔔 Reminder: *${text}*\n\n` +
+      `Do you confirm your appointment?\n` +
+      `Reply *"yes"* to confirm or *"no"* to change something.\n` +
+      `_Type *"back"* to return._`
+    : `✅ *Resumen de tu cita:*\n\n` +
+      `👤 Nombre: *${sesion.nombre}*\n` +
+      `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
+      `📅 Fecha: *${fechaTexto}*\n` +
+      `⏰ Hora: *${horaTexto}*\n` +
+      `🔔 Recordatorio: *${text}*\n\n` +
+      `¿Confirmas tu cita?\n` +
+      `Responde *"sí"* para confirmar o *"no"* para cambiar algo.\n` +
+      `_Escribe *"atrás"* para volver a elegir el recordatorio._`;
 
   return {
     respuesta: resumen,
@@ -55,6 +67,8 @@ async function handleReminderSelect(sesion, msg) {
  * Maneja la respuesta de confirmación del usuario.
  */
 async function handleConfirmation(sesion, msg) {
+  const isEn = sesion.idioma === 'en';
+
   // — Usuario confirma —
   if (esConfirmacion(msg)) {
     const fechaInicio = `${sesion.fechaSeleccionada} ${sesion.horaSeleccionada}:00`;
@@ -87,35 +101,40 @@ async function handleConfirmation(sesion, msg) {
         }).catch(() => {});
       }
 
-      const fechaObj  = new Date(sesion.fechaSeleccionada + 'T00:00:00');
-      const fechaTexto = formatFechaEspanol(fechaObj);
+      const fechaObj   = new Date(sesion.fechaSeleccionada + 'T00:00:00');
+      const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
       const [hd, md]   = sesion.horaSeleccionada.split(':').map(Number);
       const periodo    = hd >= 12 ? 'pm' : 'am';
       const h12        = hd > 12 ? hd - 12 : hd === 0 ? 12 : hd;
       const horaTexto  = `${h12}:${String(md).padStart(2, '0')}${periodo}`;
 
       return {
-        respuesta:
-          `🎉 *¡Cita confirmada!*\n\n` +
-          `📋 Folio: *#${citaId}*\n` +
-          `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
-          `📅 Fecha: *${fechaTexto}*\n` +
-          `⏰ Hora: *${horaTexto}*\n\n` +
-          `Te esperamos. Si necesitas cancelar o cambiar tu cita, escríbenos aquí.\n\n` +
-          `_Guarda tu folio #${citaId} por si lo necesitas._ 😊`,
+        respuesta: isEn
+          ? `🎉 *Appointment Confirmed!*\n\n` +
+            `📋 Confirmation #: *#${citaId}*\n` +
+            `🛎️ Service: *${sesion.servicioNombre}*\n` +
+            `📅 Date: *${fechaTexto}*\n` +
+            `⏰ Time: *${horaTexto}*\n\n` +
+            `We look forward to seeing you. If you need to cancel or change your appointment, message us anytime.\n\n` +
+            `_Save your confirmation #${citaId} for your records._ 😊`
+          : `🎉 *¡Cita confirmada!*\n\n` +
+            `📋 Folio: *#${citaId}*\n` +
+            `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
+            `📅 Fecha: *${fechaTexto}*\n` +
+            `⏰ Hora: *${horaTexto}*\n\n` +
+            `Te esperamos. Si necesitas cancelar o cambiar tu cita, escríbenos aquí.\n\n` +
+            `_Guarda tu folio #${citaId} por si lo necesitas._ 😊`,
         nuevoEstado: 'IDLE',
         limpiarSesion: true,
       };
 
     } catch (err) {
       if (err.message === 'SLOT_OCUPADO') {
-        // Alguien tomó el slot justo antes → regresar a elegir hora
         return {
-          respuesta:
-            `😅 ¡Ups! Ese horario acaba de ser tomado por otra persona.\n\n` +
-            `Elige otro horario disponible:`,
+          respuesta: isEn
+            ? `😅 Oops! That time slot was just taken by another user.\n\nPlease choose another available time slot:`
+            : `😅 ¡Ups! Ese horario acaba de ser tomado por otra persona.\n\nElige otro horario disponible:`,
           nuevoEstado: 'DATE_SELECT',
-          // La FSM re-lanzará el handler de fecha con la misma fecha guardada en sesión
           rehacerFecha: true,
         };
       }
@@ -126,19 +145,26 @@ async function handleConfirmation(sesion, msg) {
   // — Usuario niega —
   if (esNegacion(msg)) {
     return {
-      respuesta:
-        `Entendido. ¿Qué quieres cambiar?\n\n` +
-        `📅 *1.* Cambiar la fecha\n` +
-        `⏰ *2.* Cambiar la hora\n` +
-        `🛎️ *3.* Cambiar el servicio\n` +
-        `❌ *4.* Cancelar y salir`,
+      respuesta: isEn
+        ? `Got it. What would you like to change?\n\n` +
+          `📅 *1.* Change date\n` +
+          `⏰ *2.* Change time\n` +
+          `🛎️ *3.* Change service\n` +
+          `❌ *4.* Cancel and exit`
+        : `Entendido. ¿Qué quieres cambiar?\n\n` +
+          `📅 *1.* Cambiar la fecha\n` +
+          `⏰ *2.* Cambiar la hora\n` +
+          `🛎️ *3.* Cambiar el servicio\n` +
+          `❌ *4.* Cancelar y salir`,
       nuevoEstado: 'EDIT_MENU',
     };
   }
 
   // — No entendió —
   return {
-    respuesta: `No entendí tu respuesta. Por favor escribe *"sí"* para confirmar o *"no"* para cambiar algo.`,
+    respuesta: isEn
+      ? `I didn't understand your response. Please reply *"yes"* to confirm or *"no"* to change something.`
+      : `No entendí tu respuesta. Por favor escribe *"sí"* para confirmar o *"no"* para cambiar algo.`,
     nuevoEstado: 'CONFIRMATION',
   };
 }
@@ -148,37 +174,36 @@ async function handleConfirmation(sesion, msg) {
  */
 async function handleEditMenu(sesion, msg) {
   const opcion = msg.trim();
+  const isEn   = sesion.idioma === 'en';
 
   if (opcion === '1') {
     return {
-      respuesta:
-        `📅 ¿Para qué día quieres tu cita?\nEscribe la fecha que prefieres.\n` +
-        `_Escribe *"atrás"* para volver al resumen._`,
+      respuesta: isEn
+        ? `📅 What day would you like your appointment?\nType your preferred date.\n_Type *"back"* to return to the summary._`
+        : `📅 ¿Para qué día quieres tu cita?\nEscribe la fecha que prefieres.\n_Escribe *"atrás"* para volver al resumen._`,
       nuevoEstado: 'DATE_SELECT',
     };
   }
   if (opcion === '2') {
-    // Re-obtener los slots de la fecha seleccionada (con filtro de hora actual si es hoy)
-    const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol } = require('../../utils/slots');
+    const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol, formatFechaIngles } = require('../../utils/slots');
     const fecha = new Date((sesion.fechaSeleccionada || new Date().toISOString().slice(0,10)) + 'T00:00:00');
     const slots = await getSlotsDisponibles(fecha, sesion.duracionMin, sesion.empleadoId || null);
-    sesion.slotsDisponibles = slots; // Actualizar con slots frescos
-    const fechaTexto = formatFechaEspanol(fecha);
+    sesion.slotsDisponibles = slots;
+    const fechaTexto = isEn ? formatFechaIngles(fecha) : formatFechaEspanol(fecha);
 
     if (slots.length === 0) {
       return {
-        respuesta:
-          `😕 Ya no hay horarios disponibles el *${fechaTexto}*.\n\n` +
-          `¿Quieres elegir otra fecha? Escribe *"1"* para cambiar la fecha.`,
+        respuesta: isEn
+          ? `😕 There are no time slots available for *${fechaTexto}*.\n\nWould you like to choose another date? Type *"1"* to change date.`
+          : `😕 Ya no hay horarios disponibles el *${fechaTexto}*.\n\n¿Quieres elegir otra fecha? Escribe *"1"* para cambiar la fecha.`,
         nuevoEstado: 'EDIT_MENU',
       };
     }
 
     return {
-      respuesta:
-        `⏰ Elige otro horario para el *${fechaTexto}*:\n\n` +
-        formatSlotsParaWhatsApp(slots) + '\n\n' +
-        `_Escribe *"atrás"* para volver al resumen._`,
+      respuesta: isEn
+        ? `⏰ Choose another time slot for *${fechaTexto}*:\n\n` + formatSlotsParaWhatsApp(slots) + '\n\n_Type *"back"* to return._'
+        : `⏰ Elige otro horario para el *${fechaTexto}*:\n\n` + formatSlotsParaWhatsApp(slots) + '\n\n_Escribe *"atrás"* para volver._',
       nuevoEstado: 'TIME_SELECT',
     };
   }
@@ -188,36 +213,40 @@ async function handleEditMenu(sesion, msg) {
   }
   if (opcion === '4') {
     return {
-      respuesta: `Está bien. Si necesitas algo más, escríbenos cuando quieras. 👋`,
+      respuesta: isEn
+        ? `Alright. Feel free to message us anytime if you need anything else. 👋`
+        : `Está bien. Si necesitas algo más, escríbenos cuando quieras. 👋`,
       nuevoEstado: 'IDLE',
       limpiarSesion: true,
     };
   }
 
   return {
-    respuesta:
-      `Por favor elige una opción del 1 al 4.\n\n` +
-      `📅 *1.* Cambiar la fecha\n⏰ *2.* Cambiar la hora\n🛎️ *3.* Cambiar el servicio\n❌ *4.* Cancelar y salir\n\n` +
-      `_Escribe *"atrás"* para volver al resumen._`,
+    respuesta: isEn
+      ? `Please choose an option between 1 and 4.\n\n` +
+        `📅 *1.* Change date\n⏰ *2.* Change time\n🛎️ *3.* Change service\n❌ *4.* Cancel and exit\n\n` +
+        `_Type *"back"* to return._`
+      : `Por favor elige una opción del 1 al 4.\n\n` +
+        `📅 *1.* Cambiar la fecha\n⏰ *2.* Cambiar la hora\n🛎️ *3.* Cambiar el servicio\n❌ *4.* Cancelar y salir\n\n` +
+        `_Escribe *"atrás"* para volver al resumen._`,
     nuevoEstado: 'EDIT_MENU',
   };
 }
-
 
 /**
  * Maneja el estado de cancelación: muestra las citas activas y deja cancelar.
  */
 async function handleCancelFlow(sesion, msg) {
-  const { cancelCita } = require('../../db/queries');
-  const { extraerNumeroOpcion } = require('../../utils/regex');
+  const isEn = sesion.idioma === 'en';
 
-  // Primera visita al estado: mostrar citas activas
   if (!sesion.citasCancelables) {
     const citas = await getCitasActivasCliente(sesion.clienteId);
 
     if (citas.length === 0) {
       return {
-        respuesta: `No tienes citas activas para cancelar. 😊`,
+        respuesta: isEn
+          ? `You have no active appointments to cancel. 😊`
+          : `No tienes citas activas para cancelar. 😊`,
         nuevoEstado: 'IDLE',
       };
     }
@@ -226,19 +255,22 @@ async function handleCancelFlow(sesion, msg) {
 
     const lista = citas.map((c, i) => {
       const fecha = new Date(c.fecha_inicio);
-      return `*${i + 1}.* ${c.servicio} — ${fecha.toLocaleDateString('es-MX')} ${fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+      const fechaStr = isEn ? formatFechaIngles(fecha) : fecha.toLocaleDateString('es-MX');
+      return `*${i + 1}.* ${c.servicio} — ${fechaStr} ${fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }).join('\n');
 
     return {
-      respuesta:
-        `📋 *Tus citas activas:*\n\n${lista}\n\n` +
-        `¿Cuál quieres cancelar? Responde con el número, o escribe *"ninguna"* para salir.`,
+      respuesta: isEn
+        ? `📋 *Your active appointments:*\n\n${lista}\n\n` +
+          `Which one do you want to cancel? Reply with the number, or reply *"none"* to exit.`
+        : `📋 *Tus citas activas:*\n\n${lista}\n\n` +
+          `¿Cuál quieres cancelar? Responde con el número, o escribe *"ninguna"* para salir.`,
       nuevoEstado: 'CANCEL_SELECT',
     };
   }
 
   return {
-    respuesta: `Algo salió mal. Intenta de nuevo.`,
+    respuesta: isEn ? `Something went wrong. Please try again.` : `Algo salió mal. Intenta de nuevo.`,
     nuevoEstado: 'IDLE',
   };
 }
@@ -248,11 +280,13 @@ async function handleCancelFlow(sesion, msg) {
  */
 async function handleCancelSelect(sesion, msg) {
   const { cancelCita } = require('../../db/queries');
-  const { extraerNumeroOpcion } = require('../../utils/regex');
+  const isEn = sesion.idioma === 'en';
 
-  if (/ninguna|salir|no/i.test(msg)) {
+  if (/ninguna|salir|no|none|exit/i.test(msg)) {
     return {
-      respuesta: `De acuerdo. Tus citas siguen activas. 👍`,
+      respuesta: isEn
+        ? `Alright. Your appointments remain active. 👍`
+        : `De acuerdo. Tus citas siguen activas. 👍`,
       nuevoEstado: 'IDLE',
       limpiarSesion: true,
     };
@@ -263,7 +297,9 @@ async function handleCancelSelect(sesion, msg) {
 
   if (!opcion || opcion < 1 || opcion > citas.length) {
     return {
-      respuesta: `Por favor elige un número del 1 al ${citas.length}, o escribe *"ninguna"* para salir.`,
+      respuesta: isEn
+        ? `Please reply with a number between 1 and ${citas.length}, or reply *"none"* to exit.`
+        : `Por favor elige un número del 1 al ${citas.length}, o escribe *"ninguna"* para salir.`,
       nuevoEstado: 'CANCEL_SELECT',
     };
   }
@@ -273,16 +309,20 @@ async function handleCancelSelect(sesion, msg) {
 
   if (cancelada) {
     return {
-      respuesta:
-        `✅ Tu cita *#${citaElegida.id}* (${citaElegida.servicio}) ha sido cancelada.\n\n` +
-        `Si necesitas reagendar, escríbenos cuando quieras. 😊`,
+      respuesta: isEn
+        ? `✅ Your appointment *#${citaElegida.id}* (${citaElegida.servicio}) has been cancelled.\n\n` +
+          `Message us anytime if you need to reschedule. 😊`
+        : `✅ Tu cita *#${citaElegida.id}* (${citaElegida.servicio}) ha sido cancelada.\n\n` +
+          `Si necesitas reagendar, escríbenos cuando quieras. 😊`,
       nuevoEstado: 'IDLE',
       limpiarSesion: true,
     };
   }
 
   return {
-    respuesta: `⚠️ No se pudo cancelar la cita. Puede que ya haya sido procesada. Contáctanos directamente.`,
+    respuesta: isEn
+      ? `⚠️ Could not cancel appointment. It may have already been processed.`
+      : `⚠️ No se pudo cancelar la cita. Puede que ya haya sido procesada. Contáctanos directamente.`,
     nuevoEstado: 'IDLE',
     limpiarSesion: true,
   };
