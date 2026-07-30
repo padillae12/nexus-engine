@@ -454,6 +454,9 @@ Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
 • Requisitos de primera cita (Ej. Traer identificación, llegar 10 min antes):
 • Métodos de pago aceptados (Efectivo, Tarjeta, Transferencia, Aseguradoras):
 • Teléfono de emergencias médicas (opcional):
+
+6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
+• NIP / PIN secreto de 4 a 6 dígitos para acceder al modo Admin en tu App: [ ______ ]
 ```
 
 ---
