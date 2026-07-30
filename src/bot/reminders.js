@@ -8,7 +8,7 @@ const {
   markRecordatorioEnviado,
   getTelefonoEmpleado,
 } = require('../db/queries');
-const { formatFechaEspanol } = require('../utils/slots');
+const { formatFechaEspanol, formatFechaIngles } = require('../utils/slots');
 const config = require('../config');
 
 /**
@@ -129,9 +129,25 @@ async function notificarConfirmacionCitaCliente(client, citaInfo) {
     }
 
     const isEn = (citaInfo.clienteTelefono && citaInfo.clienteTelefono.startsWith('1')) || citaInfo.idioma === 'en';
-    const fechaObj = new Date(citaInfo.fechaInicio);
+
+    let fechaObj = citaInfo.fechaInicio instanceof Date ? citaInfo.fechaInicio : new Date(citaInfo.fechaInicio);
+    if (isNaN(fechaObj.getTime())) fechaObj = new Date();
+
     const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
-    const horaTexto = citaInfo.fechaInicio.split(' ')[1]?.slice(0, 5) || citaInfo.hora || '';
+
+    let horaTexto = citaInfo.hora || '';
+    if (!horaTexto) {
+      const rawStr = String(citaInfo.fechaInicio || '');
+      if (rawStr.includes(' ')) {
+        horaTexto = rawStr.split(' ')[1]?.slice(0, 5) || '';
+      } else if (rawStr.includes('T')) {
+        horaTexto = rawStr.split('T')[1]?.slice(0, 5) || '';
+      } else if (citaInfo.fechaInicio instanceof Date) {
+        const h = String(citaInfo.fechaInicio.getHours()).padStart(2, '0');
+        const m = String(citaInfo.fechaInicio.getMinutes()).padStart(2, '0');
+        horaTexto = `${h}:${m}`;
+      }
+    }
 
     const { getAllConfig } = require('../db/queries');
     const cfg = await getAllConfig().catch(() => ({}));
