@@ -25,27 +25,38 @@ const pool = require('./pool');
  * @returns {Promise<{id, telefono, nombre}>}
  */
 async function findOrCreateCliente(telefono, nombre = null) {
-  let cleanTel = String(telefono || '').trim();
-  let searchDigits = cleanTel.replace(/[^0-9]/g, '');
+  let rawStr = String(telefono || '').trim().split('@')[0];
+  let searchDigits = rawStr.replace(/[^0-9]/g, '');
 
-  if (searchDigits.length === 10) {
+  let cleanTel = searchDigits;
+  if (searchDigits.length === 13 && searchDigits.startsWith('521')) {
+    cleanTel = '52' + searchDigits.slice(3);
+  } else if (searchDigits.length === 10) {
     cleanTel = '52' + searchDigits;
   }
 
-  // 1. Buscar por teléfono exacto
+  // 1. Buscar por teléfono exacto o coincidencias de los últimos 10 dígitos
+  const last10 = cleanTel.length >= 10 ? cleanTel.slice(-10) : cleanTel;
   const [rows] = await pool.execute(
-    'SELECT id, telefono, nombre FROM clientes WHERE telefono = ?',
-    [cleanTel]
+    'SELECT id, telefono, nombre FROM clientes WHERE telefono = ? OR telefono LIKE ?',
+    [cleanTel, `%${last10}`]
   );
+
   if (rows.length > 0) {
-    if (nombre && !rows[0].nombre) {
-      await updateClienteNombre(rows[0].id, nombre);
-      rows[0].nombre = nombre;
+    const clienteEncontrado = rows[0];
+    // Si el registro existente tiene un teléfono LID antiguo (más de 12 dígitos) o diferente, actualizarlo
+    if (cleanTel.length <= 12 && (clienteEncontrado.telefono.length > 12 || clienteEncontrado.telefono !== cleanTel)) {
+      await pool.execute('UPDATE clientes SET telefono = ? WHERE id = ?', [cleanTel, clienteEncontrado.id]);
+      clienteEncontrado.telefono = cleanTel;
     }
-    return rows[0];
+    if (nombre && !clienteEncontrado.nombre) {
+      await updateClienteNombre(clienteEncontrado.id, nombre);
+      clienteEncontrado.nombre = nombre;
+    }
+    return clienteEncontrado;
   }
 
-  // 2. Si hay nombre, buscar por nombre para reutilizar/actualizar cliente con teléfono viejo o LID
+  // 2. Si hay nombre, buscar por nombre para actualizar teléfono si existía un registro viejo sin teléfono o con LID
   if (nombre) {
     const [byName] = await pool.execute(
       'SELECT id, telefono, nombre FROM clientes WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?)) LIMIT 1',

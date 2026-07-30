@@ -128,16 +128,16 @@ export default function NuevaCitaModal({ visible, onClose, onSuccess }) {
   };
 
   /**
-   * Limpia un JID de WhatsApp o string de número para mostrar solo los 10 dígitos locales.
-   * Filtra cadenas LID de más de 12 dígitos para no mostrar números internos raros.
+   * Limpia cualquier string de teléfono o JID para mostrar siempre los 10 dígitos locales.
    */
   const limpiarTelefono = (raw) => {
     if (!raw) return '';
     let str = String(raw).split('@')[0].replace(/[^0-9]/g, '');
-    if (str.length > 12) return ''; // Es un LID interno (ej. 243920420249665), no un teléfono
+    if (!str) return '';
     if (str.length === 13 && str.startsWith('521')) return str.slice(3);
     if (str.length === 12 && str.startsWith('52')) return str.slice(2);
     if (str.length === 10) return str;
+    if (str.length >= 10) return str.slice(-10);
     return str;
   };
 
