@@ -375,37 +375,25 @@ Favor de listar a los doctores, su WhatsApp personal y sus especialidades:
 
 ---
 
-## 13. Integración de Facebook Messenger e Instagram Direct (Guía Paso a Paso)
+## 13. Estrategia de Integración con Facebook e Instagram (Redirección Directa a WhatsApp)
 
-Nexus-Engine cuenta con un motor omnicanal que conecta **Facebook Messenger** e **Instagram Direct** al mismo bot bilingüe y a la misma base de datos de citas.
+Para garantizar **0% de fricción burocrática con revisiones de Meta** y mantener el 100% de la base de datos de clientes unificada en un solo lugar, la estrategia oficial consiste en utilizar las **Respuestas Instantáneas de Bienvenida de Facebook e Instagram (Meta Business Suite)**.
 
-### 13.1 Pasos en Meta Developers Portal:
+### 13.1 Configuración de la Respuesta Instantánea en Meta Business Suite:
 
-1. **Crear App en Meta:**
-   - Ve a [developers.facebook.com](https://developers.facebook.com) y crea una App de tipo **"Empresa" / "Business"**.
-2. **Agregar el producto Messenger:**
-   - En la sección de productos, agrega **Messenger** e **Instagram Graph API**.
-3. **Vincular la Página de Facebook e Instagram:**
-   - Selecciona la Página de Facebook oficial del cliente e Instagram empresarial vinculado.
-   - Genera el **Page Access Token**.
-4. **Configurar el Webhook:**
-   - **URL del Webhook:** `https://tu-dominio-o-ip-vps/api/webhooks/facebook`
-   - **Verify Token:** `nexus_secret_verify_token` (o el token personalizado configurado en tu `.env`).
-   - Suscribir a los eventos: `messages`, `messaging_postbacks`, `instagram_manage_messages`.
+1. Ingresa a [business.facebook.com](https://business.facebook.com) ➔ **Automatizaciones** ➔ **Respuesta Instantánea**.
+2. Activa la respuesta automática para los canales de **Facebook Messenger** e **Instagram Direct**.
+3. Configura el siguiente texto de bienvenida automatizado:
 
-### 13.2 Configuración de Variables de Entorno en el VPS (`.env`):
+```text
+¡Hola! 👋 Gracias por comunicarte con [Nombre del Negocio].
 
-Agrega las siguientes variables en tu archivo `~/nexus-engine/.env`:
+Para consultar nuestros tratamientos, precios y AGENDAR TU CITA EN TIEMPO REAL las 24 horas con confirmación inmediata, habla con nuestro recepcionista virtual en WhatsApp haciendo clic aquí:
 
-```env
-FB_VERIFY_TOKEN=nexus_secret_verify_token
-FB_PAGE_ACCESS_TOKEN=EAAB...tu_token_aqui...
+📲 https://wa.me/52686XXXXXXX?text=Hola%20quiero%20agendar%20una%20cita
 ```
 
-Reinicia el servidor para aplicar:
-```bash
-pm2 restart all
-```
-
-6️⃣ SEGURIDAD DE LA APP DE RECEPCIÓN:
-• PIN secreto de 4 a 6 dígitos para acceder al panel de administración: [ ______ ]
+### 13.2 Ventajas Competitivas de esta Estrategia:
+- **Cero revisiones ni solicitudes de documentos:** No requiere pedirle identificaciones oficiales, escrituras ni información confidencial al cliente.
+- **Canalización 100% Directa:** Todo prospecto de anuncios o redes sociales ingresa inmediatamente a tu WhatsApp Bot de agendamiento.
+- **Base de Datos Unificada:** El negocio gestiona toda su agenda desde un solo panel en la **Nexus-App**.
