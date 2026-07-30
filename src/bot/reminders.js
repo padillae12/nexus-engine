@@ -20,76 +20,66 @@ const config = require('../config');
  */
 function limpiarTelefonoDisplay(raw) {
   if (!raw) return '';
-  // Si tiene @, es un JID — extraer solo la parte numérica antes del @
-  if (raw.includes('@')) {
-    const parteNumerica = raw.split('@')[0].replace(/[^0-9]/g, '');
-    // Si son 12 dígitos con código 52, quitar el 52 para mostrar los 10 locales
-    if (parteNumerica.startsWith('52') && parteNumerica.length === 12) {
-      return parteNumerica.slice(2);
-    }
-    return parteNumerica;
-  }
-  return raw.replace(/[^0-9+]/g, '');
+  let str = String(raw).split('@')[0].replace(/[^0-9]/g, '');
+  if (str.length > 12) return ''; // LID interno, no es teléfono real
+  if (str.length === 13 && str.startsWith('521')) return str.slice(3);
+  if (str.length === 12 && str.startsWith('52')) return str.slice(2);
+  if (str.length === 10) return str;
+  return str;
 }
 
 /**
- * Obtiene el JID de WhatsApp válido para un número telefónico (resuelve LIDs de WhatsApp Web).
- * Soporta:
- *   - JIDs directos: "1234@lid", "521234@c.us", "521234@s.whatsapp.net"
- *   - Números de 10 dígitos: "6861234567" → antepone código de país 52
- *   - Números con 52 ya incluido
+ * Obtiene el JID de WhatsApp válido para un número telefónico.
  */
 async function getWhatsAppJid(client, telefonoRaw) {
-  if (!telefonoRaw) return null;
+  if (!client || !telefonoRaw) return null;
 
-  // Si ya es un JID válido (@lid), úsarlo directamente
-  if (telefonoRaw.includes('@lid') || telefonoRaw.includes('@s.whatsapp.net')) {
+  // Si ya viene formateado como JID válido con dominio
+  if (typeof telefonoRaw === 'string' && (telefonoRaw.endsWith('@c.us') || telefonoRaw.endsWith('@s.whatsapp.net'))) {
     return telefonoRaw;
   }
-  // Si es @c.us, también es válido directamente
-  if (telefonoRaw.includes('@c.us')) {
+  if (typeof telefonoRaw === 'string' && telefonoRaw.endsWith('@lid')) {
     return telefonoRaw;
   }
 
-  // Limpiar a solo dígitos
-  let cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
-  if (!cleanNumber) return null;
+  let digits = String(telefonoRaw).replace(/[^0-9]/g, '');
+  if (!digits) return null;
 
-  // Números de 14+ dígitos son probablemente LIDs de WhatsApp (protocolo de dispositivos enlazados)
-  // Intentar primero como @lid, luego como número regular
-  if (cleanNumber.length > 12) {
-    console.log(`📡 Número largo detectado (${cleanNumber.length} dígitos), intentando como @lid...`);
-    try {
-      // Intentar enviar directamente como LID
-      const lidJid = `${cleanNumber}@lid`;
-      // Verificar si el cliente puede encontrar este LID
-      const chat = await client.getChatById(lidJid).catch(() => null);
-      if (chat) {
-        console.log(`✅ LID válido encontrado: ${lidJid}`);
-        return lidJid;
-      }
-    } catch (e) {
-      console.log(`⚠️ No se pudo verificar como @lid, intentando como @c.us...`);
-    }
-    // Fallback: intentar como número normal @c.us
-    return `${cleanNumber}@c.us`;
+  // Si es un LID puro (14+ dígitos), intentar primero como @lid y luego getNumberId
+  if (digits.length > 13) {
+    return `${digits}@lid`;
   }
 
-  // Si el usuario ingresó un número local de 10 dígitos (ej. 6861234567), anteponer clave de país 52
-  if (cleanNumber.length === 10) {
-    cleanNumber = '52' + cleanNumber;
+  // Si tiene 10 dígitos (ej. 6861234567), anteponer 52 (México)
+  if (digits.length === 10) {
+    digits = '52' + digits;
   }
 
+  // Probar con getNumberId
   try {
-    const numberId = await client.getNumberId(cleanNumber);
+    const numberId = await client.getNumberId(digits);
     if (numberId && numberId._serialized) {
-      console.log(`✅ JID resuelto: ${numberId._serialized}`);
+      console.log(`✅ JID resuelto para ${digits}: ${numberId._serialized}`);
       return numberId._serialized;
     }
   } catch (e) {
-    console.log(`⚠️ getNumberId falló para ${cleanNumber}: ${e.message}`);
+    console.warn(`⚠️ getNumberId error para ${digits}:`, e.message);
   }
-  return `${cleanNumber}@c.us`;
+
+  // Para números de México de 12 dígitos (52XXXXXXXXXX), probar anteponiendo el '1' (521XXXXXXXXXX)
+  if (digits.length === 12 && digits.startsWith('52')) {
+    const digitsWith1 = '521' + digits.slice(2);
+    try {
+      const numberId = await client.getNumberId(digitsWith1);
+      if (numberId && numberId._serialized) {
+        console.log(`✅ JID resuelto con 521: ${numberId._serialized}`);
+        return numberId._serialized;
+      }
+    } catch (e) {}
+    return `${digitsWith1}@c.us`;
+  }
+
+  return `${digits}@c.us`;
 }
 
 /**

@@ -81,22 +81,31 @@ client.on('message_create', async (msg) => {
   // Si el mensaje viene de mí mismo y NO es un chat enviado a mí mismo, ignorar
   if (msg.fromMe && msg.to !== msg.from) return;
 
-  const texto    = msg.body?.trim();
-  const telefono = msg.fromMe ? msg.to : msg.from;
+  const texto = msg.body?.trim();
   if (!texto) return;
 
-  console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono}: ${texto}`);
+  // Obtener el número de teléfono real del contacto de WhatsApp
+  let telefono = msg.fromMe ? msg.to : msg.from;
+  try {
+    const contact = await msg.getContact();
+    if (contact && contact.number) {
+      telefono = contact.number;
+    }
+  } catch (e) {
+    console.warn('⚠️ No se pudo resolver el contacto del mensaje:', e.message);
+  }
+
+  console.log(`📩 [${new Date().toLocaleTimeString()}] ${telefono} (${msg.from}): ${texto}`);
 
   try {
     const respuesta = await handleMessage(telefono, texto);
     if (respuesta) {
-      await client.sendMessage(telefono, respuesta);
-      console.log(`📤 Respuesta enviada a ${telefono}`);
+      await msg.reply(respuesta);
+      console.log(`📤 Respuesta enviada a ${msg.from}`);
     }
   } catch (error) {
-    console.error(`❌ Error procesando mensaje de ${telefono}:`, error);
-    await client.sendMessage(
-      telefono,
+    console.error(`❌ Error procesando mensaje de ${msg.from}:`, error);
+    await msg.reply(
       '😔 Ocurrió un error inesperado. Intenta de nuevo.\n\nEscribe *"reiniciar"* si el problema persiste.'
     ).catch(() => {});
   }
