@@ -177,7 +177,7 @@ export default function ClientesScreen() {
             {loadingHistorial ? (
               <ActivityIndicator color="#6366F1" style={{ marginVertical: 30 }} />
             ) : (
-              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
                 {historialCitas.length === 0 ? (
                   <Text style={styles.emptyHistorial}>El cliente no tiene citas registradas en el historial.</Text>
                 ) : (
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '85%',
+    height: '82%',
     borderWidth: 1,
     borderColor: '#1F2937',
   },
