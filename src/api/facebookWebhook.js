@@ -42,31 +42,52 @@ router.post('/webhooks/facebook', async (req, res) => {
   // Responder 200 OK inmediatamente a Meta para evitar retries
   res.status(200).send('EVENT_RECEIVED');
 
-  if (body.object === 'page' || body.object === 'instagram') {
-    if (Array.isArray(body.entry)) {
-      for (const entry of body.entry) {
-        const messagingEvents = entry.messaging || entry.standby || [];
-        for (const event of messagingEvents) {
-          if (event.message && event.message.text && !event.message.is_echo) {
-            const senderId = event.sender?.id;
-            const text = event.message.text.trim();
+  // 1. Soporte para el botón de prueba "Enviar a mi servidor" en Meta Developers
+  if (body.sample && body.sample.value) {
+    const val = body.sample.value;
+    const senderId = val.sender?.id;
+    const text = val.message?.text?.trim();
 
-            if (senderId && text) {
-              console.log(`💬 [Meta Webhook] Mensaje recibido de ${senderId}: "${text}"`);
+    if (senderId && text) {
+      console.log(`💬 [Meta Webhook Test] Mensaje de prueba recibido de ${senderId}: "${text}"`);
+      const userKey = `fb_${senderId}`;
+      try {
+        const respuesta = await handleMessage(userKey, text);
+        console.log(`🤖 [FSM Respuesta Generada para Test ${senderId}]:\n${respuesta}`);
+        if (respuesta) {
+          await sendFacebookMessage(senderId, respuesta);
+        }
+      } catch (err) {
+        console.error(`❌ [Meta Webhook Test Error]:`, err.message);
+      }
+    }
+    return;
+  }
 
-              // Identificador único para la FSM: ej. "fb_123456789"
-              const userKey = `fb_${senderId}`;
+  // 2. Soporte para mensajes reales de usuarios en Messenger / Instagram Direct
+  if (body.entry && Array.isArray(body.entry)) {
+    for (const entry of body.entry) {
+      const messagingEvents = entry.messaging || entry.standby || [];
+      for (const event of messagingEvents) {
+        if (event.message && event.message.text && !event.message.is_echo) {
+          const senderId = event.sender?.id;
+          const text = event.message.text.trim();
 
-              try {
-                // Procesar el mensaje en la Máquina de Estados (FSM)
-                const respuesta = await handleMessage(userKey, text);
+          if (senderId && text) {
+            console.log(`💬 [Meta Webhook] Mensaje recibido de ${senderId}: "${text}"`);
 
-                if (respuesta) {
-                  await sendFacebookMessage(senderId, respuesta);
-                }
-              } catch (err) {
-                console.error(`❌ [Meta Webhook Error] al procesar mensaje de ${senderId}:`, err.message);
+            // Identificador único para la FSM: ej. "fb_123456789"
+            const userKey = `fb_${senderId}`;
+
+            try {
+              // Procesar el mensaje en la Máquina de Estados (FSM)
+              const respuesta = await handleMessage(userKey, text);
+
+              if (respuesta) {
+                await sendFacebookMessage(senderId, respuesta);
               }
+            } catch (err) {
+              console.error(`❌ [Meta Webhook Error] al procesar mensaje de ${senderId}:`, err.message);
             }
           }
         }
