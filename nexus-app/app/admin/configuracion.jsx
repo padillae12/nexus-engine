@@ -570,8 +570,14 @@ export default function ConfiguracionScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.empNombre}>{srv.nombre}</Text>
                 <View style={styles.empMetaRow}>
+                  <Ionicons name="cash-outline" size={12} color="#10B981" />
+                  <Text style={[styles.empTel, { color: '#10B981', fontWeight: '700' }]}>
+                    ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'}
+                  </Text>
+                  <Text style={[styles.empTel, { marginHorizontal: 4 }]}>·</Text>
+                  <Ionicons name="time-outline" size={12} color="#9CA3AF" />
                   <Text style={styles.empTel}>
-                    💰 ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'} · ⏱ {srv.duracion_min || 60} min
+                    {srv.duracion_min || 60} min
                   </Text>
                 </View>
                 {srv.descripcion ? <Text style={[styles.empTel, { marginTop: 2 }]}>{srv.descripcion}</Text> : null}
