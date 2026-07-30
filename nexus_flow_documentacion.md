@@ -292,7 +292,7 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 2️⃣ HORARIOS DE ATENCIÓN:
 • Días laborables (Ej. Lunes a Sábado):
 • Horario de Apertura y Cierre (Ej. 9:00 AM - 7:00 PM):
-• ¿Tienen horario de comida o descanso?:
+• (Nota: Los tiempos de comida/descanso se asignan individualmente por empleado desde el panel Admin de la App)
 
 3️⃣ CATÁLOGO DE SERVICIOS:
 Favor de listar los servicios que el bot ofrecerá en WhatsApp:
@@ -334,7 +334,7 @@ Ejemplos:
 2️⃣ HORARIOS DE ATENCIÓN Y CITAS:
 • Días laborables de la clínica:
 • Horario de Atención (Ej. Lunes a Viernes 8:00 AM - 8:00 PM, Sábados 9:00 AM - 2:00 PM):
-• Horario de comida/descanso general:
+• (Nota: Los tiempos de comida/descanso se asignan individualmente por empleado en la App)
 • Mínimo de anticipación para agendar (Ej. 2 horas antes):
 
 3️⃣ CATÁLOGO DE SERVICIOS Y TRATAMIENTOS:
