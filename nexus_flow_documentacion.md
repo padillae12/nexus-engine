@@ -49,6 +49,68 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 
 ---
 
+### 1.1 Requerimientos Funcionales (RF)
+
+- **RF-01 (Agendamiento Automático 24/7):** El bot debe permitir a los clientes agendar citas por WhatsApp en tiempo real sin intervención humana.
+- **RF-02 (Gestión de Catálogo de Servicios con Precios):** Presentar servicios activos con precios, duración estimada y descripciones informativas.
+- **RF-03 (Algoritmo de Slots Libres sin Solapamiento):** Calcular disponibilidad exacta considerando horario comercial, bloqueos de comida y citas ya confirmadas.
+- **RF-04 (Consulta y Cancelación de Citas):** Permitir a los clientes consultar sus citas activas y cancelarlas respetando la anticipación mínima configurada.
+- **RF-05 (Notificaciones a Empleados con Privacidad):** Enviar alerta por WhatsApp al doctor/empleado sin incluir el teléfono del cliente para proteger su privacidad.
+- **RF-06 (Recordatorios Automáticos Personalizados):** Enviar recordatorios automáticos por WhatsApp con la anticipación elegida por el cliente (`1h`, `2h`, `24h` o `Sin recordatorio`).
+- **RF-07 (Información y Horarios):** Responder automáticamente con la ubicación, dirección, estacionamiento y horarios del negocio.
+- **RF-08 (Soporte Bilingüe Español / Inglés):** Detectar idioma por código de país (+1 EE.UU. = Inglés) y permitir cambio manual en cualquier momento.
+- **RF-09 (Agendamiento Manual desde App Móvil/Web):** Permitir a recepción/admin agendar o modificar citas manualmente con un calendario nativo intuitivo.
+- **RF-10 (Reportes Contables y Dashboard de Ingresos):** Generar reportes PDF membretados y descargas CSV para contabilidad.
+- **RF-11 (Agendamiento para Terceros / Hijos / Familiares):** Permitir agendar citas indicando si es *"Para mí"* o *"Para otra persona"*, solicitando y registrando el nombre del paciente en la cita.
+- **RF-12 (Gestión de Perfil / Cambio de Nombre):** Permitir al cliente actualizar su nombre registrado mediante la Opción 5 o el comando *"cambiar nombre"*.
+- **RF-13 (Filtro Inteligente de Personal):** Detectar automáticamente a los doctores y empleados registrados para que el bot no intente agendarlos como clientes ni genere errores.
+- **RF-14 (Seguridad App Admin con PIN Estándar de 4 Dígitos):** Proteger el panel administrativo en la App mediante un PIN secreto de 4 dígitos.
+
+---
+
+### 1.2 Requerimientos No Funcionales (RNF)
+
+- **RNF-01 (Cero Costos de Mensajería Meta API):** Operar mediante conexión persistente WhatsApp-Web sin requerir cobros por plantilla de Meta.
+- **RNF-02 (Alta Disponibilidad 24/7):** Garantizar operación ininterrumpida gestionada con el monitor de procesos PM2.
+- **RNF-03 (Seguridad de Datos de Clientes):** Almacenar credenciales y contraseñas mediante hashing Bcrypt y proteger la base de datos MariaDB con FOREIGN KEYS.
+- **RNF-04 (Tiempo de Respuesta Inmediata):** Procesar y responder mensajes entrantes en menos de 2 segundos.
+
+---
+
+### 1.3 Casos de Uso (CU)
+
+- **CU-01 (Agendamiento de Cita Regular):**
+  - **Actor:** Cliente / Paciente.
+  - **Flujo:** Escribe al WhatsApp ➔ Selecciona servicio ➔ Indica "Para mí" ➔ Selecciona fecha y hora ➔ Selecciona recordatorio ➔ Confirma la cita.
+  - **Resultado:** Cita registrada en MariaDB y notificación enviada al doctor.
+
+- **CU-02 (Agendamiento para Hijo o Familiar):**
+  - **Actor:** Madre de familia / Titular de la cuenta de WhatsApp.
+  - **Flujo:** Escribe al WhatsApp ➔ Selecciona servicio (ej. Valoración Inicial) ➔ Elige "Para otra persona" ➔ Ingresa el nombre del paciente (ej. "Mateo") ➔ Selecciona fecha y hora ➔ Confirma.
+  - **Resultado:** Cita registrada especificando a Mateo como paciente y a la mamá como titular agendadora.
+
+- **CU-03 (Cancelación de Cita):**
+  - **Actor:** Cliente.
+  - **Flujo:** Selecciona Opción 3 o escribe "cancelar" ➔ Elige la cita ➔ Confirma cancelación.
+  - **Resultado:** Cita cambia a estado `cancelada` liberando el horario en la agenda.
+
+- **CU-04 (Cambio de Nombre de Perfil):**
+  - **Actor:** Cliente.
+  - **Flujo:** Selecciona Opción 5 o escribe "cambiar mi nombre" ➔ Ingresa su nuevo nombre.
+  - **Resultado:** Nombre actualizado en la tabla `clientes` de MariaDB y confirmación enviada.
+
+- **CU-05 (Consulta de Información y Horarios):**
+  - **Actor:** Cliente.
+  - **Flujo:** Selecciona Opción 4 o pregunta por ubicación/horarios.
+  - **Resultado:** Bot responde con dirección, estacionamiento y horarios comerciales.
+
+- **CU-06 (Gestión Ejecutiva en App Móvil/Web):**
+  - **Actor:** Recepcionista / Administrador de la Clínica.
+  - **Flujo:** Ingresa a la App ➔ Toca el logo 5 veces ➔ Ingresa PIN de 4 dígitos ➔ Visualiza citas del día, agenda manual o exporta reporte contable PDF/CSV.
+  - **Resultado:** Control absoluto de la agenda del negocio en tiempo real.
+
+---
+
 ## 2. Arquitectura del Sistema
 
 El sistema consta de **2 componentes principales** totalmente integrados:
@@ -96,32 +158,37 @@ El bot implementa una **Máquina de Estados Finitos (FSM)** que rastrea paso a p
     │  No → menú directo       │ → MAIN_MENU
     └──────────────────────────┘
            ↓
-       MAIN_MENU (4 Opciones)
+       MAIN_MENU (6 Opciones)
     ┌─────────────────────────────────────────┐
     │ 1️⃣ 📅 Agendar una cita                  │
     │ 2️⃣ 📋 Ver mis citas                     │
     │ 3️⃣ ❌ Cancelar una cita                 │
     │ 4️⃣ ℹ️ Información y Horarios            │
+    │ 5️⃣ ✏️ Cambiar mi nombre                 │
+    │ 6️⃣ 🌐 English / Español                 │
     └─────────────────────────────────────────┘
            ↓ (Elige 1)
     SERVICE_SELECT
     Muestra catálogo de servicios con precio y duración
            ↓
-    DATE_SELECT
-    Selección de fecha ("hoy", "mañana", "el lunes", "14/04")
-           ↓
-    TIME_SELECT
-    Muestra horarios libres calculados sin colisiones
-           ↓
-    REMINDER_SELECT (Solo en Plan Pro)
-    🔔 ¿Cuándo recibir recordatorio? (1h / 2h / 24h / Ninguno)
-           ↓
-    CONFIRMATION
-    Resumen completo + ¿Confirmas? (Sí / No)
-           ↓ (Sí)
-    ✅ Cita registrada en MariaDB
-       ├─ Notificación instantánea por WhatsApp al Empleado (Sin teléfono del cliente)
-       └─ Regreso a MAIN_MENU
+    FOR_WHOM_SELECT (¿Para quién es la cita?)
+    ├─ 1. Para mí ───────────────┐
+    └─ 2. Para otra persona ────┼─► PATIENT_NAME_SELECT (Captura nombre de hijo/familiar)
+                                 │
+                                 ▼
+                           DATE_SELECT
+                           Selección de fecha ("hoy", "mañana", "el lunes", "14/04")
+                                 ↓
+                           TIME_SELECT
+                           Muestra horarios libres calculados sin colisiones
+                                 ↓
+                           REMINDER_SELECT (Solo en Plan Pro)
+                           🔔 ¿Cuándo recibir recordatorio? (1h / 2h / 24h / Ninguno)
+                                 ↓
+                           CONFIRMATION
+                           Resumen completo + ¿Confirmas? (Sí / No)
+                                 ↓ (Sí)
+                           ✅ Cita registrada en MariaDB (Con paciente guardado)
 ```
 
 ### 3.2 Opción 4: Información y Horarios
