@@ -364,14 +364,16 @@ async function getCitasPorFecha(fecha) {
        TIME_FORMAT(c.fecha_fin,   '%H:%i')    AS hora_fin,
        DATE_FORMAT(c.creado_en, '%Y-%m-%d %H:%i') AS creado_en,
        c.estado,
-       cl.nombre   AS cliente,
+       COALESCE(c.paciente_nombre, cl.nombre)  AS cliente,
+       c.paciente_nombre,
+       cl.nombre                               AS agendado_por,
        cl.telefono,
-       s.nombre    AS servicio,
+       s.nombre                                AS servicio,
        c.servicio_id,
        s.duracion_min,
-       COALESCE(c.precio, s.precio) AS precio,
-       c.notas                      AS notas,
-       u.nombre    AS empleado
+       COALESCE(c.precio, s.precio)            AS precio,
+       c.notas                                 AS notas,
+       u.nombre                                AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
      JOIN servicios  s ON c.servicio_id = s.id
@@ -406,14 +408,16 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        TIME_FORMAT(c.fecha_inicio, '%H:%i')    AS hora,
        DATE_FORMAT(c.creado_en, '%Y-%m-%d %H:%i') AS creado_en,
        c.estado,
-       cl.nombre   AS cliente,
+       COALESCE(c.paciente_nombre, cl.nombre)  AS cliente,
+       c.paciente_nombre,
+       cl.nombre                               AS agendado_por,
        cl.telefono,
-       s.nombre    AS servicio,
+       s.nombre                                AS servicio,
        c.servicio_id,
        s.duracion_min,
-       COALESCE(c.precio, s.precio) AS precio,
-       c.notas                      AS notas,
-       u.nombre    AS empleado
+       COALESCE(c.precio, s.precio)            AS precio,
+       c.notas                                 AS notas,
+       u.nombre                                AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
      JOIN servicios  s ON c.servicio_id = s.id
