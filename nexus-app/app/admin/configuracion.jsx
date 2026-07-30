@@ -19,6 +19,9 @@ import {
   getEmpleados,
   guardarEmpleado,
   getServicios,
+  getServiciosAdmin,
+  guardarServicio,
+  deleteServicio,
   getServiciosEmpleado,
 } from '../../services/api';
 
@@ -51,14 +54,26 @@ export default function ConfiguracionScreen() {
   const [empTel, setEmpTel] = useState('');
   const [empRol, setEmpRol] = useState('empleado');
   const [empServicioIds, setEmpServicioIds] = useState([]);
+  const [empHoraInicioComida, setEmpHoraInicioComida] = useState('');
+  const [empHoraFinComida, setEmpHoraFinComida] = useState('');
   const [savingEmp, setSavingEmp] = useState(false);
+
+  // Formulario agregar / editar servicio
+  const [showAddSrv, setShowAddSrv] = useState(false);
+  const [editingSrvId, setEditingSrvId] = useState(null);
+  const [srvNombre, setSrvNombre] = useState('');
+  const [srvPrecio, setSrvPrecio] = useState('');
+  const [srvDuracionMin, setSrvDuracionMin] = useState('60');
+  const [srvDescripcion, setSrvDescripcion] = useState('');
+  const [srvActivo, setSrvActivo] = useState(true);
+  const [savingSrv, setSavingSrv] = useState(false);
 
   const cargarDatos = () => {
     Promise.all([
       getConfig(),
       checkHealth(),
       getEmpleados().catch(() => []),
-      getServicios().catch(() => []),
+      getServiciosAdmin().catch(() => getServicios().catch(() => [])),
     ])
       .then(([cfg, health, emps, srvs]) => {
         setConfig(cfg);
@@ -84,6 +99,8 @@ export default function ConfiguracionScreen() {
     setEmpTel('');
     setEmpRol('empleado');
     setEmpServicioIds([]);
+    setEmpHoraInicioComida('');
+    setEmpHoraFinComida('');
     setShowAddEmp(false);
   };
 
@@ -93,6 +110,8 @@ export default function ConfiguracionScreen() {
     setEmpEmail(emp.email || '');
     setEmpTel(emp.telefono || '');
     setEmpRol(emp.rol || 'empleado');
+    setEmpHoraInicioComida(emp.hora_inicio_comida || '');
+    setEmpHoraFinComida(emp.hora_fin_comida || '');
     setShowAddEmp(true);
 
     try {
@@ -125,11 +144,13 @@ export default function ConfiguracionScreen() {
         telefono: empTel.trim(),
         rol: empRol,
         activo: 1,
+        horaInicioComida: empHoraInicioComida.trim() || null,
+        horaFinComida: empHoraFinComida.trim() || null,
         servicioIds: isPro ? empServicioIds : [],
       });
 
       const mensaje = editingEmpId
-        ? 'El empleado y sus especialidades han sido actualizados.'
+        ? 'El empleado, sus especialidades y horario de comida han sido actualizados.'
         : 'El nuevo empleado ha sido registrado exitosamente.';
 
       Alert.alert('Registro Guardado', mensaje);
@@ -140,6 +161,78 @@ export default function ConfiguracionScreen() {
     } finally {
       setSavingEmp(false);
     }
+  };
+
+  // Manejadores de servicios
+  const limpiarFormServicio = () => {
+    setEditingSrvId(null);
+    setSrvNombre('');
+    setSrvPrecio('');
+    setSrvDuracionMin('60');
+    setSrvDescripcion('');
+    setSrvActivo(true);
+    setShowAddSrv(false);
+  };
+
+  const handleEditarServicio = (srv) => {
+    setEditingSrvId(srv.id);
+    setSrvNombre(srv.nombre || '');
+    setSrvPrecio(srv.precio != null ? String(srv.precio) : '');
+    setSrvDuracionMin(srv.duracion_min != null ? String(srv.duracion_min) : '60');
+    setSrvDescripcion(srv.descripcion || '');
+    setSrvActivo(srv.activo !== 0);
+    setShowAddSrv(true);
+  };
+
+  const handleGuardarServicio = async () => {
+    if (!srvNombre.trim()) {
+      Alert.alert('Campo Requerido', 'Ingrese el nombre del servicio');
+      return;
+    }
+    setSavingSrv(true);
+    try {
+      await guardarServicio({
+        id: editingSrvId || undefined,
+        nombre: srvNombre.trim(),
+        precio: srvPrecio.trim() ? Number(srvPrecio) : null,
+        duracionMin: srvDuracionMin.trim() ? Number(srvDuracionMin) : 60,
+        descripcion: srvDescripcion.trim(),
+        activo: srvActivo ? 1 : 0,
+      });
+
+      Alert.alert(
+        'Servicio Guardado',
+        editingSrvId ? 'El servicio ha sido actualizado.' : 'El nuevo servicio ha sido agregado al catálogo.'
+      );
+      limpiarFormServicio();
+      cargarDatos();
+    } catch (err) {
+      Alert.alert('Error', err.message || 'No se pudo guardar el servicio');
+    } finally {
+      setSavingSrv(false);
+    }
+  };
+
+  const handleEliminarServicio = (srvId) => {
+    Alert.alert(
+      'Desactivar Servicio',
+      '¿Deseas ocultar/desactivar este servicio del catálogo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Desactivar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteServicio(srvId);
+              cargarDatos();
+            } catch (err) {
+              Alert.alert('Error', err.message || 'No se pudo desactivar el servicio');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) return <ActivityIndicator color="#6366F1" style={{ marginTop: 60 }} />;
@@ -253,6 +346,32 @@ export default function ConfiguracionScreen() {
             })}
           </View>
 
+          {/* Horario de Comida / Descanso */}
+          <Text style={styles.subTitleLabel}>HORARIO DE COMIDA / DESCANSO:</Text>
+          <View style={styles.timeRowContainer}>
+            <View style={[styles.inputWrap, { flex: 1 }]}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Inicio (Ej. 13:00)"
+                placeholderTextColor="#6B7280"
+                value={empHoraInicioComida}
+                onChangeText={setEmpHoraInicioComida}
+              />
+            </View>
+            <Text style={{ color: '#6B7280', fontWeight: '700' }}>a</Text>
+            <View style={[styles.inputWrap, { flex: 1 }]}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Fin (Ej. 14:00)"
+                placeholderTextColor="#6B7280"
+                value={empHoraFinComida}
+                onChangeText={setEmpHoraFinComida}
+              />
+            </View>
+          </View>
+
           {/* Selector de Servicios Habilitados (Solo Plan Pro) */}
           {isPro && (
             <>
@@ -324,6 +443,14 @@ export default function ConfiguracionScreen() {
                   <Ionicons name="logo-whatsapp" size={12} color="#10B981" />
                   <Text style={styles.empTel}>{emp.telefono || 'Sin WhatsApp'}</Text>
                 </View>
+                {emp.hora_inicio_comida && emp.hora_fin_comida ? (
+                  <View style={styles.empMetaRow}>
+                    <Ionicons name="restaurant-outline" size={12} color="#F59E0B" />
+                    <Text style={[styles.empTel, { color: '#F59E0B' }]}>
+                      Comida: {emp.hora_inicio_comida.slice(0, 5)} - {emp.hora_fin_comida.slice(0, 5)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <View style={styles.empRightCol}>
                 <View style={styles.empBadge}>
@@ -332,6 +459,140 @@ export default function ConfiguracionScreen() {
                 <Ionicons name="pencil" size={14} color="#6B7280" style={{ marginTop: 4 }} />
               </View>
             </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      {/* Gestión de Servicios / Tratamientos */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>CATÁLOGO DE SERVICIOS / TRATAMIENTOS</Text>
+        <TouchableOpacity
+          style={styles.addEmpBtn}
+          onPress={() => {
+            if (showAddSrv) {
+              limpiarFormServicio();
+            } else {
+              setShowAddSrv(true);
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name={showAddSrv ? "close" : "add-circle"} size={16} color="#FFFFFF" />
+          <Text style={styles.addEmpBtnText}>{showAddSrv ? "Cancelar" : "Nuevo Servicio"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Formulario Agregar / Editar Servicio */}
+      {showAddSrv && (
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>
+            {editingSrvId ? "Editar Servicio / Tratamiento" : "Nuevo Servicio / Tratamiento"}
+          </Text>
+
+          <View style={styles.inputWrap}>
+            <Ionicons name="pricetag-outline" size={16} color="#6B7280" />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Nombre del servicio (Ej. Limpieza Dental) *"
+              placeholderTextColor="#6B7280"
+              value={srvNombre}
+              onChangeText={setSrvNombre}
+            />
+          </View>
+
+          <View style={styles.timeRowContainer}>
+            <View style={[styles.inputWrap, { flex: 1 }]}>
+              <Ionicons name="cash-outline" size={16} color="#6B7280" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Precio $ (Ej. 600)"
+                placeholderTextColor="#6B7280"
+                keyboardType="numeric"
+                value={srvPrecio}
+                onChangeText={setSrvPrecio}
+              />
+            </View>
+            <View style={[styles.inputWrap, { flex: 1 }]}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Duración Min (Ej. 45)"
+                placeholderTextColor="#6B7280"
+                keyboardType="numeric"
+                value={srvDuracionMin}
+                onChangeText={setSrvDuracionMin}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
+            <Ionicons name="document-text-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+            <TextInput
+              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
+              placeholder="Descripción o información corta (Opcional)"
+              placeholderTextColor="#6B7280"
+              multiline
+              value={srvDescripcion}
+              onChangeText={setSrvDescripcion}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.saveEmpBtn}
+            onPress={handleGuardarServicio}
+            disabled={savingSrv}
+            activeOpacity={0.85}
+          >
+            {savingSrv ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-done" size={16} color="#FFFFFF" />
+                <Text style={styles.saveEmpBtnText}>
+                  {editingSrvId ? "Actualizar Servicio" : "Guardar Servicio"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Lista de Servicios */}
+      <View style={styles.empList}>
+        {catServicios.length === 0 ? (
+          <Text style={styles.emptyText}>Sin servicios registrados</Text>
+        ) : (
+          catServicios.map(srv => (
+            <View key={srv.id} style={[styles.empCard, srv.activo === 0 && { opacity: 0.5 }]}>
+              <View style={styles.empAvatar}>
+                <Ionicons name="bookmark-outline" size={18} color="#6366F1" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.empNombre}>{srv.nombre}</Text>
+                <View style={styles.empMetaRow}>
+                  <Text style={styles.empTel}>
+                    💰 ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'} · ⏱ {srv.duracion_min || 60} min
+                  </Text>
+                </View>
+                {srv.descripcion ? <Text style={[styles.empTel, { marginTop: 2 }]}>{srv.descripcion}</Text> : null}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => handleEditarServicio(srv)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="pencil" size={16} color="#6366F1" />
+                </TouchableOpacity>
+                {srv.activo !== 0 && (
+                  <TouchableOpacity
+                    onPress={() => handleEliminarServicio(srv.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           ))
         )}
       </View>
@@ -351,7 +612,7 @@ export default function ConfiguracionScreen() {
       )}
 
       <Text style={styles.hint}>
-        Tip: Haz clic en cualquier empleado de la lista para editar su información o modificar sus servicios autorizados.
+        Tip: Haz clic en cualquier empleado para editar su información, especialidades o su horario de comida.
       </Text>
     </ScrollView>
   );
@@ -486,6 +747,12 @@ const styles = StyleSheet.create({
   rolChipTextActive: {
     color: '#6366F1',
     fontWeight: '700',
+  },
+
+  timeRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 
   servicesGrid: {

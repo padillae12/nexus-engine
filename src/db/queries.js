@@ -206,7 +206,38 @@ async function isBloqueado(fechaHora, empleadoId = null) {
      LIMIT 1`,
     [fechaHora, diaSemana, horaActual, horaActual, empleadoId]
   );
-  return recurrentes.length > 0;
+  if (recurrentes.length > 0) return true;
+
+  // Verificar horario de comida individual del empleado (en usuarios)
+  if (empleadoId) {
+    const [comida] = await pool.execute(
+      `SELECT id FROM usuarios
+       WHERE id = ?
+         AND hora_inicio_comida IS NOT NULL AND hora_inicio_comida != ''
+         AND hora_fin_comida IS NOT NULL AND hora_fin_comida != ''
+         AND ? >= CONCAT(hora_inicio_comida, ':00')
+         AND ? < CONCAT(hora_fin_comida, ':00')
+       LIMIT 1`,
+      [empleadoId, horaActual, horaActual]
+    );
+    if (comida.length > 0) return true;
+  } else {
+    // Si no hay especialista asignado ("cualquiera libre"), verificar si TODOS los empleados activos están en horario de comida
+    const [todosConComida] = await pool.execute(
+      `SELECT id, hora_inicio_comida, hora_fin_comida FROM usuarios WHERE activo = 1`
+    );
+    if (todosConComida.length > 0) {
+      const todosEnComida = todosConComida.every(u => {
+        if (!u.hora_inicio_comida || !u.hora_fin_comida) return false;
+        const inicio = `${u.hora_inicio_comida.slice(0, 5)}:00`;
+        const fin = `${u.hora_fin_comida.slice(0, 5)}:00`;
+        return horaActual >= inicio && horaActual < fin;
+      });
+      if (todosEnComida) return true;
+    }
+  }
+
+  return false;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -683,7 +714,7 @@ async function setServiciosEmpleado(empleadoId, servicioIds = []) {
  */
 async function getEmpleados() {
   const [rows] = await pool.execute(
-    `SELECT id, nombre, email, telefono, rol, activo, creado_en FROM usuarios ORDER BY id DESC`
+    `SELECT id, nombre, email, telefono, rol, activo, hora_inicio_comida, hora_fin_comida, creado_en FROM usuarios ORDER BY id DESC`
   );
   return rows;
 }
@@ -691,11 +722,14 @@ async function getEmpleados() {
 /**
  * Crea o actualiza un empleado en la base de datos.
  */
-async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'empleado', activo = 1 }) {
+async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'empleado', activo = 1, horaInicioComida = null, horaFinComida = null }) {
   const bcrypt = require('bcrypt');
+  const hInicio = horaInicioComida && horaInicioComida.trim() ? horaInicioComida.trim() : null;
+  const hFin = horaFinComida && horaFinComida.trim() ? horaFinComida.trim() : null;
+
   if (id) {
-    let sql = 'UPDATE usuarios SET nombre = ?, email = ?, telefono = ?, rol = ?, activo = ?';
-    const params = [nombre, email, telefono || null, rol, activo];
+    let sql = 'UPDATE usuarios SET nombre = ?, email = ?, telefono = ?, rol = ?, activo = ?, hora_inicio_comida = ?, hora_fin_comida = ?';
+    const params = [nombre, email, telefono || null, rol, activo, hInicio, hFin];
     if (password) {
       const hash = await bcrypt.hash(password, 10);
       sql += ', password = ?';
@@ -708,11 +742,53 @@ async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'e
   } else {
     const hash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('123456', 10);
     const [res] = await pool.execute(
-      `INSERT INTO usuarios (nombre, email, password, telefono, rol, activo) VALUES (?, ?, ?, ?, ?, ?)`,
-      [nombre, email, hash, telefono || null, rol, activo]
+      `INSERT INTO usuarios (nombre, email, password, telefono, rol, activo, hora_inicio_comida, hora_fin_comida) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, email, hash, telefono || null, rol, activo, hInicio, hFin]
     );
     return res.insertId;
   }
+}
+
+/**
+ * Obtiene todos los servicios (incluyendo inactivos para admin).
+ */
+async function getServiciosAdmin() {
+  const [rows] = await pool.execute(
+    'SELECT id, nombre, descripcion, precio, duracion_min, activo FROM servicios ORDER BY id ASC'
+  );
+  return rows;
+}
+
+/**
+ * Crea o actualiza un servicio.
+ */
+async function guardarServicio({ id, nombre, precio, duracionMin, descripcion, activo = 1 }) {
+  const numPrecio = (precio != null && precio !== '') ? Number(precio) : null;
+  const numDuracion = (duracionMin != null && duracionMin !== '') ? Number(duracionMin) : 60;
+  const act = activo ? 1 : 0;
+  const desc = descripcion ? descripcion.trim() : null;
+
+  if (id) {
+    await pool.execute(
+      `UPDATE servicios SET nombre = ?, precio = ?, duracion_min = ?, descripcion = ?, activo = ? WHERE id = ?`,
+      [nombre.trim(), numPrecio, numDuracion, desc, act, id]
+    );
+    return id;
+  } else {
+    const [res] = await pool.execute(
+      `INSERT INTO servicios (nombre, precio, duracion_min, descripcion, activo) VALUES (?, ?, ?, ?, ?)`,
+      [nombre.trim(), numPrecio, numDuracion, desc, act]
+    );
+    return res.insertId;
+  }
+}
+
+/**
+ * Desactiva / Elimina un servicio.
+ */
+async function deleteServicio(id) {
+  await pool.execute(`UPDATE servicios SET activo = 0 WHERE id = ?`, [id]);
+  return true;
 }
 
 /**
@@ -784,6 +860,9 @@ module.exports = {
   getPlanType,
   getEmpleados,
   guardarEmpleado,
+  getServiciosAdmin,
+  guardarServicio,
+  deleteServicio,
   getEmpleadoPreferidoCliente,
   getEmpleadosPorServicio,
   getServiciosEmpleado,

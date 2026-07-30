@@ -142,6 +142,34 @@ export async function getServicios() {
 }
 
 /**
+ * Obtiene el catálogo completo de servicios (para admin).
+ */
+export async function getServiciosAdmin() {
+  return request('/servicios/admin');
+}
+
+/**
+ * Crea o actualiza un servicio.
+ * @param {object} datos - { id?, nombre, precio, duracionMin, descripcion, activo }
+ */
+export async function guardarServicio(datos) {
+  return request('/servicios', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Elimina/desactiva un servicio.
+ * @param {number} id
+ */
+export async function deleteServicio(id) {
+  return request(`/servicios/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
  * Cambia el estado de una cita.
  * @param {number} citaId
  * @param {'completada'|'cancelada'|'pendiente'} estado

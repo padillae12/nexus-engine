@@ -137,6 +137,44 @@ router.get('/servicios', async (req, res) => {
   }
 });
 
+// GET /api/servicios/admin — Obtiene todos los servicios (activos e inactivos)
+router.get('/servicios/admin', async (req, res) => {
+  try {
+    const servicios = await db.getServiciosAdmin();
+    res.json(servicios);
+  } catch (err) {
+    console.error('[GET /servicios/admin]', err.message);
+    res.status(500).json({ message: 'Error al obtener lista de servicios' });
+  }
+});
+
+// POST /api/servicios — Crear o editar un servicio
+router.post('/servicios', async (req, res) => {
+  try {
+    const { id, nombre, precio, duracionMin, descripcion, activo } = req.body;
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ message: 'El nombre del servicio es requerido' });
+    }
+    const serviceId = await db.guardarServicio({ id, nombre, precio, duracionMin, descripcion, activo });
+    res.status(201).json({ ok: true, id: serviceId });
+  } catch (err) {
+    console.error('[POST /servicios]', err.message);
+    res.status(500).json({ message: 'Error al guardar el servicio' });
+  }
+});
+
+// DELETE /api/servicios/:id — Desactivar/Eliminar un servicio
+router.delete('/servicios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.deleteServicio(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[DELETE /servicios/:id]', err.message);
+    res.status(500).json({ message: 'Error al eliminar el servicio' });
+  }
+});
+
 // GET /api/slots — Retorna los horarios disponibles reales para una fecha y servicio
 router.get('/slots', async (req, res) => {
   try {
@@ -367,11 +405,11 @@ router.get('/empleados', async (req, res) => {
 // POST /api/empleados — Crear o actualizar un empleado
 router.post('/empleados', async (req, res) => {
   try {
-    const { id, nombre, email, password, telefono, rol, activo, servicioIds } = req.body;
+    const { id, nombre, email, password, telefono, rol, activo, servicioIds, horaInicioComida, horaFinComida } = req.body;
     if (!nombre) {
       return res.status(400).json({ message: 'El nombre del empleado es requerido' });
     }
-    const empId = await db.guardarEmpleado({ id, nombre, email, password, telefono, rol, activo });
+    const empId = await db.guardarEmpleado({ id, nombre, email, password, telefono, rol, activo, horaInicioComida, horaFinComida });
     if (Array.isArray(servicioIds)) {
       await db.setServiciosEmpleado(empId, servicioIds);
     }
