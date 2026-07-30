@@ -55,6 +55,26 @@ async function getWhatsAppJid(client, telefonoRaw) {
   let cleanNumber = telefonoRaw.replace(/[^0-9]/g, '');
   if (!cleanNumber) return null;
 
+  // Números de 14+ dígitos son probablemente LIDs de WhatsApp (protocolo de dispositivos enlazados)
+  // Intentar primero como @lid, luego como número regular
+  if (cleanNumber.length > 12) {
+    console.log(`📡 Número largo detectado (${cleanNumber.length} dígitos), intentando como @lid...`);
+    try {
+      // Intentar enviar directamente como LID
+      const lidJid = `${cleanNumber}@lid`;
+      // Verificar si el cliente puede encontrar este LID
+      const chat = await client.getChatById(lidJid).catch(() => null);
+      if (chat) {
+        console.log(`✅ LID válido encontrado: ${lidJid}`);
+        return lidJid;
+      }
+    } catch (e) {
+      console.log(`⚠️ No se pudo verificar como @lid, intentando como @c.us...`);
+    }
+    // Fallback: intentar como número normal @c.us
+    return `${cleanNumber}@c.us`;
+  }
+
   // Si el usuario ingresó un número local de 10 dígitos (ej. 6861234567), anteponer clave de país 52
   if (cleanNumber.length === 10) {
     cleanNumber = '52' + cleanNumber;
@@ -63,10 +83,11 @@ async function getWhatsAppJid(client, telefonoRaw) {
   try {
     const numberId = await client.getNumberId(cleanNumber);
     if (numberId && numberId._serialized) {
+      console.log(`✅ JID resuelto: ${numberId._serialized}`);
       return numberId._serialized;
     }
   } catch (e) {
-    // Si no se puede resolver en WhatsApp Web, se usa el fallback clásico @c.us
+    console.log(`⚠️ getNumberId falló para ${cleanNumber}: ${e.message}`);
   }
   return `${cleanNumber}@c.us`;
 }
