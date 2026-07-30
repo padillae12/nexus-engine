@@ -183,14 +183,14 @@ export async function updateEstadoCita(citaId, estado) {
 }
 
 /**
- * Modifica el servicio y/o precio final de una cita.
+ * Modifica el servicio, precio final y/o notas de una cita.
  * @param {number} citaId
- * @param {object} params - { servicioId, precio }
+ * @param {object} params - { servicioId, precio, notas }
  */
-export async function updateCitaServicioPrecio(citaId, { servicioId, precio }) {
+export async function updateCitaServicioPrecio(citaId, { servicioId, precio, notas }) {
   return request(`/citas/${citaId}/servicio-precio`, {
     method: 'PATCH',
-    body: JSON.stringify({ servicioId, precio }),
+    body: JSON.stringify({ servicioId, precio, notas }),
   });
 }
 

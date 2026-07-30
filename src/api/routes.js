@@ -453,15 +453,15 @@ router.get('/config', async (req, res) => {
 //  HISTORIAL CLIENTE, REENVIAR WHATSAPP & REPORTES PDF
 // ─────────────────────────────────────────────────────────────────
 
-// PATCH /api/citas/:id/servicio-precio — Modifica el servicio y/o precio de una cita
+// PATCH /api/citas/:id/servicio-precio — Modifica el servicio, precio y/o notas de una cita
 router.patch('/citas/:id/servicio-precio', async (req, res) => {
   try {
-    const { servicioId, precio } = req.body;
-    await db.updateCitaServicioPrecio(req.params.id, { servicioId, precio });
-    res.json({ ok: true, message: 'Servicio y precio actualizados correctamente' });
+    const { servicioId, precio, notas } = req.body;
+    await db.updateCitaServicioPrecio(req.params.id, { servicioId, precio, notas });
+    res.json({ ok: true, message: 'Servicio, precio y notas actualizados correctamente' });
   } catch (err) {
     console.error('[PATCH /citas/:id/servicio-precio]', err.message);
-    res.status(500).json({ message: 'Error al actualizar servicio o precio' });
+    res.status(500).json({ message: 'Error al actualizar servicio, precio o notas' });
   }
 });
 
@@ -531,7 +531,10 @@ router.get('/reportes/ingresos/html', async (req, res) => {
         <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.fecha}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB; font-weight: 600;">${c.cliente}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.telefono || '—'}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.servicio}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">
+          ${c.servicio}
+          ${c.notas ? `<br><span style="color:#6B7280; font-size:10px; font-style:italic;">Notas: ${c.notas}</span>` : ''}
+        </td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.empleado}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: 700; color: #059669;">$${Number(c.precio).toLocaleString('es-MX')}</td>
       </tr>
@@ -657,7 +660,7 @@ router.get('/reportes/ingresos/excel', async (req, res) => {
     let csv = '\uFEFF';
     csv += `REPORTE CONTABLE DE INGRESOS - ${nombreNegocio.toUpperCase()}\n`;
     csv += `PERIODO: ${nombreMes}\n\n`;
-    csv += `FECHA Y HORA,CLIENTE,TELEFONO,SERVICIO,ESPECIALISTA,MONTO (MXN)\n`;
+    csv += `FECHA Y HORA,CLIENTE,TELEFONO,SERVICIO,NOTAS,ESPECIALISTA,MONTO (MXN)\n`;
 
     let totalIngresos = 0;
     citas.forEach(c => {
@@ -665,8 +668,9 @@ router.get('/reportes/ingresos/excel', async (req, res) => {
       totalIngresos += precioNum;
       const clienteEsc = `"${(c.cliente || '').replace(/"/g, '""')}"`;
       const servicioEsc = `"${(c.servicio || '').replace(/"/g, '""')}"`;
+      const notasEsc = `"${(c.notas || '').replace(/"/g, '""')}"`;
       const empleadoEsc = `"${(c.empleado || '').replace(/"/g, '""')}"`;
-      csv += `"${c.fecha}",${clienteEsc},"${c.telefono || ''}",${servicioEsc},${empleadoEsc},${precioNum}\n`;
+      csv += `"${c.fecha}",${clienteEsc},"${c.telefono || ''}",${servicioEsc},${notasEsc},${empleadoEsc},${precioNum}\n`;
     });
 
     csv += `\n`;

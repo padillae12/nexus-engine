@@ -27,7 +27,7 @@ const ACCIONES = [
 ];
 
 export default function DetalleCitaScreen() {
-  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en } =
+  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en, notas } =
     useLocalSearchParams();
 
   // Formatear fecha programada
@@ -53,15 +53,17 @@ export default function DetalleCitaScreen() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  // Estados editables de servicio y precio
+  // Estados editables de servicio, precio y notas
   const [servicioNombre, setServicioNombre] = useState(servicio ?? '');
   const [precioValor, setPrecioValor] = useState(precio ?? '');
+  const [notasValor, setNotasValor] = useState(notas ?? '');
 
-  // Modal Edición de servicio / precio
+  // Modal Edición de servicio / precio / notas
   const [modalEditar, setModalEditar] = useState(false);
   const [catServicios, setCatServicios] = useState([]);
   const [selectedServicioObj, setSelectedServicioObj] = useState(null);
   const [precioInput, setPrecioInput] = useState(String(precio ?? ''));
+  const [notasInput, setNotasInput] = useState(notas ?? '');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const handleOpenModalEditar = () => {
@@ -73,6 +75,7 @@ export default function DetalleCitaScreen() {
       })
       .catch(console.warn);
     setPrecioInput(String(precioValor ?? ''));
+    setNotasInput(notasValor ?? '');
     setModalEditar(true);
   };
 
@@ -81,18 +84,21 @@ export default function DetalleCitaScreen() {
     try {
       const servicioId = selectedServicioObj?.id || null;
       const numPrecio = precioInput.trim() !== '' ? Number(precioInput) : null;
+      const strNotas = notasInput.trim() !== '' ? notasInput.trim() : null;
 
       await updateCitaServicioPrecio(Number(id), {
         servicioId,
         precio: numPrecio,
+        notas: strNotas,
       });
 
       if (selectedServicioObj?.nombre) {
         setServicioNombre(selectedServicioObj.nombre);
       }
       setPrecioValor(numPrecio !== null ? String(numPrecio) : '');
+      setNotasValor(strNotas || '');
       setModalEditar(false);
-      Alert.alert('¡Actualizado!', 'El servicio y precio final de la cita han sido actualizados.');
+      Alert.alert('¡Actualizado!', 'El servicio, precio y notas de la cita han sido actualizados.');
     } catch (e) {
       Alert.alert('Error', e.message);
     } finally {
@@ -241,6 +247,20 @@ export default function DetalleCitaScreen() {
             </>
           ) : null}
 
+          {/* Notas / Detalles adicionales */}
+          {notasValor ? (
+            <>
+              <View style={styles.infoSeparator} />
+              <View style={styles.infoFull}>
+                <View style={styles.infoLabelRow}>
+                  <Ionicons name="document-text-outline" size={12} color="#6B7280" />
+                  <Text style={styles.infoLabel}>DESCRIPCIÓN / NOTAS DEL SERVICIO</Text>
+                </View>
+                <Text style={styles.infoSubText}>{notasValor}</Text>
+              </View>
+            </>
+          ) : null}
+
           {/* Fecha de creación / agendada el */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
@@ -340,6 +360,17 @@ export default function DetalleCitaScreen() {
               onChangeText={setPrecioInput}
               keyboardType="numeric"
               placeholder="Ej. 800"
+              placeholderTextColor="#6B7280"
+            />
+
+            <Text style={styles.inputLabel}>DESCRIPCIÓN / NOTAS DEL SERVICIO (OPCIONAL):</Text>
+            <TextInput
+              style={[styles.precioInput, { height: 70, textAlignVertical: 'top', paddingTop: 10 }]}
+              value={notasInput}
+              onChangeText={setNotasInput}
+              multiline
+              numberOfLines={3}
+              placeholder="Ej. Se realizaron 2 resinas compuestas + profilaxis..."
               placeholderTextColor="#6B7280"
             />
 
