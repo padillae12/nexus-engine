@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { updateEstadoCita } from '../../services/api';
+import { updateEstadoCita, reenviarWhatsApp } from '../../services/api';
 
 const ESTADO_CONFIG = {
   confirmada: { color: '#10B981', bg: 'rgba(16, 185, 129, 0.08)', label: 'CONFIRMADA' },
@@ -51,6 +51,19 @@ export default function DetalleCitaScreen() {
   const router  = useRouter();
   const [estado,  setEstado]  = useState(estadoInicial ?? 'confirmada');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const handleReenviarWhatsApp = async () => {
+    setResending(true);
+    try {
+      await reenviarWhatsApp(Number(id));
+      Alert.alert('¡Mensaje Enviado!', `Se reenvió la confirmación de la cita por WhatsApp a ${cliente ?? 'el cliente'}.`);
+    } catch (e) {
+      Alert.alert('Error al reenviar', e.message);
+    } finally {
+      setResending(false);
+    }
+  };
 
   const cfg = ESTADO_CONFIG[estado] ?? ESTADO_CONFIG.pendiente;
 
@@ -201,6 +214,23 @@ export default function DetalleCitaScreen() {
                 <Text style={[styles.accionLabel, { color: accion.color }]}>{accion.label}</Text>
               </TouchableOpacity>
             ))}
+
+            {/* Botón Reenviar WhatsApp de Confirmación */}
+            <TouchableOpacity
+              style={styles.reenviarBtn}
+              onPress={handleReenviarWhatsApp}
+              disabled={resending}
+              activeOpacity={0.8}
+            >
+              {resending ? (
+                <ActivityIndicator size="small" color="#10B981" />
+              ) : (
+                <>
+                  <Ionicons name="logo-whatsapp" size={18} color="#10B981" />
+                  <Text style={styles.reenviarBtnText}>Reenviar Confirmación por WhatsApp</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -288,4 +318,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   accionLabel: { fontSize: 14, fontWeight: '600' },
+  reenviarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+  reenviarBtnText: {
+    color: '#10B981',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

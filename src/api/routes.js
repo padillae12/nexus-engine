@@ -449,4 +449,184 @@ router.get('/config', async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────
+//  HISTORIAL CLIENTE, REENVIAR WHATSAPP & REPORTES PDF
+// ─────────────────────────────────────────────────────────────────
+
+// GET /api/clientes/:id/citas — Historial completo de citas de un cliente
+router.get('/clientes/:id/citas', async (req, res) => {
+  try {
+    const citas = await db.getCitasCliente(req.params.id);
+    res.json(citas);
+  } catch (err) {
+    console.error('[GET /clientes/:id/citas]', err.message);
+    res.status(500).json({ message: 'Error al obtener historial del cliente' });
+  }
+});
+
+// POST /api/citas/:id/reenviar-whatsapp — Reenvía confirmación por WhatsApp
+router.post('/citas/:id/reenviar-whatsapp', async (req, res) => {
+  try {
+    const citaInfo = await db.getCitaFullInfo(req.params.id);
+    if (!citaInfo) {
+      return res.status(404).json({ message: 'Cita no encontrada' });
+    }
+    if (!global.whatsappClient) {
+      return res.status(503).json({ message: 'WhatsApp no está conectado en el servidor' });
+    }
+    const { notificarConfirmacionCitaCliente } = require('../bot/reminders');
+    await notificarConfirmacionCitaCliente(global.whatsappClient, {
+      clienteNombre: citaInfo.cliente_nombre,
+      clienteTelefono: citaInfo.cliente_telefono,
+      servicioNombre: citaInfo.servicio_nombre,
+      fechaInicio: citaInfo.fecha_inicio,
+      empleadoId: citaInfo.empleado_id,
+    });
+    res.json({ ok: true, message: 'Confirmación reenviada con éxito' });
+  } catch (err) {
+    console.error('[POST /citas/:id/reenviar-whatsapp]', err.message);
+    res.status(500).json({ message: 'Error al reenviar mensaje de WhatsApp' });
+  }
+});
+
+// GET /api/reportes/ingresos/html — Genera plantilla PDF/Imprimible membretada
+router.get('/reportes/ingresos/html', async (req, res) => {
+  try {
+    const mesStr = req.query.mes || new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+    const citas = await db.getReporteIngresosMensual(mesStr);
+    const config = await db.getAllConfig().catch(() => ({}));
+    
+    const nombreNegocio = config.BUSINESS_NAME || 'Dental Loquero';
+    const direccion = config.BUSINESS_ADDRESS || config.UBICACION || 'Orozco y Berra 2229, Col. Constitución';
+    const telefono = config.BUSINESS_PHONE || '686 271 8911';
+    const logoUrl = config.BUSINESS_LOGO_URL || '';
+
+    const totalIngresos = citas.reduce((sum, c) => sum + Number(c.precio || 0), 0);
+    const totalCitas = citas.length;
+
+    const [y, m] = mesStr.split('-');
+    const dateObj = new Date(Number(y), Number(m) - 1, 1);
+    const nombreMes = dateObj.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
+
+    const logoHtml = logoUrl 
+      ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; max-width: 180px; object-fit: contain;" />`
+      : `<div style="font-size: 20px; font-weight: 800; color: #4F46E5; letter-spacing: 1px;">${nombreNegocio.toUpperCase()}</div>`;
+
+    const filasHtml = citas.map((c, i) => `
+      <tr style="background-color: ${i % 2 === 0 ? '#FFFFFF' : '#F9FAFB'};">
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.fecha}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB; font-weight: 600;">${c.cliente}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.telefono || '—'}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.servicio}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB;">${c.empleado}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: 700; color: #059669;">$${Number(c.precio).toLocaleString('es-MX')}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Contable — ${nombreNegocio}</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1F2937; margin: 0; padding: 40px; background-color: #FFFFFF; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #4F46E5; padding-bottom: 20px; margin-bottom: 30px; }
+    .business-info { text-align: right; font-size: 12px; color: #4B5563; }
+    .business-name { font-size: 16px; font-weight: bold; color: #111827; }
+    .report-title { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 6px 0; }
+    .report-subtitle { font-size: 13px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-grid { display: flex; gap: 16px; margin-bottom: 30px; }
+    .summary-card { flex: 1; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; text-align: center; }
+    .summary-label { font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; margin-bottom: 4px; }
+    .summary-value { font-size: 22px; font-weight: 800; color: #4F46E5; }
+    .summary-value-green { font-size: 22px; font-weight: 800; color: #059669; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 40px; }
+    th { background: #4F46E5; color: #FFFFFF; text-align: left; padding: 10px 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; }
+    .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; align-items: flex-end; }
+    .signature-box { width: 200px; text-align: center; border-top: 1px solid #9CA3AF; padding-top: 6px; font-size: 11px; color: #4B5563; }
+    .watermark { font-size: 10px; color: #9CA3AF; text-align: right; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+    <button onclick="window.print()" style="background: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+      🖨️ Imprimir / Guardar en PDF
+    </button>
+  </div>
+
+  <!-- MEMBRETE CON LOGO Y NEGOCIO -->
+  <div class="header">
+    <div>
+      ${logoHtml}
+      <div style="margin-top: 10px;">
+        <h1 class="report-title">REPORTE CONTABLE DE INGRESOS</h1>
+        <div class="report-subtitle">PERÍODO: ${nombreMes}</div>
+      </div>
+    </div>
+    <div class="business-info">
+      <div class="business-name">${nombreNegocio}</div>
+      <div>${direccion}</div>
+      <div>Tel / WhatsApp: ${telefono}</div>
+      <div style="margin-top: 4px; color: #9CA3AF;">Emisión: ${new Date().toLocaleDateString('es-MX')}</div>
+    </div>
+  </div>
+
+  <!-- CARDS DE RESUMEN EJECUTIVO -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Citas Completadas</div>
+      <div class="summary-value">${totalCitas}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Ingresos Totales (MXN)</div>
+      <div class="summary-value-green">$${totalIngresos.toLocaleString('es-MX')}</div>
+    </div>
+  </div>
+
+  <!-- TABLA DETALLADA -->
+  <table>
+    <thead>
+      <tr>
+        <th>FECHA Y HORA</th>
+        <th>CLIENTE</th>
+        <th>TELÉFONO</th>
+        <th>SERVICIO</th>
+        <th>ESPECIALISTA</th>
+        <th style="text-align: right;">MONTO</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filasHtml || '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #9CA3AF;">Sin registros de citas completadas en este mes</td></tr>'}
+    </tbody>
+  </table>
+
+  <!-- FIRMA Y SELLO CONTABLE -->
+  <div class="footer">
+    <div class="signature-box">
+      <strong>Firma del Encargado / Contador</strong><br>
+      Sello de Conformidad
+    </div>
+    <div class="watermark">
+      Documento contable generado automáticamente por <strong>Nexus-Engine</strong><br>
+      Sistema de Gestión Operativa
+    </div>
+  </div>
+
+</body>
+</html>
+    `;
+
+    res.send(html);
+  } catch (err) {
+    console.error('[GET /reportes/ingresos/html]', err.message);
+    res.status(500).send('Error al generar el reporte contable');
+  }
+});
+
 module.exports = router;

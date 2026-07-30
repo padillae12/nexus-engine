@@ -6,9 +6,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
-  TouchableOpacity, RefreshControl,
+  TouchableOpacity, RefreshControl, Linking,
 } from 'react-native';
-import { getDashboardStats, getIngresosDiarios } from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
+import { getDashboardStats, getIngresosDiarios, getReportePdfUrl } from '../../services/api';
 
 // Tarjeta de métrica ejecutiva
 function StatCard({ label, value, trend, color }) {
@@ -133,12 +134,23 @@ export default function DashboardScreen() {
 
       {/* ── Resumen del mes ───────────────────────────────────── */}
       <View style={styles.mesBanner}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.mesBannerLabel}>INGRESOS DEL MES (ACUMULADO)</Text>
           <Text style={styles.mesBannerValue}>
             ${totalMes.toLocaleString('es-MX')} MXN
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.pdfBtn}
+          onPress={() => {
+            const url = getReportePdfUrl();
+            Linking.openURL(url);
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="document-text-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.pdfBtnText}>Reporte PDF</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Historial por día ─────────────────────────────────── */}
@@ -287,4 +299,19 @@ const styles = StyleSheet.create({
   emptyHistorial: { alignItems: 'center', paddingVertical: 32, backgroundColor: '#111827', borderRadius: 12, borderWidth: 1, borderColor: '#1F2937' },
   emptyText: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', marginBottom: 4 },
   emptyHint: { color: '#6B7280', fontSize: 12, textAlign: 'center' },
+
+  pdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  pdfBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
 });

@@ -845,6 +845,84 @@ async function markRecordatorioEnviado(citaId) {
   await pool.execute('UPDATE citas SET recordatorio_enviado = 1 WHERE id = ?', [citaId]);
 }
 
+/**
+ * Obtiene el historial completo de citas de un cliente.
+ */
+async function getCitasCliente(clienteId) {
+  const [rows] = await pool.execute(
+    `SELECT 
+       c.id,
+       c.fecha_inicio,
+       c.fecha_fin,
+       c.estado,
+       c.creado_en,
+       s.nombre AS servicio,
+       s.precio,
+       s.duracion_min,
+       u.nombre AS empleado
+     FROM citas c
+     JOIN servicios s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     WHERE c.cliente_id = ?
+     ORDER BY c.fecha_inicio DESC`,
+    [clienteId]
+  );
+  return rows;
+}
+
+/**
+ * Obtiene información detallada de una cita por su ID.
+ */
+async function getCitaFullInfo(citaId) {
+  const [rows] = await pool.execute(
+    `SELECT 
+       c.id,
+       c.fecha_inicio,
+       c.fecha_fin,
+       c.estado,
+       c.creado_en,
+       cl.nombre AS cliente_nombre,
+       cl.telefono AS cliente_telefono,
+       s.nombre AS servicio_nombre,
+       s.precio,
+       u.nombre AS empleado_nombre,
+       u.id AS empleado_id
+     FROM citas c
+     JOIN clientes cl ON c.cliente_id = cl.id
+     JOIN servicios s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     WHERE c.id = ?`,
+    [citaId]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Obtiene el detalle mensual de citas completadas para reporte contable.
+ */
+async function getReporteIngresosMensual(mesStr) {
+  // mesStr ej: '2026-07'
+  const [rows] = await pool.execute(
+    `SELECT 
+       c.id,
+       DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d %H:%i') AS fecha,
+       cl.nombre AS cliente,
+       cl.telefono,
+       s.nombre AS servicio,
+       COALESCE(s.precio, 0) AS precio,
+       COALESCE(u.nombre, 'Sin asignar') AS empleado
+     FROM citas c
+     JOIN clientes cl ON c.cliente_id = cl.id
+     JOIN servicios s ON c.servicio_id = s.id
+     LEFT JOIN usuarios u ON c.empleado_id = u.id
+     WHERE c.estado = 'completada'
+       AND DATE_FORMAT(c.fecha_inicio, '%Y-%m') = ?
+     ORDER BY c.fecha_inicio ASC`,
+    [mesStr]
+  );
+  return rows;
+}
+
 module.exports = {
   // Bot
   findOrCreateCliente,
@@ -872,6 +950,9 @@ module.exports = {
   getTelefonoEmpleado,
   getCitasPendientesRecordatorio,
   markRecordatorioEnviado,
+  getCitasCliente,
+  getCitaFullInfo,
+  getReporteIngresosMensual,
   // API REST (Nexus-App)
   getCitasPorFecha,
   getCitasFiltradas,

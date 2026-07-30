@@ -325,11 +325,12 @@ Ejemplos:
 ```text
 📋 FORMULARIO DE CONFIGURACIÓN — PLAN PRO / CLÍNICO
 
-1️⃣ DATOS DE LA CLÍNICA:
-• Nombre Oficial de la Clínica / Consultorio:
-• Nombre del Bot (Ej. Asistente Dental / Recepción Médica):
+1️⃣ DATOS DEL NEGOCIO:
+• Nombre Oficial del Negocio:
+• Nombre del Bot (Ej. Recepción / Asistente Virtual):
 • Número de WhatsApp del Bot:
-• Dirección Física completa y referencias de ubicación:
+• Dirección Física completa:
+• URL/Imagen del Logo Oficial (para membrete de reportes contables PDF): [ Adjuntar / Enlace ]
 
 2️⃣ HORARIOS DE ATENCIÓN Y CITAS:
 • Días laborables de la clínica:

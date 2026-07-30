@@ -194,6 +194,33 @@ export async function getClientes() {
   return request('/clientes');
 }
 
+/**
+ * Obtiene la URL pública para descargar/imprimir el reporte contable PDF.
+ * @param {string} mesStr Ej: '2026-07'
+ */
+export function getReportePdfUrl(mesStr) {
+  const mes = mesStr || new Date().toISOString().slice(0, 7);
+  return `${BASE_URL}/reportes/ingresos/html?mes=${mes}`;
+}
+
+/**
+ * Obtiene el historial completo de citas de un cliente.
+ * @param {number} clienteId
+ */
+export async function getCitasCliente(clienteId) {
+  return request(`/clientes/${clienteId}/citas`);
+}
+
+/**
+ * Reenvía la confirmación de la cita por WhatsApp al cliente.
+ * @param {number} citaId
+ */
+export async function reenviarWhatsApp(citaId) {
+  return request(`/citas/${citaId}/reenviar-whatsapp`, {
+    method: 'POST',
+  });
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  DASHBOARD (solo Modo Admin)
 // ══════════════════════════════════════════════════════════════════
