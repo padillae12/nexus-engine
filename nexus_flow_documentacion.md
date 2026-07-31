@@ -529,11 +529,11 @@ Ejemplos:
 • Dirección Física completa:
 • URL/Imagen del Logo Oficial (para membrete de reportes contables PDF): [ Adjuntar / Enlace ]
 
-2️⃣ HORARIOS DE ATENCIÓN Y CITAS:
-• Días laborables de la clínica:
-• Horario de Atención (Ej. Lunes a Viernes 8:00 AM - 8:00 PM, Sábados 9:00 AM - 2:00 PM):
-• (Nota: Los tiempos de comida/descanso se asignan individualmente por empleado en la App)
-• Mínimo de anticipación para agendar (Ej. 2 horas antes):
+2️⃣ HORARIOS DE ATENCIÓN GENERALES DE LA CLÍNICA / NEGOCIO:
+• Días laborables de la clínica (Ej. Lunes a Viernes):
+• Horario General de Apertura y Cierre (Ej. 9:00 AM - 7:00 PM):
+• Horario General de Comida/Descanso (Ej. 2:00 PM - 3:00 PM):
+• Anticipación mínima para agendar (Ej. 4 horas antes):
 
 3️⃣ CATÁLOGO DE SERVICIOS Y TRATAMIENTOS:
 Favor de detallar los tratamientos que se pueden agendar por WhatsApp:
