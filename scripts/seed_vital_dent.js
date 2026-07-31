@@ -19,9 +19,12 @@ async function seed() {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'nexus_user',
     password: process.env.DB_PASSWORD || 'PadAlex01',
-    database: process.env.DB_NAME || 'nexus_flow',
     multipleStatements: true,
   });
+
+  const dbName = process.env.DB_NAME || 'nexus_flow';
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await connection.query(`USE \`${dbName}\``);
 
   try {
     // 0. Cargar el esquema maestro si las tablas no existen aún
