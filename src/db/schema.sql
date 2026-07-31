@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
   email       VARCHAR(150)    NOT NULL UNIQUE,
   password    VARCHAR(255)    NOT NULL,
   telefono    VARCHAR(20)     NULL,
-  rol         ENUM('admin', 'encargado', 'empleado') NOT NULL DEFAULT 'empleado',
+  rol         ENUM('admin', 'encargado', 'empleado', 'doctor') NOT NULL DEFAULT 'empleado',
+  especialidad VARCHAR(100)   NULL,
   activo      TINYINT(1)      NOT NULL DEFAULT 1,
   creado_en   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)

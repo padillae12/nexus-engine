@@ -24,9 +24,14 @@ async function seed() {
   });
 
   try {
-    // 1. Limpiar datos existentes
+    // 1. Limpiar datos existentes y asegurar columnas de usuarios
     console.log('🧹 Limpiando tablas previas...');
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+
+    // Auto-migrar la estructura de usuarios si falta especialidad o el rol doctor
+    await connection.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS especialidad VARCHAR(100) NULL`).catch(() => {});
+    await connection.query(`ALTER TABLE usuarios MODIFY COLUMN rol ENUM('admin', 'encargado', 'empleado', 'doctor') NOT NULL DEFAULT 'empleado'`).catch(() => {});
+
     await connection.query('TRUNCATE TABLE citas');
     await connection.query('TRUNCATE TABLE bloqueos');
     await connection.query('TRUNCATE TABLE empleado_servicios');
