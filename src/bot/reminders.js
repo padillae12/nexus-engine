@@ -306,9 +306,60 @@ function iniciarMotorRecordatorios(client) {
   }, 60000);
 }
 
+/**
+ * Notifica inmediatamente al empleado por WhatsApp cuando se cancela una cita de su agenda.
+ */
+async function notificarCancelacionCitaEmpleado(client, citaInfo) {
+  try {
+    if (!client || !citaInfo) return;
+
+    const empId = citaInfo.empleadoId || citaInfo.empleado_id;
+    let empleadoInfo = null;
+
+    if (empId) {
+      empleadoInfo = await getTelefonoEmpleado(empId);
+    } else if (citaInfo.empleado_telefono) {
+      empleadoInfo = { nombre: citaInfo.empleado_nombre || 'Especialista', telefono: citaInfo.empleado_telefono };
+    }
+
+    if (!empleadoInfo || !empleadoInfo.telefono) return;
+
+    const jid = await getWhatsAppJid(client, empleadoInfo.telefono);
+    if (!jid) return;
+
+    let fechaObj = citaInfo.fechaInicio instanceof Date ? citaInfo.fechaInicio : new Date(citaInfo.fechaInicio || citaInfo.fecha_inicio);
+    if (isNaN(fechaObj.getTime())) fechaObj = new Date();
+    const fechaTexto = formatFechaEspanol(fechaObj);
+
+    let horaTexto = citaInfo.hora || '';
+    if (!horaTexto && citaInfo.fecha_inicio) {
+      const rawStr = String(citaInfo.fecha_inicio);
+      horaTexto = rawStr.includes(' ') ? rawStr.split(' ')[1]?.slice(0, 5) : rawStr.includes('T') ? rawStr.split('T')[1]?.slice(0, 5) : '';
+    }
+
+    const pacienteStr = citaInfo.pacienteNombre || citaInfo.paciente_nombre || citaInfo.clienteNombre || citaInfo.cliente_nombre || 'Cliente';
+    const servicioStr = citaInfo.servicioNombre || citaInfo.servicio_nombre || citaInfo.servicio || 'Servicio';
+
+    const mensaje =
+      `⚠️ *NOTIFICACIÓN DE CITA CANCELADA*\n\n` +
+      `Hola *${empleadoInfo.nombre}*, se ha cancelado una cita de tu agenda:\n\n` +
+      `👤 Paciente: *${pacienteStr}*\n` +
+      `🛎️ Servicio: *${servicioStr}*\n` +
+      `📅 Fecha: *${fechaTexto}*\n` +
+      `⏰ Hora: *${horaTexto}*\n\n` +
+      `_Tu horario para esta hora ha quedado libre nuevamente en tu agenda._`;
+
+    await client.sendMessage(jid, mensaje);
+    console.log(`📱 Notificación de cancelación de cita enviada por WhatsApp al empleado (${empleadoInfo.nombre})`);
+  } catch (err) {
+    console.warn('⚠️ Error al notificar cancelación al empleado por WhatsApp:', err.message);
+  }
+}
+
 module.exports = {
   iniciarMotorRecordatorios,
   notificarNuevaCitaEmpleado,
   notificarConfirmacionCitaCliente,
   notificarTicketCompletadoCliente,
+  notificarCancelacionCitaEmpleado,
 };

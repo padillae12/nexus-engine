@@ -342,6 +342,15 @@ router.patch('/citas/:id/estado', async (req, res) => {
       }
     }
 
+    // Si la cita fue CANCELADA, notificar por WhatsApp al doctor/empleado asignado
+    if (estado === 'cancelada' && global.whatsappClient) {
+      const citaFull = await db.getCitaFullInfo(citaId).catch(() => null);
+      if (citaFull) {
+        const { notificarCancelacionCitaEmpleado } = require('../bot/reminders');
+        notificarCancelacionCitaEmpleado(global.whatsappClient, citaFull).catch((e) => console.warn('[WA] Error notificando cancelación a empleado:', e.message));
+      }
+    }
+
     res.json({ ok: true, citaId, estado });
   } catch (err) {
     console.error('[PATCH /citas/:id/estado]', err.message);

@@ -314,6 +314,10 @@ async function handleCancelSelect(sesion, msg) {
   const cancelada   = await cancelCita(citaElegida.id, sesion.telefono);
 
   if (cancelada) {
+    if (global.whatsappClient) {
+      const { notificarCancelacionCitaEmpleado } = require('../reminders');
+      notificarCancelacionCitaEmpleado(global.whatsappClient, citaElegida).catch((e) => console.warn('[WA] Error notificando cancelación a empleado:', e.message));
+    }
     return {
       respuesta: isEn
         ? `✅ Your appointment *#${citaElegida.id}* (${citaElegida.servicio}) has been cancelled.\n\n` +
