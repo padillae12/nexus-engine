@@ -637,6 +637,9 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE citas ADD COLUMN precio DECIMAL(10,2) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN paciente_nombre VARCHAR(100) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notas TEXT NULL').catch(() => {});
+    await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN hora_inicio_comida TIME NULL').catch(() => {});
+    await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN hora_fin_comida TIME NULL').catch(() => {});
+    await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1').catch(() => {});
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empleado_servicios (

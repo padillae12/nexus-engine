@@ -10,15 +10,17 @@ CREATE TABLE IF NOT EXISTS config_negocio (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS usuarios (
-  id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  nombre      VARCHAR(100)    NOT NULL,
-  email       VARCHAR(150)    NOT NULL UNIQUE,
-  password    VARCHAR(255)    NOT NULL,
-  telefono    VARCHAR(20)     NULL,
-  rol         ENUM('admin', 'encargado', 'empleado', 'doctor') NOT NULL DEFAULT 'empleado',
-  especialidad VARCHAR(100)   NULL,
-  activo      TINYINT(1)      NOT NULL DEFAULT 1,
-  creado_en   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+  nombre              VARCHAR(100)    NOT NULL,
+  email               VARCHAR(150)    NOT NULL UNIQUE,
+  password            VARCHAR(255)    NOT NULL,
+  telefono            VARCHAR(20)     NULL,
+  rol                 ENUM('admin', 'encargado', 'empleado', 'doctor') NOT NULL DEFAULT 'empleado',
+  especialidad        VARCHAR(100)    NULL,
+  hora_inicio_comida  VARCHAR(10)     NULL,
+  hora_fin_comida     VARCHAR(10)     NULL,
+  activo              TINYINT(1)      NOT NULL DEFAULT 1,
+  creado_en           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
@@ -43,11 +45,14 @@ CREATE TABLE IF NOT EXISTS servicios (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS horarios_trabajo (
-  id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  empleado_id   INT UNSIGNED    NULL,
-  dia_semana    TINYINT         NOT NULL,
-  hora_inicio   TIME            NOT NULL,
-  hora_fin      TIME            NOT NULL,
+  id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+  empleado_id         INT UNSIGNED    NULL,
+  dia_semana          TINYINT         NOT NULL,
+  hora_inicio         TIME            NOT NULL,
+  hora_fin            TIME            NOT NULL,
+  hora_inicio_comida  TIME            NULL,
+  hora_fin_comida     TIME            NULL,
+  activo              TINYINT(1)      NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   FOREIGN KEY (empleado_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
