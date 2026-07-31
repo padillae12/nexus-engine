@@ -5,7 +5,12 @@
 
 require('dotenv').config();
 const mysql = require('mysql2/promise');
-const bcrypt = require('bcryptjs');
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch (e) {
+  bcrypt = require('bcrypt');
+}
 
 async function seed() {
   console.log('🌱 Sembrando base de datos para Clínica Dental "Vital Dent"...');
