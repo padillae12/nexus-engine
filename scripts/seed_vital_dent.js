@@ -24,6 +24,15 @@ async function seed() {
   });
 
   try {
+    // 0. Cargar el esquema maestro si las tablas no existen aún
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(__dirname, '../src/db/schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const sqlSchema = fs.readFileSync(schemaPath, 'utf8');
+      await connection.query(sqlSchema).catch(() => {});
+    }
+
     // 1. Limpiar datos existentes y asegurar columnas de usuarios
     console.log('🧹 Limpiando tablas previas...');
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
