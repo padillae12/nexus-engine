@@ -151,11 +151,24 @@ router.get('/servicios/admin', async (req, res) => {
 // POST /api/servicios — Crear o editar un servicio
 router.post('/servicios', async (req, res) => {
   try {
-    const { id, nombre, precio, duracionMin, descripcion, activo } = req.body;
+    const { id, nombre, precio, duracionMin, duracion_min, descripcion, indicacionesPrecita, indicaciones_precita, indicacionesPostcita, indicaciones_postcita, activo } = req.body;
     if (!nombre || !nombre.trim()) {
       return res.status(400).json({ message: 'El nombre del servicio es requerido' });
     }
-    const serviceId = await db.guardarServicio({ id, nombre, precio, duracionMin, descripcion, activo });
+    const pre = indicacionesPrecita !== undefined ? indicacionesPrecita : indicaciones_precita;
+    const post = indicacionesPostcita !== undefined ? indicacionesPostcita : indicaciones_postcita;
+    const dur = duracionMin !== undefined ? duracionMin : duracion_min;
+
+    const serviceId = await db.guardarServicio({
+      id,
+      nombre,
+      precio,
+      duracionMin: dur,
+      descripcion,
+      indicacionesPrecita: pre,
+      indicacionesPostcita: post,
+      activo
+    });
     res.status(201).json({ ok: true, id: serviceId });
   } catch (err) {
     console.error('[POST /servicios]', err.message);
