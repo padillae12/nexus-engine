@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS citas (
   precio                        DECIMAL(10,2) NULL,
   paciente_nombre               VARCHAR(100)  NULL,
   notas                         TEXT          NULL,
+  indicaciones_postcita         TEXT          NULL,
   recordatorio_mins             INT UNSIGNED  NOT NULL DEFAULT 120,
   recordatorio_enviado          TINYINT(1)    NOT NULL DEFAULT 0,
   notificacion_empleado_enviada TINYINT(1)    NOT NULL DEFAULT 0,

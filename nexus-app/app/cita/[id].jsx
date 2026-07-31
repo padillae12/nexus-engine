@@ -27,7 +27,7 @@ const ACCIONES = [
 ];
 
 export default function DetalleCitaScreen() {
-  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en, notas } =
+  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en, notas, indicaciones_postcita } =
     useLocalSearchParams();
 
   // Formatear fecha programada
@@ -53,17 +53,19 @@ export default function DetalleCitaScreen() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  // Estados editables de servicio, precio y notas
+  // Estados editables de servicio, precio, notas y cuidados post-cita
   const [servicioNombre, setServicioNombre] = useState(servicio ?? '');
   const [precioValor, setPrecioValor] = useState(precio ?? '');
   const [notasValor, setNotasValor] = useState(notas ?? '');
+  const [postcitaValor, setPostcitaValor] = useState(indicaciones_postcita ?? '');
 
-  // Modal Edición de servicio / precio / notas
+  // Modal Edición de servicio / precio / notas / postcita
   const [modalEditar, setModalEditar] = useState(false);
   const [catServicios, setCatServicios] = useState([]);
   const [selectedServicioObj, setSelectedServicioObj] = useState(null);
   const [precioInput, setPrecioInput] = useState(String(precio ?? ''));
   const [notasInput, setNotasInput] = useState(notas ?? '');
+  const [postcitaInput, setPostcitaInput] = useState(indicaciones_postcita ?? '');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const handleOpenModalEditar = () => {
@@ -71,11 +73,17 @@ export default function DetalleCitaScreen() {
       .then(servs => {
         setCatServicios(servs);
         const actual = servs.find(s => s.nombre === servicioNombre);
-        if (actual) setSelectedServicioObj(actual);
+        if (actual) {
+          setSelectedServicioObj(actual);
+          if (!postcitaValor && actual.indicaciones_postcita) {
+            setPostcitaInput(actual.indicaciones_postcita);
+          }
+        }
       })
       .catch(console.warn);
     setPrecioInput(String(precioValor ?? ''));
     setNotasInput(notasValor ?? '');
+    setPostcitaInput(postcitaValor ?? '');
     setModalEditar(true);
   };
 
@@ -85,11 +93,13 @@ export default function DetalleCitaScreen() {
       const servicioId = selectedServicioObj?.id || null;
       const numPrecio = precioInput.trim() !== '' ? Number(precioInput) : null;
       const strNotas = notasInput.trim() !== '' ? notasInput.trim() : null;
+      const strPostcita = postcitaInput.trim() !== '' ? postcitaInput.trim() : null;
 
       await updateCitaServicioPrecio(Number(id), {
         servicioId,
         precio: numPrecio,
         notas: strNotas,
+        indicacionesPostcita: strPostcita,
       });
 
       if (selectedServicioObj?.nombre) {
@@ -97,8 +107,9 @@ export default function DetalleCitaScreen() {
       }
       setPrecioValor(numPrecio !== null ? String(numPrecio) : '');
       setNotasValor(strNotas || '');
+      setPostcitaValor(strPostcita || '');
       setModalEditar(false);
-      Alert.alert('¡Actualizado!', 'El servicio, precio y notas de la cita han sido actualizados.');
+      Alert.alert('¡Actualizado!', 'El servicio, precio e indicaciones post-cita han sido guardados.');
     } catch (e) {
       Alert.alert('Error', e.message);
     } finally {
@@ -261,6 +272,28 @@ export default function DetalleCitaScreen() {
             </>
           ) : null}
 
+          {/* Cuidados Post-Cita Personalizados */}
+          <View style={styles.infoSeparator} />
+          <View style={styles.infoFull}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={styles.infoLabelRow}>
+                <Ionicons name="medkit-outline" size={12} color="#10B981" />
+                <Text style={[styles.infoLabel, { color: '#10B981' }]}>CUIDADOS POST-CITA (WHATSAPP)</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.editServicioChip}
+                onPress={handleOpenModalEditar}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="pencil" size={12} color="#6366F1" />
+                <Text style={styles.editServicioChipText}>Personalizar</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.infoSubText}>
+              {postcitaValor || 'Sin indicaciones personalizadas (se usará el valor por defecto del catálogo).'}
+            </Text>
+          </View>
+
           {/* Fecha de creación / agendada el */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
@@ -317,14 +350,14 @@ export default function DetalleCitaScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajustar Servicio / Precio</Text>
+              <Text style={styles.modalTitle}>Ajustar Servicio / Precio / Cuidados</Text>
               <TouchableOpacity style={styles.closeBtn} onPress={() => setModalEditar(false)}>
                 <Ionicons name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.inputLabel}>SELECCIONAR SERVICIO ATENDIDO:</Text>
-            <ScrollView style={{ maxHeight: 200, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 180, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
               {catServicios.map(srv => {
                 const isSel = selectedServicioObj?.id === srv.id;
                 return (
@@ -334,6 +367,7 @@ export default function DetalleCitaScreen() {
                     onPress={() => {
                       setSelectedServicioObj(srv);
                       if (srv.precio != null) setPrecioInput(String(srv.precio));
+                      if (srv.indicaciones_postcita && !postcitaInput) setPostcitaInput(srv.indicaciones_postcita);
                     }}
                     activeOpacity={0.8}
                   >
@@ -363,13 +397,24 @@ export default function DetalleCitaScreen() {
               placeholderTextColor="#6B7280"
             />
 
-            <Text style={styles.inputLabel}>DESCRIPCIÓN / NOTAS DEL SERVICIO (OPCIONAL):</Text>
+            <Text style={styles.inputLabel}>CUIDADOS POST-CITA (RECOMENDACIONES PARA EL PACIENTE):</Text>
             <TextInput
-              style={[styles.precioInput, { height: 70, textAlignVertical: 'top', paddingTop: 10 }]}
+              style={[styles.precioInput, { height: 75, textAlignVertical: 'top', paddingTop: 10 }]}
+              value={postcitaInput}
+              onChangeText={setPostcitaInput}
+              multiline
+              numberOfLines={3}
+              placeholder="Ej. Tomar Amoxicilina 500mg c/8h por 5 días, reposo 24h..."
+              placeholderTextColor="#6B7280"
+            />
+
+            <Text style={styles.inputLabel}>DESCRIPCIÓN / NOTAS INTERNAS DEL SERVICIO (OPCIONAL):</Text>
+            <TextInput
+              style={[styles.precioInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
               value={notasInput}
               onChangeText={setNotasInput}
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
               placeholder="Ej. Se realizaron 2 resinas compuestas + profilaxis..."
               placeholderTextColor="#6B7280"
             />

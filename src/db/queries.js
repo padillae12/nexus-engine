@@ -427,6 +427,7 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        s.duracion_min,
        COALESCE(c.precio, s.precio)            AS precio,
        c.notas                                 AS notas,
+       COALESCE(c.indicaciones_postcita, s.indicaciones_postcita) AS indicaciones_postcita,
        u.nombre                                AS empleado
      FROM citas c
      JOIN clientes  cl ON c.cliente_id  = cl.id
@@ -649,6 +650,7 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE citas ADD COLUMN precio DECIMAL(10,2) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN paciente_nombre VARCHAR(100) NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notas TEXT NULL').catch(() => {});
+    await pool.query('ALTER TABLE citas ADD COLUMN indicaciones_postcita TEXT NULL').catch(() => {});
     await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN hora_inicio_comida TIME NULL').catch(() => {});
     await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN hora_fin_comida TIME NULL').catch(() => {});
     await pool.query('ALTER TABLE horarios_trabajo ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1').catch(() => {});
@@ -973,16 +975,20 @@ async function getReporteIngresosMensual(mesStr) {
 /**
  * Actualiza el servicio, precio personalizado y/o notas de una cita existente.
  */
-async function updateCitaServicioPrecio(citaId, { servicioId, precio, notas }) {
+async function updateCitaServicioPrecio(citaId, { servicioId, precio, notas, indicacionesPostcita, indicaciones_postcita }) {
   const numPrecio = (precio != null && precio !== '') ? Number(precio) : null;
   const strNotas = (notas != null && notas.trim() !== '') ? notas.trim() : null;
+  const rawPost = indicacionesPostcita !== undefined ? indicacionesPostcita : indicaciones_postcita;
+  const strPost = (rawPost != null && rawPost.trim() !== '') ? rawPost.trim() : null;
+
   await pool.execute(
     `UPDATE citas 
      SET servicio_id = COALESCE(?, servicio_id),
          precio = ?,
-         notas = ?
+         notas = ?,
+         indicaciones_postcita = ?
      WHERE id = ?`,
-    [servicioId || null, numPrecio, strNotas, citaId]
+    [servicioId || null, numPrecio, strNotas, strPost, citaId]
   );
 }
 

@@ -331,7 +331,7 @@ router.patch('/citas/:id/estado', async (req, res) => {
       const [citasDB] = await pool.execute(
         `SELECT c.fecha_inicio, COALESCE(c.precio, s.precio, 0) AS precio, c.notas,
                 cl.nombre AS cliente_nombre, cl.telefono AS cliente_telefono, 
-                s.nombre AS servicio_nombre, s.indicaciones_postcita, u.nombre AS empleado_nombre
+                s.nombre AS servicio_nombre, COALESCE(c.indicaciones_postcita, s.indicaciones_postcita) AS indicaciones_postcita, u.nombre AS empleado_nombre
          FROM citas c
          JOIN clientes cl ON c.cliente_id = cl.id
          JOIN servicios s ON c.servicio_id = s.id
@@ -505,12 +505,12 @@ router.get('/config', async (req, res) => {
 //  HISTORIAL CLIENTE, REENVIAR WHATSAPP & REPORTES PDF
 // ─────────────────────────────────────────────────────────────────
 
-// PATCH /api/citas/:id/servicio-precio — Modifica el servicio, precio y/o notas de una cita
+// PATCH /api/citas/:id/servicio-precio — Modifica el servicio, precio, notas e indicaciones post-cita
 router.patch('/citas/:id/servicio-precio', async (req, res) => {
   try {
-    const { servicioId, precio, notas } = req.body;
-    await db.updateCitaServicioPrecio(req.params.id, { servicioId, precio, notas });
-    res.json({ ok: true, message: 'Servicio, precio y notas actualizados correctamente' });
+    const { servicioId, precio, notas, indicacionesPostcita, indicaciones_postcita } = req.body;
+    await db.updateCitaServicioPrecio(req.params.id, { servicioId, precio, notas, indicacionesPostcita, indicaciones_postcita });
+    res.json({ ok: true, message: 'Servicio, precio, notas e indicaciones post-cita actualizados correctamente' });
   } catch (err) {
     console.error('[PATCH /citas/:id/servicio-precio]', err.message);
     res.status(500).json({ message: 'Error al actualizar servicio, precio o notas' });
