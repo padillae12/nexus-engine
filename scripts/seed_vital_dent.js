@@ -145,10 +145,20 @@ async function seed() {
       );
     }
 
-    // 6. Horarios de Trabajo (Lunes a Viernes 09:00 a 19:00 para todos los doctores)
+    // 6. Horarios de Trabajo (Lunes a Viernes 09:00 a 19:00 - General y por Doctor)
     console.log('⏰ Asignando horarios comerciales (Lunes a Viernes 09:00 - 19:00)...');
     const diasLaborables = [1, 2, 3, 4, 5]; // 1: Lunes, 5: Viernes
 
+    // Horario general de la clínica
+    for (const dia of diasLaborables) {
+      await connection.query(
+        `INSERT INTO horarios_trabajo (empleado_id, dia_semana, hora_inicio, hora_fin, hora_inicio_comida, hora_fin_comida, activo)
+         VALUES (NULL, ?, '09:00:00', '19:00:00', '14:00:00', '15:00:00', 1)`,
+        [dia]
+      );
+    }
+
+    // Horario específico por doctor
     for (const docId of Object.values(doctorIds)) {
       for (const dia of diasLaborables) {
         await connection.query(

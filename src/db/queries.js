@@ -137,15 +137,25 @@ async function getServicioById(id) {
  * @returns {Promise<{hora_inicio, hora_fin} | null>}
  */
 async function getHorarioTrabajo(diaSemana, empleadoId = null) {
-  const [rows] = await pool.execute(
-    `SELECT hora_inicio, hora_fin
-     FROM horarios_trabajo
-     WHERE dia_semana = ?
-       AND (empleado_id = ? OR empleado_id IS NULL)
-     ORDER BY empleado_id DESC  -- Prioriza el horario específico del empleado
-     LIMIT 1`,
-    [diaSemana, empleadoId]
-  );
+  let sql, params;
+
+  if (empleadoId) {
+    sql = `SELECT hora_inicio, hora_fin, hora_inicio_comida, hora_fin_comida
+           FROM horarios_trabajo
+           WHERE dia_semana = ? AND (empleado_id = ? OR empleado_id IS NULL) AND activo = 1
+           ORDER BY (empleado_id = ?) DESC
+           LIMIT 1`;
+    params = [diaSemana, empleadoId, empleadoId];
+  } else {
+    sql = `SELECT hora_inicio, hora_fin, hora_inicio_comida, hora_fin_comida
+           FROM horarios_trabajo
+           WHERE dia_semana = ? AND activo = 1
+           ORDER BY (empleado_id IS NULL) DESC
+           LIMIT 1`;
+    params = [diaSemana];
+  }
+
+  const [rows] = await pool.execute(sql, params);
   return rows[0] || null;
 }
 
