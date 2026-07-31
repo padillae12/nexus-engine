@@ -12,7 +12,7 @@
 
 /** El usuario quiere agendar una cita */
 const quiereAgendar = (msg) =>
-  /\b(cita|agendar|reservar|quiero\s+una|necesito|appointment|book|schedule|turno)\b/i.test(msg);
+  /cita|agend|reserv|quiero\s+una|necesito|appointment|book|schedule|turno/i.test(msg);
 
 /** El usuario confirma algo (sí, ok, yes, etc.) */
 const esConfirmacion = (msg) =>
@@ -24,15 +24,15 @@ const esNegacion = (msg) =>
 
 /** El usuario quiere cancelar una cita */
 const quiereCancelar = (msg) =>
-  /\b(cancelar|cancel|eliminar|borrar|quitar\s+cita|no\s+voy\s+a\s+ir|delete|remove)\b/i.test(msg);
+  /cancel|elimin|borrar|quitar\s+cita|no\s+voy|delete|remove/i.test(msg);
 
 /** El usuario quiere ver sus citas */
 const quiereVerCitas = (msg) =>
-  /\b(mis\s+citas?|tengo\s+cita|ver\s*citas?|ver|cuando\s+es|cuand[oa]\s+tengo|my\s+appointments?|view|see\s+appointments?)\b/i.test(msg);
+  /mis\s+citas|tengo\s+cita|ver\s*citas|cuand[oa]\s+tengo|my\s+appointment|view\s+appointment/i.test(msg);
 
 /** El usuario quiere ver información u horarios del negocio */
 const quiereInfo = (msg) =>
-  /\b(info|informaci[oó]n|horario|horarios|atenci[oó]n|ubicaci[oó]n|direcci[oó]n|d[oó]nde\s+est[aá]n|d[oó]nde\s+se\s+ubican|hours|address|location)\b/i.test(msg);
+  /info|informaci|horari|atenci|ubicaci|direcci|d[oó]nde|hours|address|location/i.test(msg);
 
 // ─────────────────────────────────────────────────────────────────
 //  EXTRACCIÓN DE FECHAS (ESPAÑOL & ENGLISH)
