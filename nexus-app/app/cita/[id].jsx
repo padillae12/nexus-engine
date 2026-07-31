@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, ScrollView, Modal, TextInput,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -347,92 +348,97 @@ export default function DetalleCitaScreen() {
 
       {/* Modal Edición de Servicio y Precio */}
       <Modal visible={modalEditar} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajustar Servicio / Precio / Cuidados</Text>
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setModalEditar(false)}>
-                <Ionicons name="close" size={20} color="#FFFFFF" />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Ajustar Servicio / Precio / Cuidados</Text>
+                <TouchableOpacity style={styles.closeBtn} onPress={() => setModalEditar(false)}>
+                  <Ionicons name="close" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>SELECCIONAR SERVICIO ATENDIDO:</Text>
+              <ScrollView style={{ maxHeight: 160, marginBottom: 16 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                {catServicios.map(srv => {
+                  const isSel = selectedServicioObj?.id === srv.id;
+                  return (
+                    <TouchableOpacity
+                      key={srv.id}
+                      style={[styles.srvOptionRow, isSel && styles.srvOptionRowSelected]}
+                      onPress={() => {
+                        setSelectedServicioObj(srv);
+                        if (srv.precio != null) setPrecioInput(String(srv.precio));
+                        if (srv.indicaciones_postcita && !postcitaInput) setPostcitaInput(srv.indicaciones_postcita);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={isSel ? "radio-button-on" : "radio-button-off"}
+                        size={16}
+                        color={isSel ? "#6366F1" : "#6B7280"}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.srvOptionName, isSel && styles.srvOptionNameSelected]}>{srv.nombre}</Text>
+                        <Text style={styles.srvOptionPrice}>
+                          ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'} · {srv.duracion_min || 60} min
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>PRECIO FINAL A COBRAR ($ MXN):</Text>
+              <TextInput
+                style={styles.precioInput}
+                value={precioInput}
+                onChangeText={setPrecioInput}
+                keyboardType="numeric"
+                placeholder="Ej. 800"
+                placeholderTextColor="#6B7280"
+              />
+
+              <Text style={styles.inputLabel}>CUIDADOS POST-CITA (RECOMENDACIONES PARA EL PACIENTE):</Text>
+              <TextInput
+                style={[styles.precioInput, { height: 75, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={postcitaInput}
+                onChangeText={setPostcitaInput}
+                multiline
+                numberOfLines={3}
+                placeholder="Ej. Tomar Amoxicilina 500mg c/8h por 5 días, reposo 24h..."
+                placeholderTextColor="#6B7280"
+              />
+
+              <Text style={styles.inputLabel}>DESCRIPCIÓN / NOTAS INTERNAS DEL SERVICIO (OPCIONAL):</Text>
+              <TextInput
+                style={[styles.precioInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={notasInput}
+                onChangeText={setNotasInput}
+                multiline
+                numberOfLines={2}
+                placeholder="Ej. Se realizaron 2 resinas compuestas + profilaxis..."
+                placeholderTextColor="#6B7280"
+              />
+
+              <TouchableOpacity
+                style={styles.saveModalBtn}
+                onPress={handleGuardarServicioPrecio}
+                disabled={savingEdit}
+                activeOpacity={0.8}
+              >
+                {savingEdit ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.saveModalBtnText}>Guardar Cambios</Text>
+                )}
               </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>SELECCIONAR SERVICIO ATENDIDO:</Text>
-            <ScrollView style={{ maxHeight: 180, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
-              {catServicios.map(srv => {
-                const isSel = selectedServicioObj?.id === srv.id;
-                return (
-                  <TouchableOpacity
-                    key={srv.id}
-                    style={[styles.srvOptionRow, isSel && styles.srvOptionRowSelected]}
-                    onPress={() => {
-                      setSelectedServicioObj(srv);
-                      if (srv.precio != null) setPrecioInput(String(srv.precio));
-                      if (srv.indicaciones_postcita && !postcitaInput) setPostcitaInput(srv.indicaciones_postcita);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={isSel ? "radio-button-on" : "radio-button-off"}
-                      size={16}
-                      color={isSel ? "#6366F1" : "#6B7280"}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.srvOptionName, isSel && styles.srvOptionNameSelected]}>{srv.nombre}</Text>
-                      <Text style={styles.srvOptionPrice}>
-                        ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'} · {srv.duracion_min || 60} min
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
             </ScrollView>
-
-            <Text style={styles.inputLabel}>PRECIO FINAL A COBRAR ($ MXN):</Text>
-            <TextInput
-              style={styles.precioInput}
-              value={precioInput}
-              onChangeText={setPrecioInput}
-              keyboardType="numeric"
-              placeholder="Ej. 800"
-              placeholderTextColor="#6B7280"
-            />
-
-            <Text style={styles.inputLabel}>CUIDADOS POST-CITA (RECOMENDACIONES PARA EL PACIENTE):</Text>
-            <TextInput
-              style={[styles.precioInput, { height: 75, textAlignVertical: 'top', paddingTop: 10 }]}
-              value={postcitaInput}
-              onChangeText={setPostcitaInput}
-              multiline
-              numberOfLines={3}
-              placeholder="Ej. Tomar Amoxicilina 500mg c/8h por 5 días, reposo 24h..."
-              placeholderTextColor="#6B7280"
-            />
-
-            <Text style={styles.inputLabel}>DESCRIPCIÓN / NOTAS INTERNAS DEL SERVICIO (OPCIONAL):</Text>
-            <TextInput
-              style={[styles.precioInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
-              value={notasInput}
-              onChangeText={setNotasInput}
-              multiline
-              numberOfLines={2}
-              placeholder="Ej. Se realizaron 2 resinas compuestas + profilaxis..."
-              placeholderTextColor="#6B7280"
-            />
-
-            <TouchableOpacity
-              style={styles.saveModalBtn}
-              onPress={handleGuardarServicioPrecio}
-              disabled={savingEdit}
-              activeOpacity={0.8}
-            >
-              {savingEdit ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.saveModalBtnText}>Guardar Cambios</Text>
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
