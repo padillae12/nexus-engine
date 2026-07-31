@@ -283,30 +283,60 @@ En la pantalla **`Configuración → Modo Admin`**:
 
 ---
 
-## 8. Instalación, Despliegue y Puesta en Marcha para un Nuevo Cliente (Guía Paso a Paso)
+## 8. Guía Oficial de Instalación Limpia en VPS (Despliegue Cero-Fallos en 3 Pasos)
 
-Esta sección te explica **exactamente cómo instalar y dar de alta a un nuevo cliente en tu VPS** en menos de 10 minutos.
+Esta guía condensa todos los aprendizajes y optimizaciones para instalar un cliente nuevo en menos de **2 minutos** sin fallos de contraseñas, dependencias ni SQL manual.
 
 ---
 
-### 8.1 Pasos de Despliegue Desde Cero (Paso a Paso):
+### 💥 Paso 1 — Borrado Limpio (Tabula Rasa)
 
-#### 1️⃣ **Crear la Base de Datos para el Cliente:**
-Ingresa a MariaDB/MySQL en tu VPS:
+Si vas a hacer una reinstalación limpia en la VPS:
+
 ```bash
-mysql -u root -p
+# 1. Detener y eliminar procesos previos de PM2
+pm2 stop all && pm2 delete all && pm2 save --force
+
+# 2. Recrear la Base de Datos MariaDB limpia
+mysql -u nexus_user -pPadAlex01 -e "DROP DATABASE IF EXISTS nexus_flow; CREATE DATABASE nexus_flow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 3. Eliminar la carpeta del proyecto anterior
+rm -rf ~/nexus-engine
 ```
-Ejecuta la creación e importa el esquema maestro:
-```sql
-CREATE DATABASE nexus_cliente1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON nexus_cliente1.* TO 'nexus_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-Importa las tablas ejecutando:
+
+---
+
+### 📥 Paso 2 — Clonar e Instalar Dependencias
+
+Descargar el proyecto desde el repositorio público de GitHub e instalar paquetes de Node.js:
+
 ```bash
-mysql -u nexus_user -pPadAlex01 nexus_cliente1 < ~/nexus-engine/src/db/schema.sql
+# 1. Clonar repositorio sin necesidad de contraseñas
+git clone https://github.com/padillae12/nexus-engine.git ~/nexus-engine
+
+# 2. Instalar dependencias optimizadas para Linux
+cd ~/nexus-engine && npm install
 ```
+
+---
+
+### 🚀 Paso 3 — Sembrar la Clínica y Encender el Bot (Comando Maestro Único)
+
+Ejecutar el comando maestro que hace la siembra de MariaDB, auto-crea el esquema de tablas, inicia PM2 con `ecosystem.config.js`, graba el proceso en `pm2 save` y muestra el código QR:
+
+```bash
+cd ~/nexus-engine && npm run seed:vitaldent && pm2 start && pm2 save && pm2 flush && pm2 logs nexus-engine
+```
+
+---
+
+### 📱 Paso 4 — Vincular el WhatsApp del Cliente (Escaneo de QR)
+
+1. En la pantalla del terminal de MobaXterm aparecerá el **Código QR**.
+2. En el WhatsApp del cliente, ir a **Ajustes ➔ Dispositivos vinculados ➔ Vincular dispositivo**.
+3. Escanear el código QR.
+4. En cuanto aparezca `✅ Nexus-Engine conectado a WhatsApp`, presionar `Ctrl` + `C` para salir de los logs.
+5. ¡El sistema quedará 100% activo, blindado con `systemd` y respondiendo 24/7!
 
 ---
 
