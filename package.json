@@ -11,7 +11,8 @@
     "dev:api": "node --watch src/api/server.js",
     "seed:sonrisas": "node scripts/seed_sonrisas_perfectas.js",
     "seed:vitaldent": "node scripts/seed_vital_dent.js",
-    "seed:elbaron": "node scripts/seed_el_baron.js"
+    "seed:elbaron": "node scripts/seed_el_baron.js",
+    "seed:elitesmiles": "node scripts/seed_elite_smiles.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
