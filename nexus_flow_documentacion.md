@@ -66,6 +66,7 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 - **RF-13 (Filtro Inteligente de Personal):** Detectar automáticamente a los doctores y empleados registrados para que el bot no intente agendarlos como clientes ni genere errores.
 - **RF-14 (Seguridad App Admin con PIN Estándar de 4 Dígitos):** Proteger el panel administrativo en la App mediante un PIN secreto de 4 dígitos.
 - **RF-15 (Límite Configurable de Citas Activas Anti-Troll):** El dueño/administrador del negocio puede definir el límite máximo de citas activas que un cliente puede tener agendadas por WhatsApp (parámetro `MAX_ACTIVE_APPOINTMENTS`, por defecto 2). Si el cliente alcanza el límite, el bot detiene el flujo automático y sugiere contactar a recepción por llamada o presencial.
+- **RF-16 (Notificación Automática de Cancelación a Empleados):** Cuando una cita es cancelada por el cliente vía WhatsApp o por recepción desde la App, el motor envía de inmediato una alerta de WhatsApp al celular personal del especialista o doctor asignado, detallando el paciente, servicio, fecha y hora del horario liberado.
 
 ---
 
