@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 // Importar rutas
 const apiRoutes = require('./routes');
@@ -11,7 +12,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Montar rutas
+// Servir archivos estáticos del Panel PWA de Escritorio
+app.use(express.static(path.join(__dirname, '../../public')));
+
+// Montar rutas de la API
 app.use('/api', apiRoutes);
 
 // Puerto

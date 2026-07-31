@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus-Flow — Panel de Administración de Escritorio</title>
+
+  <!-- Meta PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nexus-Flow">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3652/3652191.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3652/3652191.png">
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --primary: #0284c7;
+      --primary-glow: rgba(2, 132, 199, 0.4);
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #0284c7, #38bdf8, #818cf8);
+    }
+
+    .logo-badge {
+      width: 80px;
+      height: 80px;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid var(--primary-glow);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px auto;
+      box-shadow: 0 0 30px var(--primary-glow);
+    }
+
+    .logo-badge img {
+      width: 48px;
+      height: 48px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 99px;
+      font-size: 13px;
+      color: var(--success);
+      font-weight: 500;
+      margin-bottom: 32px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    .btn-install {
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+      margin-bottom: 16px;
+    }
+
+    .btn-install:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(2, 132, 199, 0.5);
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 14px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .instruction-card {
+      margin-top: 24px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 12px;
+      text-align: left;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .instruction-card strong {
+      color: var(--accent);
+    }
+
+    footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="logo-badge">
+      <img src="https://cdn-icons-png.flaticon.com/512/3652/3652191.png" alt="Nexus-Flow Logo">
+    </div>
+
+    <h1 id="business-title">Nexus-Flow Admin Cockpit</h1>
+    <p class="subtitle" id="business-sub">Panel de Administración Comercial & Citas 24/7</p>
+
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="api-status">Sistema Conectado & Operando en Producción</span>
+    </div>
+
+    <!-- Botón PWA Instalación -->
+    <button class="btn-install" id="btnInstallPwa">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Instalar Nexus-App en el Escritorio
+    </button>
+
+    <!-- Instrucciones Manuales si PWA ya está o navega de otro lado -->
+    <div class="instruction-card">
+      💡 <strong>Para crear tu Icono en el Escritorio de Windows:</strong><br>
+      1. Haz clic en los 3 puntos de Chrome/Edge (arriba a la derecha).<br>
+      2. Selecciona <strong>"Guardar y compartir"</strong> ➔ <strong>"Crear acceso directo..."</strong>.<br>
+      3. Marca la casilla <strong>"Abrir como ventana"</strong> y haz clic en <strong>Crear</strong>.
+    </div>
+
+    <footer>
+      Nexus-Flow Engine v2.0.0 — Sistema Propietario de Agendamiento Inteligente
+    </footer>
+  </div>
+
+  <script>
+    // Registro de Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+
+    // Lógica del Prompt de Instalación PWA
+    let deferredPrompt;
+    const btnInstall = document.getElementById('btnInstallPwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstall.style.display = 'flex';
+    });
+
+    btnInstall.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('✅ PWA Instalada en Escritorio');
+        }
+        deferredPrompt = null;
+      } else {
+        alert('Para crear el acceso directo en tu escritorio:\n\n1. En tu navegador haz clic en los 3 puntos (arriba a la derecha).\n2. Selecciona "Guardar y compartir" -> "Crear acceso directo...".\n3. Marca la casilla "Abrir como ventana" y listo.');
+      }
+    });
+
+    // Cargar Nombre de Negocio desde API
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.BUSINESS_NAME) {
+          document.getElementById('business-title').innerText = data.BUSINESS_NAME;
+          document.getElementById('business-sub').innerText = `Panel de Control Admin (PIN: ${data.ADMIN_PIN || '****'})`;
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
