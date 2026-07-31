@@ -318,7 +318,7 @@ router.patch('/citas/:id/estado', async (req, res) => {
       const [citasDB] = await pool.execute(
         `SELECT c.fecha_inicio, COALESCE(c.precio, s.precio, 0) AS precio, c.notas,
                 cl.nombre AS cliente_nombre, cl.telefono AS cliente_telefono, 
-                s.nombre AS servicio_nombre, u.nombre AS empleado_nombre
+                s.nombre AS servicio_nombre, s.indicaciones_postcita, u.nombre AS empleado_nombre
          FROM citas c
          JOIN clientes cl ON c.cliente_id = cl.id
          JOIN servicios s ON c.servicio_id = s.id
@@ -334,6 +334,7 @@ router.patch('/citas/:id/estado', async (req, res) => {
           clienteNombre: c.cliente_nombre,
           clienteTelefono: c.cliente_telefono,
           servicioNombre: c.servicio_nombre,
+          indicacionesPostcita: c.indicaciones_postcita,
           precio: c.precio,
           notas: c.notas,
           empleadoNombre: c.empleado_nombre,

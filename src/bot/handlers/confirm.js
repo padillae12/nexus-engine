@@ -114,20 +114,28 @@ async function handleConfirmation(sesion, msg) {
       const h12        = hd > 12 ? hd - 12 : hd === 0 ? 12 : hd;
       const horaTexto  = `${h12}:${String(md).padStart(2, '0')}${periodo}`;
 
+      // Obtener indicaciones_precita si existen para este servicio
+      const { getServicioById } = require('../../db/queries');
+      const servicioInfo = await getServicioById(sesion.servicioId).catch(() => null);
+      const precita = servicioInfo?.indicaciones_precita;
+      const precitaTexto = precita
+        ? (isEn ? `\n📋 *Pre-Appointment Requirements:*\n_${precita}_\n` : `\n📋 *Recomendaciones Pre-Cita / Requisitos:*\n_${precita}_\n`)
+        : '';
+
       return {
         respuesta: isEn
           ? `🎉 *Appointment Confirmed!*\n\n` +
             `📋 Confirmation #: *#${citaId}*\n` +
             `🛎️ Service: *${sesion.servicioNombre}*\n` +
             `📅 Date: *${fechaTexto}*\n` +
-            `⏰ Time: *${horaTexto}*\n\n` +
+            `⏰ Time: *${horaTexto}*` + precitaTexto + `\n\n` +
             `We look forward to seeing you. If you need to change or reschedule your appointment, message us anytime.\n\n` +
             `_Save your confirmation #${citaId} for your records._ 😊`
           : `🎉 *¡Cita confirmada!*\n\n` +
             `📋 Folio: *#${citaId}*\n` +
             `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
             `📅 Fecha: *${fechaTexto}*\n` +
-            `⏰ Hora: *${horaTexto}*\n\n` +
+            `⏰ Hora: *${horaTexto}*` + precitaTexto + `\n\n` +
             `Te esperamos. Si necesitas cambiar o reagendar tu cita, escríbenos aquí.\n\n` +
             `_Guarda tu folio #${citaId} por si lo necesitas._ 😊`,
         nuevoEstado: 'IDLE',

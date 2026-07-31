@@ -107,7 +107,7 @@ async function updateClienteNombre(clienteId, nombre) {
  */
 async function getServicios() {
   const [rows] = await pool.execute(
-    'SELECT id, nombre, descripcion, precio, mostrar_precio, duracion_min FROM servicios WHERE activo = 1 ORDER BY id'
+    'SELECT id, nombre, descripcion, indicaciones_precita, indicaciones_postcita, precio, mostrar_precio, duracion_min FROM servicios WHERE activo = 1 ORDER BY id'
   );
   return rows;
 }
@@ -118,7 +118,7 @@ async function getServicios() {
  */
 async function getServicioById(id) {
   const [rows] = await pool.execute(
-    'SELECT id, nombre, descripcion, precio, mostrar_precio, duracion_min FROM servicios WHERE id = ? AND activo = 1',
+    'SELECT id, nombre, descripcion, indicaciones_precita, indicaciones_postcita, precio, mostrar_precio, duracion_min FROM servicios WHERE id = ? AND activo = 1',
     [id]
   );
   return rows[0] || null;
@@ -641,6 +641,8 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_inicio_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_fin_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE servicios ADD COLUMN mostrar_precio TINYINT(1) NOT NULL DEFAULT 1').catch(() => {});
+    await pool.query('ALTER TABLE servicios ADD COLUMN indicaciones_precita TEXT NULL').catch(() => {});
+    await pool.query('ALTER TABLE servicios ADD COLUMN indicaciones_postcita TEXT NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_enviado TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN notificacion_empleado_enviada TINYINT(1) NOT NULL DEFAULT 0').catch(() => {});
@@ -789,7 +791,7 @@ async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'e
  */
 async function getServiciosAdmin() {
   const [rows] = await pool.execute(
-    'SELECT id, nombre, descripcion, precio, duracion_min, activo FROM servicios ORDER BY id ASC'
+    'SELECT id, nombre, descripcion, indicaciones_precita, indicaciones_postcita, precio, duracion_min, activo FROM servicios ORDER BY id ASC'
   );
   return rows;
 }
@@ -797,22 +799,24 @@ async function getServiciosAdmin() {
 /**
  * Crea o actualiza un servicio.
  */
-async function guardarServicio({ id, nombre, precio, duracionMin, descripcion, activo = 1 }) {
+async function guardarServicio({ id, nombre, precio, duracionMin, descripcion, indicacionesPrecita, indicacionesPostcita, activo = 1 }) {
   const numPrecio = (precio != null && precio !== '') ? Number(precio) : null;
   const numDuracion = (duracionMin != null && duracionMin !== '') ? Number(duracionMin) : 60;
   const act = activo ? 1 : 0;
   const desc = descripcion ? descripcion.trim() : null;
+  const pre = indicacionesPrecita ? indicacionesPrecita.trim() : null;
+  const post = indicacionesPostcita ? indicacionesPostcita.trim() : null;
 
   if (id) {
     await pool.execute(
-      `UPDATE servicios SET nombre = ?, precio = ?, duracion_min = ?, descripcion = ?, activo = ? WHERE id = ?`,
-      [nombre.trim(), numPrecio, numDuracion, desc, act, id]
+      `UPDATE servicios SET nombre = ?, precio = ?, duracion_min = ?, descripcion = ?, indicaciones_precita = ?, indicaciones_postcita = ?, activo = ? WHERE id = ?`,
+      [nombre.trim(), numPrecio, numDuracion, desc, pre, post, act, id]
     );
     return id;
   } else {
     const [res] = await pool.execute(
-      `INSERT INTO servicios (nombre, precio, duracion_min, descripcion, activo) VALUES (?, ?, ?, ?, ?)`,
-      [nombre.trim(), numPrecio, numDuracion, desc, act]
+      `INSERT INTO servicios (nombre, precio, duracion_min, descripcion, indicaciones_precita, indicaciones_postcita, activo) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nombre.trim(), numPrecio, numDuracion, desc, pre, post, act]
     );
     return res.insertId;
   }

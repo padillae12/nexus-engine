@@ -98,17 +98,17 @@ async function seed() {
     // 4. Insertar Tratamientos y Servicios
     console.log('🛎️ Insertando catálogo de servicios VIP...');
     const serviciosData = [
-      ['Diseño de Sonrisa (Veneers)', 'Previa valoración digital', 15000.00, 1, 120],
-      ['Implante Dental Premium', 'Incluye corona de zirconio', 25000.00, 1, 90],
-      ['Blanqueamiento Láser', 'Resultados inmediatos', 4500.00, 1, 60],
-      ['Ortodoncia Invisible', 'Escaneo 3D incluido', 8000.00, 1, 45],
+      ['Diseño de Sonrisa (Veneers)', 'Previa valoración digital', 15000.00, 1, 120, 'Traer radiografía panorámica reciente y acudir con higiene oral rigurosa.', 'Evitar alimentos pigmentantes (café, vino, salsa de tomate) durante 48 hrs y usar guarda nocturna.'],
+      ['Implante Dental Premium', 'Incluye corona de zirconio', 25000.00, 1, 90, 'No ingerir alimentos 4 horas antes si requiere sedación ligera. Venir acompañado.', 'Tomar antibiótico/analgésico indicado cada 8h. Colocar hielo externo 15 min por hora. Reposo 24h.'],
+      ['Blanqueamiento Láser', 'Resultados inmediatos', 4500.00, 1, 60, 'Realizar limpieza dental previa si han pasado más de 6 meses.', 'Dieta blanca estricta durante 72 hrs. Evitar bebidas muy frías o calientes.'],
+      ['Ortodoncia Invisible', 'Escaneo 3D incluido', 8000.00, 1, 45, 'Venir con dientes limpios para escaneo intraoral 3D.', 'Usar alineadores mínimo 22 horas al día. Retirar únicamente para comer.'],
     ];
 
     const servicioIds = {};
-    for (const [nombre, desc, precio, mostrarPrecio, duracion] of serviciosData) {
+    for (const [nombre, desc, precio, mostrarPrecio, duracion, precita, postcita] of serviciosData) {
       const [res] = await connection.query(
-        'INSERT INTO servicios (nombre, descripcion, precio, mostrar_precio, duracion_min, activo) VALUES (?, ?, ?, ?, ?, 1)',
-        [nombre, desc, precio, mostrarPrecio, duracion]
+        'INSERT INTO servicios (nombre, descripcion, precio, mostrar_precio, duracion_min, indicaciones_precita, indicaciones_postcita, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+        [nombre, desc, precio, mostrarPrecio, duracion, precita, postcita]
       );
       servicioIds[nombre] = res.insertId;
     }

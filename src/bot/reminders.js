@@ -216,6 +216,11 @@ async function notificarTicketCompletadoCliente(client, citaInfo) {
     const precioNum = Number(citaInfo.precio || 0);
     const precioFmt = `$${precioNum.toLocaleString('es-MX')} MXN`;
 
+    const postcita = citaInfo.indicacionesPostcita || citaInfo.indicaciones_postcita;
+    const postcitaTexto = postcita
+      ? (isEn ? `\n🩺 *Post-Treatment Care Instructions:*\n_${postcita}_\n` : `\n🩺 *Cuidados Post-Tratamiento / Recomendaciones:*\n_${postcita}_\n`)
+      : '';
+
     const notasTexto = citaInfo.notas ? (isEn ? `\n📝 Details: _${citaInfo.notas}_` : `\n📝 Detalles: _${citaInfo.notas}_`) : '';
     const doctorTexto = citaInfo.empleadoNombre ? (isEn ? `\n👨‍⚕️ Specialist: *${citaInfo.empleadoNombre}*` : `\n👨‍⚕️ Especialista: *${citaInfo.empleadoNombre}*`) : '';
 
@@ -226,7 +231,8 @@ async function notificarTicketCompletadoCliente(client, citaInfo) {
         notasTexto +
         doctorTexto + `\n` +
         `📅 Date: *${fechaTexto}*\n` +
-        `💰 Total Paid: *${precioFmt}*\n\n` +
+        `💰 Total Paid: *${precioFmt}*\n` +
+        postcitaTexto + `\n` +
         `Thank you for choosing us! If you need to book a new appointment or follow-up, feel free to text us anytime. 😊`
       : `🧾 *COMPROBANTE DE ATENCIÓN - ${businessName.toUpperCase()}*\n\n` +
         `Hola *${citaInfo.clienteNombre || 'Cliente'}*, ¡muchas gracias por tu visita hoy!\n\n` +
@@ -234,7 +240,8 @@ async function notificarTicketCompletadoCliente(client, citaInfo) {
         notasTexto +
         doctorTexto + `\n` +
         `📅 Fecha: *${fechaTexto}*\n` +
-        `💰 Total Cobrado: *${precioFmt}*\n\n` +
+        `💰 Total Cobrado: *${precioFmt}*\n` +
+        postcitaTexto + `\n` +
         `¡Agradecemos tu preferencia! Si necesitas agendar una nueva cita o seguimiento, sólo escríbenos por aquí. 😊`;
 
     await client.sendMessage(jid, mensaje);

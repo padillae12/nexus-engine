@@ -568,13 +568,12 @@ Ejemplos:
 
 3️⃣ CATÁLOGO DE SERVICIOS Y TRATAMIENTOS:
 Favor de detallar los tratamientos que se pueden agendar por WhatsApp:
-(Formato: Tratamiento | Duración estimada | Precio base | Información/Requisitos previos)
+(Formato: Tratamiento | Duración estimada | Precio base | Requisitos Pre-Cita | Cuidados Post-Cita)
 Ejemplos:
-- Valoración Inicial / Diagnóstico | 30 min | $300 MXN | Incluye radiografía inicial
-- Limpieza / Profilaxis | 45 min | $600 MXN | Ultrasonido y pulido
-- Ajuste Mensual de Ortodoncia | 30 min | $500 MXN | Solo pacientes en tratamiento
-- Resina / Obturación | 45 min | $800 MXN | Por pieza dental
-- Extracción Simple | 60 min | $1,200 MXN | Requiere valoración previa
+- Diseño de Sonrisa (Veneers) | 120 min | $15,000 MXN | Traer panorámica previa | Evitar alimentos pigmentantes por 48h
+- Implante Dental Premium | 90 min | $25,000 MXN | Ayuno 4h, venir acompañado | Tomar analgésico cada 8h, reposo 24h
+- Blanqueamiento Láser | 60 min | $4,500 MXN | Limpieza previa | Dieta blanca estricta 72h
+- Ortodoncia Invisible | 45 min | $8,000 MXN | Dientes limpios para escaneo 3D | Usar alineadores 22h al día
 
 4️⃣ DOCTORES Y ESPECIALISTAS (Notificaciones por WhatsApp):
 Favor de listar a los doctores, su WhatsApp personal y sus especialidades:

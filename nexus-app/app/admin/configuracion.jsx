@@ -65,6 +65,8 @@ export default function ConfiguracionScreen() {
   const [srvPrecio, setSrvPrecio] = useState('');
   const [srvDuracionMin, setSrvDuracionMin] = useState('60');
   const [srvDescripcion, setSrvDescripcion] = useState('');
+  const [srvIndicacionesPrecita, setSrvIndicacionesPrecita] = useState('');
+  const [srvIndicacionesPostcita, setSrvIndicacionesPostcita] = useState('');
   const [srvActivo, setSrvActivo] = useState(true);
   const [savingSrv, setSavingSrv] = useState(false);
 
@@ -81,7 +83,7 @@ export default function ConfiguracionScreen() {
         setEmpleados(emps);
         setCatServicios(srvs);
       })
-      .catch(console.warn)
+      .catch((err) => console.error("Error al cargar configuración:", err))
       .finally(() => setLoading(false));
   };
 
@@ -140,20 +142,18 @@ export default function ConfiguracionScreen() {
       await guardarEmpleado({
         id: editingEmpId || undefined,
         nombre: empNombre.trim(),
-        email: empEmail.trim() || `${empNombre.toLowerCase().replace(/\s+/g, '')}@negocio.com`,
-        telefono: empTel.trim(),
+        email: empEmail.trim() || null,
+        telefono: empTel.trim() || null,
         rol: empRol,
-        activo: 1,
         horaInicioComida: empHoraInicioComida.trim() || null,
         horaFinComida: empHoraFinComida.trim() || null,
-        servicioIds: isPro ? empServicioIds : [],
+        servicioIds: empServicioIds,
       });
 
-      const mensaje = editingEmpId
-        ? 'El empleado, sus especialidades y horario de comida han sido actualizados.'
-        : 'El nuevo empleado ha sido registrado exitosamente.';
-
-      Alert.alert('Registro Guardado', mensaje);
+      Alert.alert(
+        'Empleado Guardado',
+        editingEmpId ? 'Los datos del empleado han sido actualizados.' : 'El nuevo empleado ha sido registrado.'
+      );
       limpiarFormulario();
       cargarDatos();
     } catch (err) {
@@ -170,6 +170,8 @@ export default function ConfiguracionScreen() {
     setSrvPrecio('');
     setSrvDuracionMin('60');
     setSrvDescripcion('');
+    setSrvIndicacionesPrecita('');
+    setSrvIndicacionesPostcita('');
     setSrvActivo(true);
     setShowAddSrv(false);
   };
@@ -180,6 +182,8 @@ export default function ConfiguracionScreen() {
     setSrvPrecio(srv.precio != null ? String(srv.precio) : '');
     setSrvDuracionMin(srv.duracion_min != null ? String(srv.duracion_min) : '60');
     setSrvDescripcion(srv.descripcion || '');
+    setSrvIndicacionesPrecita(srv.indicaciones_precita || '');
+    setSrvIndicacionesPostcita(srv.indicaciones_postcita || '');
     setSrvActivo(srv.activo !== 0);
     setShowAddSrv(true);
   };
@@ -197,6 +201,8 @@ export default function ConfiguracionScreen() {
         precio: srvPrecio.trim() ? Number(srvPrecio) : null,
         duracionMin: srvDuracionMin.trim() ? Number(srvDuracionMin) : 60,
         descripcion: srvDescripcion.trim(),
+        indicacionesPrecita: srvIndicacionesPrecita.trim(),
+        indicacionesPostcita: srvIndicacionesPostcita.trim(),
         activo: srvActivo ? 1 : 0,
       });
 
@@ -534,6 +540,30 @@ export default function ConfiguracionScreen() {
               multiline
               value={srvDescripcion}
               onChangeText={setSrvDescripcion}
+            />
+          </View>
+
+          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
+            <Ionicons name="clipboard-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+            <TextInput
+              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
+              placeholder="Indicaciones Pre-Cita / Requisitos (Ej. Ayuno 8h)"
+              placeholderTextColor="#6B7280"
+              multiline
+              value={srvIndicacionesPrecita}
+              onChangeText={setSrvIndicacionesPrecita}
+            />
+          </View>
+
+          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
+            <Ionicons name="medkit-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+            <TextInput
+              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
+              placeholder="Indicaciones Post-Cita / Cuidados (Ej. Reposo 24h)"
+              placeholderTextColor="#6B7280"
+              multiline
+              value={srvIndicacionesPostcita}
+              onChangeText={setSrvIndicacionesPostcita}
             />
           </View>
 
