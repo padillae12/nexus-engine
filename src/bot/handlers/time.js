@@ -13,11 +13,11 @@ async function handleTimeSelect(sesion, msg) {
     return {
       respuesta: isEn
         ? `❓ Please reply with a number between 1 and ${Math.min(slots.length, 10)}.\n\n` +
-          `If you don't want to book, type *"cancel"*.\n` +
-          `Type *"back"* to choose another date.`
+          `Type *"back"* to choose another date.\n` +
+          `Or type *"menu"* to return to main menu.`
         : `❓ Por favor elige un número del 1 al ${Math.min(slots.length, 10)}.\n\n` +
-          `Si ya no quieres agendar, escribe *"cancelar"*.\n` +
-          `Escribe *"atrás"* para elegir otra fecha.`,
+          `Escribe *"atrás"* para elegir otra fecha.\n` +
+          `O escribe *"menú"* para volver al inicio.`,
       nuevoEstado: 'TIME_SELECT',
     };
   }

@@ -100,6 +100,10 @@ function extraerFechaExplicita(msg) {
     } else if (p1 <= 12 && p2 > 12) {
       dia = p2; mes = p1 - 1;
     }
+    // Validar días máximos del mes
+    const maxDias = new Date(year, mes + 1, 0).getDate();
+    if (dia < 1 || dia > maxDias) return null;
+
     const d = new Date(year, mes, dia);
     return isNaN(d.getTime()) ? null : d;
   }
@@ -112,7 +116,11 @@ function extraerFechaExplicita(msg) {
     const dia = parseInt(matchEs[1], 10);
     const mesIdx = mesesEs.findIndex(m => m === matchEs[2].toLowerCase());
     if (mesIdx !== -1) {
-      const d = new Date(new Date().getFullYear(), mesIdx, dia);
+      const year = new Date().getFullYear();
+      const maxDias = new Date(year, mesIdx + 1, 0).getDate();
+      if (dia < 1 || dia > maxDias) return null;
+
+      const d = new Date(year, mesIdx, dia);
       return isNaN(d.getTime()) ? null : d;
     }
   }
@@ -130,7 +138,11 @@ function extraerFechaExplicita(msg) {
     }
     const mesIdx = mesesEn.findIndex(m => m.startsWith(monthName));
     if (mesIdx !== -1) {
-      const d = new Date(new Date().getFullYear(), mesIdx, dayNum);
+      const year = new Date().getFullYear();
+      const maxDias = new Date(year, mesIdx + 1, 0).getDate();
+      if (dayNum < 1 || dayNum > maxDias) return null;
+
+      const d = new Date(year, mesIdx, dayNum);
       return isNaN(d.getTime()) ? null : d;
     }
   }

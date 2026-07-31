@@ -121,14 +121,14 @@ async function handleConfirmation(sesion, msg) {
             `🛎️ Service: *${sesion.servicioNombre}*\n` +
             `📅 Date: *${fechaTexto}*\n` +
             `⏰ Time: *${horaTexto}*\n\n` +
-            `We look forward to seeing you. If you need to cancel or change your appointment, message us anytime.\n\n` +
+            `We look forward to seeing you. If you need to change or reschedule your appointment, message us anytime.\n\n` +
             `_Save your confirmation #${citaId} for your records._ 😊`
           : `🎉 *¡Cita confirmada!*\n\n` +
             `📋 Folio: *#${citaId}*\n` +
             `🛎️ Servicio: *${sesion.servicioNombre}*\n` +
             `📅 Fecha: *${fechaTexto}*\n` +
             `⏰ Hora: *${horaTexto}*\n\n` +
-            `Te esperamos. Si necesitas cancelar o cambiar tu cita, escríbenos aquí.\n\n` +
+            `Te esperamos. Si necesitas cambiar o reagendar tu cita, escríbenos aquí.\n\n` +
             `_Guarda tu folio #${citaId} por si lo necesitas._ 😊`,
         nuevoEstado: 'IDLE',
         limpiarSesion: true,
@@ -268,9 +268,9 @@ async function handleCancelFlow(sesion, msg) {
     return {
       respuesta: isEn
         ? `📋 *Your active appointments:*\n\n${lista}\n\n` +
-          `Which one do you want to cancel? Reply with the number, or reply *"none"* to exit.`
+          `Which one do you want to cancel? Reply with the number, or type *"back"* to exit.`
         : `📋 *Tus citas activas:*\n\n${lista}\n\n` +
-          `¿Cuál quieres cancelar? Responde con el número, o escribe *"ninguna"* para salir.`,
+          `¿Cuál deseas cancelar? Responde con el número de la cita, o escribe *"atrás"* para salir.`,
       nuevoEstado: 'CANCEL_SELECT',
     };
   }
@@ -288,7 +288,7 @@ async function handleCancelSelect(sesion, msg) {
   const { cancelCita } = require('../../db/queries');
   const isEn = sesion.idioma === 'en';
 
-  if (/ninguna|salir|no|none|exit/i.test(msg)) {
+  if (/atr[aá]s|ninguna|salir|no|none|exit|back/i.test(msg)) {
     return {
       respuesta: isEn
         ? `Alright. Your appointments remain active. 👍`
@@ -304,8 +304,8 @@ async function handleCancelSelect(sesion, msg) {
   if (!opcion || opcion < 1 || opcion > citas.length) {
     return {
       respuesta: isEn
-        ? `Please reply with a number between 1 and ${citas.length}, or reply *"none"* to exit.`
-        : `Por favor elige un número del 1 al ${citas.length}, o escribe *"ninguna"* para salir.`,
+        ? `Please reply with a number between 1 and ${citas.length}, or type *"back"* to exit.`
+        : `Por favor elige un número del 1 al ${citas.length}, o escribe *"atrás"* para salir.`,
       nuevoEstado: 'CANCEL_SELECT',
     };
   }
