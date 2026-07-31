@@ -1,21 +1,17 @@
 // src/db/pool.js
 // Pool de conexiones MySQL reutilizable para todo el proyecto.
-// Se importa como: const pool = require('./pool');
-// Y se usa como:   const [rows] = await pool.execute(sql, params);
-//
-// ── Modo mock ───────────────────────────────────────────────────
-// Si USE_MOCK_DB=true en .env, no se intenta conectar al VPS.
-// Las queries reales son reemplazadas por queries.mock.js.
 
 require('dotenv').config();
 
 if (process.env.USE_MOCK_DB === 'true') {
   console.log('🟡 [MOCK] pool.js omitido — usando base de datos simulada.');
   module.exports = { execute: async () => { throw new Error('Mock activo'); } };
-  return; // Node permite return en CommonJS a nivel de módulo
+  return;
 }
 
 const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 const config = require('../config');
 
 const pool = mysql.createPool({
@@ -28,16 +24,27 @@ const pool = mysql.createPool({
   connectionLimit:    10,
   queueLimit:         0,
   timezone:           '+00:00',
+  multipleStatements: true,
 });
 
-// Prueba de conexión al arrancar
+// Prueba de conexión y auto-inicialización del esquema maestro
 pool.getConnection()
-  .then(conn => {
-    console.log('✅ Nexus-Engine conectado a MySQL');
-    conn.release();
+  .then(async conn => {
+    console.log('✅ Nexus-Engine conectado a MariaDB');
+    try {
+      const schemaPath = path.join(__dirname, 'schema.sql');
+      if (fs.existsSync(schemaPath)) {
+        const sql = fs.readFileSync(schemaPath, 'utf8');
+        await conn.query(sql);
+      }
+    } catch (e) {
+      console.warn('⚠️ Auto-inicialización de esquema:', e.message);
+    } finally {
+      conn.release();
+    }
   })
   .catch(err => {
-    console.error('❌ Error conectando a MySQL:', err.message);
+    console.error('❌ Error conectando a MariaDB:', err.message);
     process.exit(1);
   });
 
