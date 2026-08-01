@@ -65,8 +65,11 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 - **RF-12 (Gestión de Perfil / Cambio de Nombre):** Permitir al cliente actualizar su nombre registrado mediante la Opción 5 o el comando *"cambiar nombre"*.
 - **RF-13 (Filtro Inteligente de Personal):** Detectar automáticamente a los doctores y empleados registrados para que el bot no intente agendarlos como clientes ni genere errores.
 - **RF-14 (Seguridad App Admin con PIN Estándar de 4 Dígitos):** Proteger el panel administrativo en la App mediante un PIN secreto de 4 dígitos.
-- **RF-15 (Límite Configurable de Citas Activas Anti-Troll):** El dueño/administrador del negocio puede definir el límite máximo de citas activas que un cliente puede tener agendadas por WhatsApp (parámetro `MAX_ACTIVE_APPOINTMENTS`, por defecto 2). Si el cliente alcanza el límite, el bot detiene el flujo automático y sugiere contactar a recepción por llamada o presencial.
 - **RF-16 (Notificación Automática de Cancelación a Empleados):** Cuando una cita es cancelada por el cliente vía WhatsApp o por recepción desde la App, el motor envía de inmediato una alerta de WhatsApp al celular personal del especialista o doctor asignado, detallando el paciente, servicio, fecha y hora del horario liberado.
+- **RF-17 (Indicaciones Pre-Cita y Cuidados Post-Cita por Servicio):** Permite configurar requisitos previos (ej. ayuno, radiografía) que el bot envía en la confirmación de agendamiento por WhatsApp, y cuidados posteriores (ej. medicación, reposo) incluidos automáticamente en el ticket/comprobante de atención al cliente.
+- **RF-18 (Personalización de Cuidados Post-Tratamiento por Cita en la App):** Los doctores y recepcionistas pueden personalizar las indicaciones post-cita específicas para un paciente desde la pantalla de Detalle de Cita en la Nexus-App, las cuales se adjuntan en el mensaje de WhatsApp al completar la cita.
+- **RF-19 (Coincidencia Flexible de Intenciones - Fuzzy Matching):** El motor conversacional interpreta intenciones mediante coincidencias parciales de raíces clave (`horari`, `agend`, `cancel`, `ubicac`), entendiendo mensajes con errores ortográficos o letras repetidas (ej. *"horarioosss"*, *"agendarrrr"*).
+- **RF-20 (Estrategia UX Antideserción & Validación Estricta de Fechas):** Priorizar opciones de navegación (`"atrás"`, `"menú"`) en todos los mensajes del bot para maximizar la conversión, y validar matemáticamente los límites de días por mes (rechazando fechas inexistentes como *"32 de octubre"*).
 
 ---
 
