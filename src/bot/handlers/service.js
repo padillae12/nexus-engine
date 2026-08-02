@@ -110,12 +110,21 @@ async function handleServiceSelect(sesion, msg) {
     servicioElegido = catalogo[opcion - 1];
   }
 
-  // ── Intentar por nombre (búsqueda parcial, case-insensitive) ─────
+  // ── Intentar por nombre (búsqueda fonética & tolerancia a errores ortográficos) ─────
   if (!servicioElegido) {
-    servicioElegido = catalogo.find(s =>
-      s.nombre.toLowerCase().includes(msgLower) ||
-      msgLower.includes(s.nombre.toLowerCase())
-    );
+    const { normalizarTexto } = require('../../utils/regex');
+    const normMsg = normalizarTexto(msg);
+
+    servicioElegido = catalogo.find(s => {
+      const normNombre = normalizarTexto(s.nombre);
+      const normDesc = normalizarTexto(s.descripcion || '');
+      return (
+        normNombre.includes(normMsg) ||
+        normMsg.includes(normNombre) ||
+        (normDesc && normDesc.includes(normMsg)) ||
+        (normMsg.length >= 4 && normNombre.includes(normMsg.slice(0, 4)))
+      );
+    });
   }
 
   // ── No se reconoció la opción ────────────────────────────────────

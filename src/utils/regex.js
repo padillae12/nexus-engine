@@ -10,29 +10,64 @@
 //  INTENCIONES GENERALES (ESPAÑOL & ENGLISH)
 // ─────────────────────────────────────────────────────────────────
 
+/**
+ * Normalización fonética y de errores de ortografía en español.
+ * Remueve acentos, unifica s/c/z -> s, v/b -> b, k/q -> c, remueve h muda y reduce letras consecutivas repetidas.
+ */
+function normalizarTexto(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+    .replace(/[b|v]/g, 'b')                           // v -> b
+    .replace(/[z|c|s]/g, 's')                         // z, c -> s (seseo)
+    .replace(/[k|q]/g, 'c')                           // k, q -> c
+    .replace(/h/g, '')                                // h muda
+    .replace(/(.)\1+/g, '$1')                         // letras repetidas (oo -> o, ss -> s, rr -> r)
+    .trim();
+}
+
 /** El usuario quiere agendar una cita */
-const quiereAgendar = (msg) =>
-  /cita|agend|reserv|quiero\s+una|necesito|appointment|book|schedule|turno/i.test(msg);
+const quiereAgendar = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /sita|sinta|ajend|agend|reserb|ciero|quiero|necesit|apointment|book|scedule|turno/i.test(norm) ||
+         /cita|agend|reserv|quiero\s+una|necesito|appointment|book|schedule|turno/i.test(msg);
+};
 
 /** El usuario confirma algo (sí, ok, yes, etc.) */
-const esConfirmacion = (msg) =>
-  /^(sí|si|s|yes|yep|yeah|ok|dale|confirmo|confirmar|claro|va|andale|adelante|correcto|exacto|está\s+bien|de\s+acuerdo|sure|confirm|1)[\s.!]*$/i.test(msg.trim());
+const esConfirmacion = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /^(si|s|yes|yep|yeah|ok|dale|confirmo|confirmar|claro|ba|va|andale|adelante|correcto|esacto|exacto|esta bien|de acuerdo|sure|confirm|1)[\s.!]*$/i.test(norm) ||
+         /^(sí|si|s|yes|yep|yeah|ok|dale|confirmo|confirmar|claro|va|andale|adelante|correcto|exacto|está\s+bien|de\s+acuerdo|sure|confirm|1)[\s.!]*$/i.test(msg.trim());
+};
 
 /** El usuario niega o quiere cambiar algo */
-const esNegacion = (msg) =>
-  /^(no|nope|nel|nah|cambiar|otro|otra|diferente|equivocado|error|mal|change|2)[\s.!]*$/i.test(msg.trim());
+const esNegacion = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /^(no|nope|nel|nah|cambiar|otro|otra|diferente|equibocado|equivocado|error|mal|change|2)[\s.!]*$/i.test(norm) ||
+         /^(no|nope|nel|nah|cambiar|otro|otra|diferente|equivocado|error|mal|change|2)[\s.!]*$/i.test(msg.trim());
+};
 
 /** El usuario quiere cancelar una cita */
-const quiereCancelar = (msg) =>
-  /cancel|elimin|borrar|quitar\s+cita|no\s+voy|delete|remove/i.test(msg);
+const quiereCancelar = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /cansel|cansel|elimin|borar|borrar|citar|quitar|kitar|no boi|no voy|delete|remobe|remove/i.test(norm) ||
+         /cancel|elimin|borrar|quitar\s+cita|no\s+voy|delete|remove/i.test(msg);
+};
 
 /** El usuario quiere ver sus citas */
-const quiereVerCitas = (msg) =>
-  /mis\s+citas|tengo\s+cita|ver\s*citas|cuand[oa]\s+tengo|my\s+appointment|view\s+appointment/i.test(msg);
+const quiereVerCitas = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /mis sitas|tengo sita|ber sitas|cuando tengo|my apointment|view apointment/i.test(norm) ||
+         /mis\s+citas|tengo\s+cita|ver\s*citas|cuand[oa]\s+tengo|my\s+appointment|view\s+appointment/i.test(msg);
+};
 
 /** El usuario quiere ver información u horarios del negocio */
-const quiereInfo = (msg) =>
-  /info|informaci|horari|atenci|ubicaci|direcci|d[oó]nde|hours|address|location/i.test(msg);
+const quiereInfo = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /info|informas|orari|atens|ubicas|ubikac|dires|dond|hours|adres|address|location/i.test(norm) ||
+         /info|informaci|horari|atenci|ubicaci|direcci|d[oó]nde|hours|address|location/i.test(msg);
+};
 
 // ─────────────────────────────────────────────────────────────────
 //  EXTRACCIÓN DE FECHAS (ESPAÑOL & ENGLISH)
@@ -190,6 +225,7 @@ function extraerNumeroOpcion(msg) {
 }
 
 module.exports = {
+  normalizarTexto,
   quiereAgendar,
   esConfirmacion,
   esNegacion,
