@@ -86,6 +86,10 @@ async function getWhatsAppJid(client, telefonoRaw) {
  */
 async function notificarNuevaCitaEmpleado(client, citaInfo) {
   try {
+    const { getPlanType } = require('../db/queries');
+    const planType = await getPlanType().catch(() => 'basic');
+    if (planType !== 'pro') return; // Alertas a WhatsApp del empleado solo en Plan Pro
+
     const empleadoInfo = await getTelefonoEmpleado(citaInfo.empleadoId);
     if (!empleadoInfo || !empleadoInfo.telefono) return;
 
@@ -209,14 +213,16 @@ async function notificarTicketCompletadoCliente(client, citaInfo) {
     if (isNaN(fechaObj.getTime())) fechaObj = new Date();
     const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
 
-    const { getAllConfig } = require('../db/queries');
+    const { getAllConfig, getPlanType } = require('../db/queries');
     const cfg = await getAllConfig().catch(() => ({}));
+    const planType = await getPlanType().catch(() => 'basic');
     const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Loquero';
 
     const precioNum = Number(citaInfo.precio || 0);
     const precioFmt = `$${precioNum.toLocaleString('es-MX')} MXN`;
 
-    const postcita = citaInfo.indicacionesPostcita || citaInfo.indicaciones_postcita;
+    const rawPostcita = citaInfo.indicacionesPostcita || citaInfo.indicaciones_postcita;
+    const postcita = (planType === 'pro') ? rawPostcita : null;
     const postcitaTexto = postcita
       ? (isEn ? `\n🩺 *Post-Treatment Care Instructions:*\n_${postcita}_\n` : `\n🩺 *Cuidados Post-Tratamiento / Recomendaciones:*\n_${postcita}_\n`)
       : '';
@@ -319,6 +325,10 @@ function iniciarMotorRecordatorios(client) {
 async function notificarCancelacionCitaEmpleado(client, citaInfo) {
   try {
     if (!client || !citaInfo) return;
+
+    const { getPlanType } = require('../db/queries');
+    const planType = await getPlanType().catch(() => 'basic');
+    if (planType !== 'pro') return; // Alertas a WhatsApp del empleado solo en Plan Pro
 
     const empId = citaInfo.empleadoId || citaInfo.empleado_id;
     let empleadoInfo = null;
