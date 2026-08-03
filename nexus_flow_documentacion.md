@@ -70,6 +70,7 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 - **RF-18 (Personalización de Cuidados Post-Tratamiento por Cita en la App):** Los doctores y recepcionistas pueden personalizar las indicaciones post-cita específicas para un paciente desde la pantalla de Detalle de Cita en la Nexus-App, las cuales se adjuntan en el mensaje de WhatsApp al completar la cita.
 - **RF-19 (Coincidencia Flexible de Intenciones - Fuzzy Matching):** El motor conversacional interpreta intenciones mediante coincidencias parciales de raíces clave (`horari`, `agend`, `cancel`, `ubicac`), entendiendo mensajes con errores ortográficos o letras repetidas (ej. *"horarioosss"*, *"agendarrrr"*).
 - **RF-20 (Estrategia UX Antideserción & Validación Estricta de Fechas):** Priorizar opciones de navegación (`"atrás"`, `"menú"`) en todos los mensajes del bot para maximizar la conversión, y validar matemáticamente los límites de días por mes (rechazando fechas inexistentes como *"32 de octubre"*).
+- **RF-21 (Arquitectura Modular de Licenciamiento "A la Carta"):** Soporte para licenciamiento por presets (`PLAN_TYPE = 'basic' | 'pro'`) e interruptores de características individuales (`MODULE_EMPLOYEE_ALERTS`, `MODULE_PREPOSTCITA`, `MODULE_REPORTS`, `MODULE_ANTITROLL`), permitiendo vender tanto planes cerrados como paquetes a la medida ("A la Carta").
 
 ---
 
@@ -480,6 +481,18 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET va
 #### 👑 Cambiar a Plan Pro / Clínico:
 ```bash
 mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; UPDATE config_negocio SET valor = 'pro' WHERE clave = 'PLAN_TYPE';"
+```
+
+#### 🧩 Activar / Desactivar Módulos "A la Carta" (Plan Personalizado):
+```bash
+# Activar Notificaciones por WhatsApp a Celulares de Empleados (+ $400 MXN)
+mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; INSERT INTO config_negocio (clave, valor) VALUES ('MODULE_EMPLOYEE_ALERTS', '1') ON DUPLICATE KEY UPDATE valor = '1';"
+
+# Activar Indicaciones Pre-Cita y Recetas Post-Cita (+ $400 MXN)
+mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; INSERT INTO config_negocio (clave, valor) VALUES ('MODULE_PREPOSTCITA', '1') ON DUPLICATE KEY UPDATE valor = '1';"
+
+# Activar Dashboard y Reportes PDF/CSV (+ $300 MXN)
+mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; INSERT INTO config_negocio (clave, valor) VALUES ('MODULE_REPORTS', '1') ON DUPLICATE KEY UPDATE valor = '1';"
 ```
 
 ---
