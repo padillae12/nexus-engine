@@ -685,6 +685,21 @@ async function getPlanType() {
 }
 
 /**
+ * Verifica si el negocio tiene activo un módulo específico (A la Carta).
+ * Si PLAN_TYPE === 'pro', todos los módulos están incluidos (retorna true).
+ * De lo contrario, verifica si la clave MODULE_<NAME> === '1'.
+ * Módulos: 'EMPLOYEE_ALERTS', 'PREPOSTCITA', 'REPORTS', 'ANTITROLL'
+ */
+async function tieneModulo(moduloNombre) {
+  const plan = await getPlanType();
+  if (plan === 'pro') return true;
+
+  const key = `MODULE_${String(moduloNombre).toUpperCase()}`;
+  const val = await getConfig(key).catch(() => null);
+  return val === '1' || val === 'true';
+}
+
+/**
  * Obtiene el especialista preferido/frecuente de un cliente para un servicio dado (ej. Ortodoncia).
  */
 async function getEmpleadoPreferidoCliente(clienteId, servicioId) {
@@ -1027,6 +1042,7 @@ module.exports = {
   getConfig,
   getAllConfig,
   getPlanType,
+  tieneModulo,
   getEmpleados,
   guardarEmpleado,
   getServiciosAdmin,

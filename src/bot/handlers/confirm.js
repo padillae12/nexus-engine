@@ -114,11 +114,11 @@ async function handleConfirmation(sesion, msg) {
       const h12        = hd > 12 ? hd - 12 : hd === 0 ? 12 : hd;
       const horaTexto  = `${h12}:${String(md).padStart(2, '0')}${periodo}`;
 
-      // Obtener indicaciones_precita si existen para este servicio (Solo en Plan Pro)
-      const { getServicioById, getPlanType } = require('../../db/queries');
-      const planType = await getPlanType().catch(() => 'basic');
+      // Obtener indicaciones_precita si existen para este servicio (Plan Pro o Módulo 'PREPOSTCITA')
+      const { getServicioById, tieneModulo } = require('../../db/queries');
+      const habilitadoPrePost = await tieneModulo('PREPOSTCITA').catch(() => false);
       const servicioInfo = await getServicioById(sesion.servicioId).catch(() => null);
-      const precita = (planType === 'pro') ? servicioInfo?.indicaciones_precita : null;
+      const precita = habilitadoPrePost ? servicioInfo?.indicaciones_precita : null;
       const precitaTexto = precita
         ? (isEn ? `\n📋 *Pre-Appointment Requirements:*\n_${precita}_\n` : `\n📋 *Recomendaciones Pre-Cita / Requisitos:*\n_${precita}_\n`)
         : '';

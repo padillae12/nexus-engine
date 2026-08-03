@@ -86,9 +86,9 @@ async function getWhatsAppJid(client, telefonoRaw) {
  */
 async function notificarNuevaCitaEmpleado(client, citaInfo) {
   try {
-    const { getPlanType } = require('../db/queries');
-    const planType = await getPlanType().catch(() => 'basic');
-    if (planType !== 'pro') return; // Alertas a WhatsApp del empleado solo en Plan Pro
+    const { tieneModulo } = require('../db/queries');
+    const habilitadoAlertas = await tieneModulo('EMPLOYEE_ALERTS').catch(() => false);
+    if (!habilitadoAlertas) return; // Alertas a WhatsApp del empleado (Plan Pro o Módulo 'EMPLOYEE_ALERTS')
 
     const empleadoInfo = await getTelefonoEmpleado(citaInfo.empleadoId);
     if (!empleadoInfo || !empleadoInfo.telefono) return;
@@ -213,16 +213,16 @@ async function notificarTicketCompletadoCliente(client, citaInfo) {
     if (isNaN(fechaObj.getTime())) fechaObj = new Date();
     const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
 
-    const { getAllConfig, getPlanType } = require('../db/queries');
+    const { getAllConfig, tieneModulo } = require('../db/queries');
     const cfg = await getAllConfig().catch(() => ({}));
-    const planType = await getPlanType().catch(() => 'basic');
+    const habilitadoPrePost = await tieneModulo('PREPOSTCITA').catch(() => false);
     const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Loquero';
 
     const precioNum = Number(citaInfo.precio || 0);
     const precioFmt = `$${precioNum.toLocaleString('es-MX')} MXN`;
 
     const rawPostcita = citaInfo.indicacionesPostcita || citaInfo.indicaciones_postcita;
-    const postcita = (planType === 'pro') ? rawPostcita : null;
+    const postcita = habilitadoPrePost ? rawPostcita : null;
     const postcitaTexto = postcita
       ? (isEn ? `\n🩺 *Post-Treatment Care Instructions:*\n_${postcita}_\n` : `\n🩺 *Cuidados Post-Tratamiento / Recomendaciones:*\n_${postcita}_\n`)
       : '';
@@ -326,9 +326,9 @@ async function notificarCancelacionCitaEmpleado(client, citaInfo) {
   try {
     if (!client || !citaInfo) return;
 
-    const { getPlanType } = require('../db/queries');
-    const planType = await getPlanType().catch(() => 'basic');
-    if (planType !== 'pro') return; // Alertas a WhatsApp del empleado solo en Plan Pro
+    const { tieneModulo } = require('../db/queries');
+    const habilitadoAlertas = await tieneModulo('EMPLOYEE_ALERTS').catch(() => false);
+    if (!habilitadoAlertas) return; // Alertas a WhatsApp del empleado (Plan Pro o Módulo 'EMPLOYEE_ALERTS')
 
     const empId = citaInfo.empleadoId || citaInfo.empleado_id;
     let empleadoInfo = null;
