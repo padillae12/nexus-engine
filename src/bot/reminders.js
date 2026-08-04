@@ -114,13 +114,24 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
       }
     }
 
+    // Consultar si el paciente tiene notas internas de perfil (ej. "Nervioso con agujas", etc.)
+    const { pool } = require('../db/connection');
+    let notasInternas = null;
+    if (citaInfo.clienteId) {
+      const [clRows] = await pool.execute('SELECT notas_internas FROM clientes WHERE id = ?', [citaInfo.clienteId]).catch(() => [[]]);
+      if (clRows.length > 0 && clRows[0].notas_internas) notasInternas = clRows[0].notas_internas;
+    }
+
+    const notasTexto = notasInternas ? `\n\n📌 *NOTAS INTERNAS DEL PACIENTE:*\n_${notasInternas}_` : '';
+
     const mensaje =
       `🔔 *NUEVA CITA ASIGNADA*\n\n` +
       `Hola *${empleadoInfo.nombre}*, se agendó una nueva cita:\n\n` +
       `👤 Cliente: *${citaInfo.clienteNombre || 'Cliente'}*\n` +
       `🛎️ Servicio: *${citaInfo.servicioNombre}*\n` +
       `📅 Fecha: *${fechaTexto}*\n` +
-      `⏰ Hora: *${horaTexto}*\n\n` +
+      `⏰ Hora: *${horaTexto}*` +
+      notasTexto + `\n\n` +
       `_Registrado en Nexus-Engine._`;
 
     await client.sendMessage(jid, mensaje);

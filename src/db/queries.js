@@ -422,6 +422,8 @@ async function getCitasFiltradas({ fecha, estado, empleadoId } = {}) {
        c.paciente_nombre,
        cl.nombre                               AS agendado_por,
        cl.telefono,
+       cl.id                                   AS cliente_id,
+       cl.notas_internas                       AS cliente_notas_internas,
        s.nombre                                AS servicio,
        c.servicio_id,
        s.duracion_min,
@@ -470,6 +472,7 @@ async function getClientesLista() {
        cl.id,
        cl.telefono,
        cl.nombre,
+       cl.notas_internas,
        cl.creado_en,
        COUNT(c.id)                                        AS total_citas,
        MAX(DATE_FORMAT(c.fecha_inicio, '%Y-%m-%d %H:%i')) AS ultima_cita
@@ -506,6 +509,17 @@ async function getClientesLista() {
 // ─────────────────────────────────────────────────────────────────
 //  DASHBOARD — Estadísticas para el dueño
 // ─────────────────────────────────────────────────────────────────
+
+/**
+ * Actualiza las notas internas privadas de un cliente (para el personal/doctores).
+ */
+async function updateClienteNotasInternas(clienteId, notasInternas) {
+  const strNotas = (notasInternas != null && String(notasInternas).trim() !== '') ? String(notasInternas).trim() : null;
+  await pool.execute(
+    'UPDATE clientes SET notas_internas = ? WHERE id = ?',
+    [strNotas, clienteId]
+  );
+}
 
 /**
  * Calcula las métricas del dashboard:
@@ -642,6 +656,7 @@ async function ensureRemindersSchema() {
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_inicio_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_fin_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE servicios ADD COLUMN mostrar_precio TINYINT(1) NOT NULL DEFAULT 1').catch(() => {});
+    await pool.query('ALTER TABLE clientes ADD COLUMN notas_internas TEXT NULL').catch(() => {});
     await pool.query('ALTER TABLE servicios ADD COLUMN indicaciones_precita TEXT NULL').catch(() => {});
     await pool.query('ALTER TABLE servicios ADD COLUMN indicaciones_postcita TEXT NULL').catch(() => {});
     await pool.query('ALTER TABLE citas ADD COLUMN recordatorio_mins INT UNSIGNED NOT NULL DEFAULT 120').catch(() => {});
@@ -1064,6 +1079,7 @@ module.exports = {
   getCitasFiltradas,
   updateEstadoCita,
   getClientesLista,
+  updateClienteNotasInternas,
   getDashboardStats,
   getIngresosDiarios,
   crearBloqueo,

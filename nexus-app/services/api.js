@@ -279,6 +279,18 @@ export async function crearBloqueo(datos) {
   });
 }
 
+/**
+ * Actualiza las notas internas privadas de un paciente.
+ * @param {number} clienteId
+ * @param {string} notasInternas
+ */
+export async function updateClienteNotasInternas(clienteId, notasInternas) {
+  return request(`/clientes/${clienteId}/notas-internas`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notasInternas }),
+  });
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  EMPLEADOS
 // ══════════════════════════════════════════════════════════════════

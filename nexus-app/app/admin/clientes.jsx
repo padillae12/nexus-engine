@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { getClientes, getCitasCliente } from '../../services/api';
+import { getClientes, getCitasCliente, updateClienteNotasInternas } from '../../services/api';
+import { Alert, TextInput } from 'react-native';
 
 function ClienteRow({ cliente, onPress }) {
   const inicial = (cliente.nombre ?? '?')[0].toUpperCase();
@@ -31,6 +32,11 @@ function ClienteRow({ cliente, onPress }) {
       <View style={styles.info}>
         <Text style={styles.nombre}>{cliente.nombre ?? 'Sin nombre'}</Text>
         <Text style={styles.telefono}>{cliente.telefono}</Text>
+        {cliente.notas_internas ? (
+          <Text style={{ fontSize: 11, color: '#F59E0B', marginTop: 2 }} numberOfLines={1}>
+            📌 {cliente.notas_internas}
+          </Text>
+        ) : null}
       </View>
       <View style={styles.metaCol}>
         <Text style={styles.citasCount}>{cliente.total_citas ?? 0} citas</Text>
@@ -49,6 +55,8 @@ export default function ClientesScreen() {
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [historialCitas, setHistorialCitas] = useState([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [clienteNotasInput, setClienteNotasInput] = useState('');
+  const [savingNotas, setSavingNotas] = useState(false);
 
   const cargarClientes = () => {
     setLoading(true);
@@ -66,12 +74,29 @@ export default function ClientesScreen() {
 
   const handleOpenCliente = (cliente) => {
     setSelectedCliente(cliente);
+    setClienteNotasInput(cliente.notas_internas ?? '');
     setLoadingHistorial(true);
     setHistorialCitas([]);
     getCitasCliente(cliente.id)
       .then(setHistorialCitas)
       .catch(console.warn)
       .finally(() => setLoadingHistorial(false));
+  };
+
+  const handleGuardarNotasCliente = async () => {
+    if (!selectedCliente) return;
+    setSavingNotas(true);
+    try {
+      await updateClienteNotasInternas(selectedCliente.id, clienteNotasInput);
+      const strVal = clienteNotasInput.trim() !== '' ? clienteNotasInput.trim() : null;
+      setSelectedCliente(prev => prev ? { ...prev, notas_internas: strVal } : prev);
+      setClientes(prev => prev.map(c => c.id === selectedCliente.id ? { ...c, notas_internas: strVal } : c));
+      Alert.alert('¡Guardado!', 'Notas internas del paciente actualizadas.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingNotas(false);
+    }
   };
 
   const totalCitas = historialCitas.length;
@@ -145,6 +170,32 @@ export default function ClientesScreen() {
                 <Text style={[styles.statVal, { color: '#EF4444' }]}>{canceladas}</Text>
                 <Text style={styles.statLbl}>CANCELADAS</Text>
               </View>
+            </View>
+
+            {/* Sección de Notas Internas Privadas del Paciente */}
+            <View style={{ marginBottom: 14, backgroundColor: '#1E293B', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#334155' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#F59E0B', letterSpacing: 0.5 }}>
+                  📌 NOTAS INTERNAS DEL PACIENTE (PERSONAL)
+                </Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#F59E0B20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#F59E0B50' }}
+                  onPress={handleGuardarNotasCliente}
+                  disabled={savingNotas}
+                >
+                  <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '700' }}>
+                    {savingNotas ? 'Guardando...' : 'Guardar Nota'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={{ backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: 8, padding: 10, fontSize: 13, borderBottomWidth: 1, borderColor: '#475569', minHeight: 45, textAlignVertical: 'top' }}
+                value={clienteNotasInput}
+                onChangeText={setClienteNotasInput}
+                multiline
+                placeholder="Ej. Paciente muy nervioso con agujas, es enojón, prefiere citas en la mañana..."
+                placeholderTextColor="#64748B"
+              />
             </View>
 
             {/* Personas / Pacientes Afiliados a este Número */}

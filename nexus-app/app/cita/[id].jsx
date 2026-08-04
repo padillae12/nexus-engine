@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { updateEstadoCita, reenviarWhatsApp, getServicios, updateCitaServicioPrecio } from '../../services/api';
+import { updateEstadoCita, reenviarWhatsApp, getServicios, updateCitaServicioPrecio, updateClienteNotasInternas } from '../../services/api';
 
 const ESTADO_CONFIG = {
   confirmada: { color: '#10B981', bg: 'rgba(16, 185, 129, 0.08)', label: 'CONFIRMADA' },
@@ -28,7 +28,7 @@ const ACCIONES = [
 ];
 
 export default function DetalleCitaScreen() {
-  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en, notas, indicaciones_postcita } =
+  const { id, fecha, hora, cliente, servicio, empleado, estado: estadoInicial, duracion_min, precio, creado_en, notas, indicaciones_postcita, cliente_id, cliente_notas_internas } =
     useLocalSearchParams();
 
   // Formatear fecha programada
@@ -54,19 +54,21 @@ export default function DetalleCitaScreen() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  // Estados editables de servicio, precio, notas y cuidados post-cita
+  // Estados editables de servicio, precio, notas, cuidados post-cita y notas internas del paciente
   const [servicioNombre, setServicioNombre] = useState(servicio ?? '');
   const [precioValor, setPrecioValor] = useState(precio ?? '');
   const [notasValor, setNotasValor] = useState(notas ?? '');
   const [postcitaValor, setPostcitaValor] = useState(indicaciones_postcita ?? '');
+  const [clienteNotasValor, setClienteNotasValor] = useState(cliente_notas_internas ?? '');
 
-  // Modal Edición de servicio / precio / notas / postcita
+  // Modal Edición de servicio / precio / notas / postcita / notas internas
   const [modalEditar, setModalEditar] = useState(false);
   const [catServicios, setCatServicios] = useState([]);
   const [selectedServicioObj, setSelectedServicioObj] = useState(null);
   const [precioInput, setPrecioInput] = useState(String(precio ?? ''));
   const [notasInput, setNotasInput] = useState(notas ?? '');
   const [postcitaInput, setPostcitaInput] = useState(indicaciones_postcita ?? '');
+  const [clienteNotasInput, setClienteNotasInput] = useState(cliente_notas_internas ?? '');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const handleOpenModalEditar = () => {
@@ -85,6 +87,7 @@ export default function DetalleCitaScreen() {
     setPrecioInput(String(precioValor ?? ''));
     setNotasInput(notasValor ?? '');
     setPostcitaInput(postcitaValor ?? '');
+    setClienteNotasInput(clienteNotasValor ?? '');
     setModalEditar(true);
   };
 
@@ -95,6 +98,7 @@ export default function DetalleCitaScreen() {
       const numPrecio = precioInput.trim() !== '' ? Number(precioInput) : null;
       const strNotas = notasInput.trim() !== '' ? notasInput.trim() : null;
       const strPostcita = postcitaInput.trim() !== '' ? postcitaInput.trim() : null;
+      const strClienteNotas = clienteNotasInput.trim() !== '' ? clienteNotasInput.trim() : null;
 
       await updateCitaServicioPrecio(Number(id), {
         servicioId,
@@ -103,14 +107,19 @@ export default function DetalleCitaScreen() {
         indicacionesPostcita: strPostcita,
       });
 
+      if (cliente_id) {
+        await updateClienteNotasInternas(Number(cliente_id), strClienteNotas).catch(console.warn);
+      }
+
       if (selectedServicioObj?.nombre) {
         setServicioNombre(selectedServicioObj.nombre);
       }
       setPrecioValor(numPrecio !== null ? String(numPrecio) : '');
       setNotasValor(strNotas || '');
       setPostcitaValor(strPostcita || '');
+      setClienteNotasValor(strClienteNotas || '');
       setModalEditar(false);
-      Alert.alert('¡Actualizado!', 'El servicio, precio e indicaciones post-cita han sido guardados.');
+      Alert.alert('¡Actualizado!', 'Los detalles de la cita y notas del paciente han sido guardados.');
     } catch (e) {
       Alert.alert('Error', e.message);
     } finally {
@@ -295,6 +304,28 @@ export default function DetalleCitaScreen() {
             </Text>
           </View>
 
+          {/* Notas Internas del Paciente (Exclusivo Personal) */}
+          <View style={styles.infoSeparator} />
+          <View style={styles.infoFull}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={styles.infoLabelRow}>
+                <Ionicons name="bookmark-outline" size={12} color="#F59E0B" />
+                <Text style={[styles.infoLabel, { color: '#F59E0B' }]}>📌 NOTAS INTERNAS DEL PACIENTE (PERSONAL)</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.editServicioChip}
+                onPress={handleOpenModalEditar}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="pencil" size={12} color="#F59E0B" />
+                <Text style={[styles.editServicioChipText, { color: '#F59E0B' }]}>Editar Nota</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.infoSubText}>
+              {clienteNotasValor || 'Sin notas internas registradas (ej: paciente nervioso con agujas, enojón, alérgico, etc.).'}
+            </Text>
+          </View>
+
           {/* Fecha de creación / agendada el */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
@@ -410,6 +441,17 @@ export default function DetalleCitaScreen() {
                 multiline
                 numberOfLines={3}
                 placeholder="Ej. Tomar Amoxicilina 500mg c/8h por 5 días, reposo 24h..."
+                placeholderTextColor="#6B7280"
+              />
+
+              <Text style={styles.inputLabel}>📌 NOTAS INTERNAS DEL PACIENTE (PERSONAL / CONFIDENCIAL):</Text>
+              <TextInput
+                style={[styles.precioInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={clienteNotasInput}
+                onChangeText={setClienteNotasInput}
+                multiline
+                numberOfLines={2}
+                placeholder="Ej. Paciente muy nervioso con agujas, es enojón, alérgico a la penicilina..."
                 placeholderTextColor="#6B7280"
               />
 

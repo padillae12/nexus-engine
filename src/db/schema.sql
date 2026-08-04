@@ -25,10 +25,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS clientes (
-  id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  telefono    VARCHAR(20)     NOT NULL UNIQUE,
-  nombre      VARCHAR(100)    NULL,
-  creado_en   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+  telefono        VARCHAR(20)     NOT NULL UNIQUE,
+  nombre          VARCHAR(100)    NULL,
+  notas_internas  TEXT            NULL,
+  creado_en       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   INDEX idx_telefono (telefono)
 ) ENGINE=InnoDB;

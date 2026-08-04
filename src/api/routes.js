@@ -517,6 +517,19 @@ router.patch('/citas/:id/servicio-precio', async (req, res) => {
   }
 });
 
+// PATCH /api/clientes/:id/notas-internas — Actualiza las notas internas privadas del paciente
+router.patch('/clientes/:id/notas-internas', async (req, res) => {
+  try {
+    const { notasInternas, notas_internas } = req.body;
+    const val = notasInternas !== undefined ? notasInternas : notas_internas;
+    await db.updateClienteNotasInternas(req.params.id, val);
+    res.json({ ok: true, message: 'Notas internas del paciente actualizadas correctamente' });
+  } catch (err) {
+    console.error('[PATCH /clientes/:id/notas-internas]', err.message);
+    res.status(500).json({ message: 'Error al actualizar notas internas del paciente' });
+  }
+});
+
 // GET /api/clientes/:id/citas — Historial completo de citas de un cliente
 router.get('/clientes/:id/citas', async (req, res) => {
   try {
