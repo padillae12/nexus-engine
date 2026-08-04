@@ -500,6 +500,25 @@ router.get('/config', async (req, res) => {
     res.status(500).json({ message: 'Error al obtener configuración' });
   }
 });
+// POST /api/config — Actualiza parámetros de configuración del negocio (ej. MAPS_URL, BUSINESS_NAME, BUSINESS_ADDRESS)
+router.post('/config', async (req, res) => {
+  try {
+    const { clave, valor, configs } = req.body;
+    if (configs && typeof configs === 'object') {
+      for (const [k, v] of Object.entries(configs)) {
+        await db.setConfig(k, v);
+      }
+    } else if (clave) {
+      await db.setConfig(clave, valor);
+    } else {
+      return res.status(400).json({ message: 'Se requiere clave y valor o un objeto configs' });
+    }
+    res.json({ ok: true, message: 'Configuración actualizada correctamente' });
+  } catch (err) {
+    console.error('[POST /config]', err.message);
+    res.status(500).json({ message: 'Error al actualizar la configuración' });
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────
 //  HISTORIAL CLIENTE, REENVIAR WHATSAPP & REPORTES PDF

@@ -648,6 +648,19 @@ async function getAllConfig() {
 }
 
 /**
+ * Guarda o actualiza un parámetro de configuración del negocio en config_negocio.
+ */
+async function setConfig(clave, valor) {
+  const strValor = valor != null ? String(valor).trim() : '';
+  await pool.execute(
+    `INSERT INTO config_negocio (clave, valor)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE valor = VALUES(valor)`,
+    [clave, strValor]
+  );
+}
+
+/**
  * Auto-migración silenciosa de columnas para recordatorios y teléfonos de empleados
  */
 async function ensureRemindersSchema() {
@@ -1056,6 +1069,7 @@ module.exports = {
   getCitasActivasCliente,
   getConfig,
   getAllConfig,
+  setConfig,
   getPlanType,
   tieneModulo,
   getEmpleados,

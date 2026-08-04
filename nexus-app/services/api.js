@@ -335,3 +335,14 @@ export async function getServiciosEmpleado(id) {
 export async function getConfig() {
   return request('/config');
 }
+
+/**
+ * Guarda o actualiza la configuración del negocio.
+ * @param {object} configs - { MAPS_URL?, BUSINESS_NAME?, BUSINESS_ADDRESS?, HORARIO_ATENCION? }
+ */
+export async function guardarConfig(configs) {
+  return request('/config', {
+    method: 'POST',
+    body: JSON.stringify({ configs }),
+  });
+}

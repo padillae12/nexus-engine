@@ -70,6 +70,12 @@ export default function ConfiguracionScreen() {
   const [srvActivo, setSrvActivo] = useState(true);
   const [savingSrv, setSavingSrv] = useState(false);
 
+  // Formulario información del negocio y enlace de Maps
+  const [bizNameInput, setBizNameInput] = useState('');
+  const [bizAddressInput, setBizAddressInput] = useState('');
+  const [bizMapsUrlInput, setBizMapsUrlInput] = useState('');
+  const [savingBizConfig, setSavingBizConfig] = useState(false);
+
   const cargarDatos = () => {
     Promise.all([
       getConfig(),
@@ -82,9 +88,33 @@ export default function ConfiguracionScreen() {
         setApiOnline(health);
         setEmpleados(emps);
         setCatServicios(srvs);
+
+        if (cfg) {
+          setBizNameInput(cfg.BUSINESS_NAME || '');
+          setBizAddressInput(cfg.BUSINESS_ADDRESS || cfg.UBICACION || '');
+          setBizMapsUrlInput(cfg.MAPS_URL || cfg.GOOGLE_MAPS_URL || '');
+        }
       })
       .catch((err) => console.error("Error al cargar configuración:", err))
       .finally(() => setLoading(false));
+  };
+
+  const handleGuardarBizConfig = async () => {
+    setSavingBizConfig(true);
+    try {
+      const { guardarConfig } = require('../../services/api');
+      await guardarConfig({
+        BUSINESS_NAME: bizNameInput.trim(),
+        BUSINESS_ADDRESS: bizAddressInput.trim(),
+        MAPS_URL: bizMapsUrlInput.trim(),
+      });
+      Alert.alert('¡Guardado!', 'El nombre del consultorio, dirección y enlace de Maps se han actualizado.');
+      cargarDatos();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingBizConfig(false);
+    }
   };
 
   useEffect(() => {
@@ -266,6 +296,62 @@ export default function ConfiguracionScreen() {
             <Text style={styles.planDesc}>{isPro ? "Funciones clínicas y médico de cabecera" : "Flujo ultra-rápido para locales"}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Datos del Negocio & Ubicación en Maps */}
+      <Text style={styles.sectionTitle}>INFORMACIÓN Y UBICACIÓN EN MAPS DE LA CLÍNICA</Text>
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>Configurar Enlace de Google Maps / Apple Maps</Text>
+
+        <View style={styles.inputWrap}>
+          <Ionicons name="business-outline" size={16} color="#6B7280" />
+          <TextInput
+            style={styles.textInput}
+            placeholder="Nombre del Negocio / Consultorio *"
+            placeholderTextColor="#6B7280"
+            value={bizNameInput}
+            onChangeText={setBizNameInput}
+          />
+        </View>
+
+        <View style={styles.inputWrap}>
+          <Ionicons name="location-outline" size={16} color="#6B7280" />
+          <TextInput
+            style={styles.textInput}
+            placeholder="Dirección Física (Ej. Av. Reforma #123) *"
+            placeholderTextColor="#6B7280"
+            value={bizAddressInput}
+            onChangeText={setBizAddressInput}
+          />
+        </View>
+
+        <View style={styles.inputWrap}>
+          <Ionicons name="map-outline" size={16} color="#10B981" />
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enlace Google Maps (Ej. https://maps.app.goo.gl/...)"
+            placeholderTextColor="#6B7280"
+            value={bizMapsUrlInput}
+            onChangeText={setBizMapsUrlInput}
+            autoCapitalize="none"
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.saveBtn, { backgroundColor: '#10B981', marginTop: 10 }]}
+          onPress={handleGuardarBizConfig}
+          disabled={savingBizConfig}
+          activeOpacity={0.8}
+        >
+          {savingBizConfig ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <>
+              <Ionicons name="map" size={16} color="#FFFFFF" />
+              <Text style={styles.saveBtnText}>Guardar Ubicación y Maps</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Directorio de Empleados */}
