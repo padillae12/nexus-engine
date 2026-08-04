@@ -71,6 +71,7 @@ A diferencia de los bots comunes basados en IA generativa o en formularios web e
 - **RF-19 (Coincidencia Flexible de Intenciones - Fuzzy Matching):** El motor conversacional interpreta intenciones mediante coincidencias parciales de raíces clave (`horari`, `agend`, `cancel`, `ubicac`), entendiendo mensajes con errores ortográficos o letras repetidas (ej. *"horarioosss"*, *"agendarrrr"*).
 - **RF-20 (Estrategia UX Antideserción & Validación Estricta de Fechas):** Priorizar opciones de navegación (`"atrás"`, `"menú"`) en todos los mensajes del bot para maximizar la conversión, y validar matemáticamente los límites de días por mes (rechazando fechas inexistentes como *"32 de octubre"*).
 - **RF-21 (Arquitectura Modular de Licenciamiento "A la Carta"):** Soporte para licenciamiento por presets (`PLAN_TYPE = 'basic' | 'pro'`) e interruptores de características individuales (`MODULE_EMPLOYEE_ALERTS`, `MODULE_PREPOSTCITA`, `MODULE_REPORTS`, `MODULE_ANTITROLL`), permitiendo vender tanto planes cerrados como paquetes a la medida ("A la Carta").
+- **RF-22 (Expediente de Notas Internas Privadas del Paciente):** Permite al personal administrativo, doctores o barberos guardar notas confidenciales sobre el perfil del cliente (ej. *"paciente nervioso con las agujas"*, *"exigente"*, *"alérgico"*, *"preferencia de horario"*). Estas notas se consultan/editan en la App y se incluyen automáticamente en las notificaciones por WhatsApp que recibe el especialista al asignarle una nueva cita.
 
 ---
 
