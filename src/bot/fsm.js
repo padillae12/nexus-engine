@@ -339,19 +339,23 @@ async function handleMessage(telefono, mensaje) {
       } else if (opcion === '4' || quiereInfo(msg)) {
         const { getAllConfig } = require('../db/queries');
         const configNegocio = await getAllConfig().catch(() => ({}));
-        const nombreNegocio = configNegocio.BUSINESS_NAME || 'Dental Loquero';
+        const nombreNegocio = configNegocio.BUSINESS_NAME || 'Dental Care';
         const horarioAtencion = configNegocio.HORARIO_ATENCION || (sesion.idioma === 'en' ? '• Monday to Friday: 08:00 AM - 06:00 PM\n• Saturdays: 10:00 AM - 04:00 PM\n• Sundays: Closed' : '• Lunes a Viernes: 08:00 AM - 06:00 PM\n• Sábados: 10:00 AM - 04:00 PM\n• Domingos: Cerrado');
         const ubicacion = configNegocio.BUSINESS_ADDRESS || configNegocio.UBICACION || 'Consult directly with us';
+        const mapsUrl = configNegocio.MAPS_URL || configNegocio.GOOGLE_MAPS_URL || '';
+        const mapsTexto = mapsUrl ? (sesion.idioma === 'en' ? `\n🗺️ *Google Maps / Apple Maps:*\n${mapsUrl}\n` : `\n🗺️ *Ver en Google Maps / Apple Maps:*\n${mapsUrl}\n`) : '';
 
         result = {
           respuesta: sesion.idioma === 'en'
             ? `ℹ️ *INFO & BUSINESS HOURS — ${nombreNegocio.toUpperCase()}*\n\n` +
               `⏰ *Business Hours:*\n${horarioAtencion}\n\n` +
-              `📍 *Location:*\n${ubicacion}\n\n` +
+              `📍 *Location:*\n${ubicacion}\n` +
+              mapsTexto + `\n` +
               `_Need anything else? Reply with the option number (1, 2, 3) or *"menu"* to return._`
             : `ℹ️ *INFORMACIÓN Y HORARIOS — ${nombreNegocio.toUpperCase()}*\n\n` +
               `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
-              `📍 *Ubicación:*\n${ubicacion}\n\n` +
+              `📍 *Ubicación:*\n${ubicacion}\n` +
+              mapsTexto + `\n` +
               `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
           nuevoEstado: 'MAIN_MENU'
         };

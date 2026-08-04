@@ -180,9 +180,11 @@ async function notificarConfirmacionCitaCliente(client, citaInfo) {
 
     const { getAllConfig } = require('../db/queries');
     const cfg = await getAllConfig().catch(() => ({}));
-    const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Loquero';
+    const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Care';
     const ubicacion = cfg.BUSINESS_ADDRESS || cfg.UBICACION || '';
+    const mapsUrl = cfg.MAPS_URL || cfg.GOOGLE_MAPS_URL || '';
     const ubicacionTexto = ubicacion ? (isEn ? `\n📍 Location: *${ubicacion}*` : `\n📍 Ubicación: *${ubicacion}*`) : '';
+    const mapsTexto = mapsUrl ? (isEn ? `\n🗺️ Google Maps / Apple Maps: ${mapsUrl}` : `\n🗺️ Ver en Maps: ${mapsUrl}`) : '';
 
     const mensaje = isEn
       ? `✅ *APPOINTMENT CONFIRMED AT ${businessName.toUpperCase()}*\n\n` +
@@ -190,14 +192,16 @@ async function notificarConfirmacionCitaCliente(client, citaInfo) {
         `🛎️ Service: *${citaInfo.servicioNombre}*\n` +
         `📅 Date: *${fechaTexto}*\n` +
         `⏰ Time: *${horaTexto}*` +
-        ubicacionTexto + `\n\n` +
+        ubicacionTexto +
+        mapsTexto + `\n\n` +
         `We look forward to seeing you! If you need to change your appointment, please let us know in advance. 😊`
       : `✅ *CITA CONFIRMADA EN ${businessName.toUpperCase()}*\n\n` +
         `Hola *${citaInfo.clienteNombre || 'Cliente'}*, tu cita ha sido registrada con éxito:\n\n` +
         `🛎️ Servicio: *${citaInfo.servicioNombre}*\n` +
         `📅 Fecha: *${fechaTexto}*\n` +
         `⏰ Hora: *${horaTexto}*` +
-        ubicacionTexto + `\n\n` +
+        ubicacionTexto +
+        mapsTexto + `\n\n` +
         `¡Te esperamos! Si necesitas cambiar tu cita, avísanos con anticipación. 😊`;
 
     await client.sendMessage(jid, mensaje);
@@ -288,19 +292,31 @@ function iniciarMotorRecordatorios(client) {
         const fechaTexto = isEn ? formatFechaIngles(fechaObj) : formatFechaEspanol(fechaObj);
         const horaTexto = cita.fecha_inicio.toISOString().split('T')[1]?.slice(0, 5) || '';
 
+        const { getAllConfig } = require('../db/queries');
+        const cfg = await getAllConfig().catch(() => ({}));
+        const businessName = cfg.BUSINESS_NAME || config.business.name || 'Dental Care';
+        const ubicacion = cfg.BUSINESS_ADDRESS || cfg.UBICACION || '';
+        const mapsUrl = cfg.MAPS_URL || cfg.GOOGLE_MAPS_URL || '';
+        const ubicacionTexto = ubicacion ? (isEn ? `\n📍 Location: *${ubicacion}*` : `\n📍 Ubicación: *${ubicacion}*`) : '';
+        const mapsTexto = mapsUrl ? (isEn ? `\n🗺️ Google Maps / Apple Maps: ${mapsUrl}` : `\n🗺️ Ver en Maps: ${mapsUrl}`) : '';
+
         const msgCliente = isEn
           ? `🔔 *APPOINTMENT REMINDER*\n\n` +
-            `Hello *${cita.cliente_nombre || 'Customer'}*, this is a reminder for your upcoming appointment at *${config.business.name}*:\n\n` +
+            `Hello *${cita.cliente_nombre || 'Customer'}*, this is a reminder for your upcoming appointment at *${businessName}*:\n\n` +
             `🛎️ Service: *${cita.servicio_nombre}*\n` +
             `📅 Date: *${fechaTexto}*\n` +
-            `⏰ Time: *${horaTexto}*\n\n` +
-            `📍 We look forward to seeing you. If you need to reschedule, please let us know. 😊`
+            `⏰ Time: *${horaTexto}*` +
+            ubicacionTexto +
+            mapsTexto + `\n\n` +
+            `We look forward to seeing you. If you need to reschedule, please let us know. 😊`
           : `🔔 *RECORDATORIO DE CITA*\n\n` +
-            `Hola *${cita.cliente_nombre || 'cliente'}*, te recordamos tu próxima cita en *${config.business.name}*:\n\n` +
+            `Hola *${cita.cliente_nombre || 'cliente'}*, te recordamos tu próxima cita en *${businessName}*:\n\n` +
             `🛎️ Servicio: *${cita.servicio_nombre}*\n` +
             `📅 Fecha: *${fechaTexto}*\n` +
-            `⏰ Hora: *${horaTexto}*\n\n` +
-            `📍 Te esperamos. Si necesitas cambiar tu horario, avísanos con anticipación. 😊`;
+            `⏰ Hora: *${horaTexto}*` +
+            ubicacionTexto +
+            mapsTexto + `\n\n` +
+            `Te esperamos. Si necesitas cambiar tu horario, avísanos con anticipación. 😊`;
 
         await client.sendMessage(clienteJid, msgCliente).catch(err => {
           console.warn(`No se pudo enviar recordatorio a ${clienteJid}:`, err.message);
