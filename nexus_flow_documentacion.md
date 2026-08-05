@@ -531,6 +531,7 @@ mysql -u nexus_user -pPadAlex01 -e "USE nexus_flow; INSERT INTO config_negocio (
 • Número de WhatsApp donde atenderá el Bot:
 • Ciudad / Sucursal:
 • Dirección Física y Referencias:
+• Enlace de Google Maps / Apple Maps del Local: [ https://maps.app.goo.gl/... ]
 
 2️⃣ HORARIOS DE ATENCIÓN:
 • Días laborables (Ej. Lunes a Sábado):
@@ -576,6 +577,7 @@ Ejemplos:
 • Nombre del Bot (Ej. Recepción / Asistente Virtual):
 • Número de WhatsApp del Bot:
 • Dirección Física completa:
+• Enlace de Google Maps / Apple Maps del Consultorio: [ https://maps.app.goo.gl/... ]
 • URL/Imagen del Logo Oficial (para membrete de reportes contables PDF): [ Adjuntar / Enlace ]
 
 2️⃣ HORARIOS DE ATENCIÓN GENERALES DE LA CLÍNICA / NEGOCIO:
