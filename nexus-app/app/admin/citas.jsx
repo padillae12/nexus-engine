@@ -360,8 +360,8 @@ const styles = StyleSheet.create({
   filtroText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
   filtroTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
-  empFiltroScroll: { maxHeight: 36, marginBottom: 8 },
-  empFiltroContainer: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
+  empFiltroScroll: { flexGrow: 0, marginVertical: 6 },
+  empFiltroContainer: { paddingHorizontal: 16, gap: 8, alignItems: 'center', paddingVertical: 2 },
   empFiltroChip: {
     flexDirection: 'row',
     alignItems: 'center',

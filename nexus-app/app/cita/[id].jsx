@@ -285,10 +285,10 @@ export default function DetalleCitaScreen() {
           {/* Cuidados Post-Cita Personalizados */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <View style={styles.infoLabelRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 4 }}>
+              <View style={[styles.infoLabelRow, { flex: 1, flexShrink: 1, marginBottom: 0 }]}>
                 <Ionicons name="medkit-outline" size={12} color="#10B981" />
-                <Text style={[styles.infoLabel, { color: '#10B981' }]}>CUIDADOS POST-CITA (WHATSAPP)</Text>
+                <Text style={[styles.infoLabel, { color: '#10B981', flexShrink: 1 }]} numberOfLines={1}>CUIDADOS POST-CITA</Text>
               </View>
               <TouchableOpacity
                 style={styles.editServicioChip}
@@ -296,7 +296,7 @@ export default function DetalleCitaScreen() {
                 activeOpacity={0.8}
               >
                 <Ionicons name="pencil" size={12} color="#6366F1" />
-                <Text style={styles.editServicioChipText}>Personalizar</Text>
+                <Text style={styles.editServicioChipText}>Editar</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.infoSubText}>
@@ -307,10 +307,10 @@ export default function DetalleCitaScreen() {
           {/* Notas Internas del Paciente (Exclusivo Personal) */}
           <View style={styles.infoSeparator} />
           <View style={styles.infoFull}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <View style={styles.infoLabelRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 4 }}>
+              <View style={[styles.infoLabelRow, { flex: 1, flexShrink: 1, marginBottom: 0 }]}>
                 <Ionicons name="bookmark-outline" size={12} color="#F59E0B" />
-                <Text style={[styles.infoLabel, { color: '#F59E0B' }]}>📌 NOTAS INTERNAS DEL PACIENTE (PERSONAL)</Text>
+                <Text style={[styles.infoLabel, { color: '#F59E0B', flexShrink: 1 }]} numberOfLines={1}>NOTAS INTERNAS DEL PACIENTE</Text>
               </View>
               <TouchableOpacity
                 style={styles.editServicioChip}
@@ -318,7 +318,7 @@ export default function DetalleCitaScreen() {
                 activeOpacity={0.8}
               >
                 <Ionicons name="pencil" size={12} color="#F59E0B" />
-                <Text style={[styles.editServicioChipText, { color: '#F59E0B' }]}>Editar Nota</Text>
+                <Text style={[styles.editServicioChipText, { color: '#F59E0B' }]}>Editar</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.infoSubText}>
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   backText:  { fontSize: 14, color: '#6366F1', fontWeight: '600' },
   headerTitle: { fontSize: 15, fontWeight: '700', color: '#F9FAFB', letterSpacing: 0.3 },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 110 },
 
   // Avatar Hero
   avatarSection: { alignItems: 'center', marginTop: 12, marginBottom: 24 },
