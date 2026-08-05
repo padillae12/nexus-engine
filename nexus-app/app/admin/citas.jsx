@@ -136,49 +136,6 @@ export default function CitasScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filtros de Segmentación */}
-      <View style={styles.filtrosRow}>
-        {FILTROS.map(f => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filtroBtn, filtro === f && styles.filtroBtnActive]}
-            onPress={() => setFiltro(f)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filtroText, filtro === f && styles.filtroTextActive]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Filtro por Especialista / Doctor */}
-      {empleados.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.empFiltroScroll} contentContainerStyle={styles.empFiltroContainer}>
-          <TouchableOpacity
-            style={[styles.empFiltroChip, !selectedEmpId && styles.empFiltroChipActive]}
-            onPress={() => setSelectedEmpId(null)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="people-outline" size={12} color={!selectedEmpId ? '#6366F1' : '#6B7280'} />
-            <Text style={[styles.empFiltroText, !selectedEmpId && styles.empFiltroTextActive]}>Todos los Doctores</Text>
-          </TouchableOpacity>
-
-          {empleados.map(emp => {
-            const active = selectedEmpId === emp.id;
-            return (
-              <TouchableOpacity
-                key={emp.id}
-                style={[styles.empFiltroChip, active && styles.empFiltroChipActive]}
-                onPress={() => setSelectedEmpId(emp.id)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="person-outline" size={12} color={active ? '#6366F1' : '#6B7280'} />
-                <Text style={[styles.empFiltroText, active && styles.empFiltroTextActive]}>{emp.nombre}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-
       {/* Lista de Citas (Filtradas por el Calendario o Estados) */}
       {loading ? (
         <ActivityIndicator color="#6366F1" style={{ marginTop: 30 }} />
@@ -187,84 +144,130 @@ export default function CitasScreen() {
           data={citasFiltradas}
           keyExtractor={item => String(item.id)}
           ListHeaderComponent={
-            filtro === 'Calendario' ? (
-              <View style={styles.calendarCard}>
-                {/* Header Mes y Navegación */}
-                <View style={styles.calendarMonthHeader}>
-                  <TouchableOpacity onPress={handlePrevMonth} style={styles.navMonthBtn}>
-                    <Ionicons name="chevron-back" size={18} color="#9CA3AF" />
-                  </TouchableOpacity>
-                  <Text style={styles.monthTitle}>{nombreMes.toUpperCase()}</Text>
-                  <TouchableOpacity onPress={handleNextMonth} style={styles.navMonthBtn}>
-                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                  </TouchableOpacity>
+            <>
+              {/* Filtros de Segmentación */}
+              <View style={styles.filtrosRow}>
+                {FILTROS.map(f => (
                   <TouchableOpacity
-                    onPress={() => setShowCalendarGrid(!showCalendarGrid)}
-                    style={[styles.navMonthBtn, { marginLeft: 'auto' }]}
-                    activeOpacity={0.7}
+                    key={f}
+                    style={[styles.filtroBtn, filtro === f && styles.filtroBtnActive]}
+                    onPress={() => setFiltro(f)}
+                    activeOpacity={0.8}
                   >
-                    <Ionicons name={showCalendarGrid ? "chevron-up" : "chevron-down"} size={16} color="#6366F1" />
+                    <Text style={[styles.filtroText, filtro === f && styles.filtroTextActive]}>{f}</Text>
                   </TouchableOpacity>
-                </View>
-
-                {/* Días de la semana y Grilla (solo si showCalendarGrid === true) */}
-                {showCalendarGrid && (
-                  <>
-                    <View style={styles.weekDaysRow}>
-                      {DIAS_SEMANA.map((d, idx) => (
-                        <Text key={idx} style={styles.weekDayText}>{d}</Text>
-                      ))}
-                    </View>
-
-                    <View style={styles.daysGrid}>
-                      {daysGrid.map((item, index) => {
-                        if (!item) {
-                          return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
-                        }
-
-                        const { day, dateStr } = item;
-                        const isSelected = dateStr === selectedDateStr;
-                        const isToday = dateStr === todayStr;
-                        const hasAppt = fechasConCita.has(dateStr);
-
-                        return (
-                          <TouchableOpacity
-                            key={dateStr}
-                            style={[
-                              styles.dayCell,
-                              isSelected && styles.dayCellSelected,
-                              isToday && !isSelected && styles.dayCellToday,
-                            ]}
-                            onPress={() => setSelectedDateStr(dateStr)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.dayNum,
-                              isSelected && styles.dayNumSelected,
-                              isToday && !isSelected && styles.dayNumToday,
-                            ]}>
-                              {day}
-                            </Text>
-                            
-                            {hasAppt && (
-                              <View style={[styles.apptDot, isSelected && styles.apptDotSelected]} />
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </>
-                )}
-
-                {/* Banner indicador del día seleccionado */}
-                <View style={styles.selectedDayBanner}>
-                  <Ionicons name="calendar-outline" size={14} color="#6366F1" />
-                  <Text style={styles.selectedDayBannerText}>
-                    Citas del {textoDiaSeleccionado}: <Text style={{ color: '#6366F1', fontWeight: '800' }}>{citasFiltradas.length}</Text>
-                  </Text>
-                </View>
+                ))}
               </View>
-            ) : null
+
+              {/* Filtro por Especialista / Doctor */}
+              {empleados.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.empFiltroScroll} contentContainerStyle={styles.empFiltroContainer}>
+                  <TouchableOpacity
+                    style={[styles.empFiltroChip, !selectedEmpId && styles.empFiltroChipActive]}
+                    onPress={() => setSelectedEmpId(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="people-outline" size={12} color={!selectedEmpId ? '#6366F1' : '#6B7280'} />
+                    <Text style={[styles.empFiltroText, !selectedEmpId && styles.empFiltroTextActive]}>Todos los Doctores</Text>
+                  </TouchableOpacity>
+
+                  {empleados.map(emp => {
+                    const active = selectedEmpId === emp.id;
+                    return (
+                      <TouchableOpacity
+                        key={emp.id}
+                        style={[styles.empFiltroChip, active && styles.empFiltroChipActive]}
+                        onPress={() => setSelectedEmpId(emp.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="person-outline" size={12} color={active ? '#6366F1' : '#6B7280'} />
+                        <Text style={[styles.empFiltroText, active && styles.empFiltroTextActive]}>{emp.nombre}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              {/* COMPONENTE CALENDARIO (Solo visible si el filtro es 'Calendario') */}
+              {filtro === 'Calendario' && (
+                <View style={styles.calendarCard}>
+                  {/* Header Mes y Navegación */}
+                  <View style={styles.calendarMonthHeader}>
+                    <TouchableOpacity onPress={handlePrevMonth} style={styles.navMonthBtn}>
+                      <Ionicons name="chevron-back" size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+                    <Text style={styles.monthTitle}>{nombreMes.toUpperCase()}</Text>
+                    <TouchableOpacity onPress={handleNextMonth} style={styles.navMonthBtn}>
+                      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setShowCalendarGrid(!showCalendarGrid)}
+                      style={[styles.navMonthBtn, { marginLeft: 'auto' }]}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={showCalendarGrid ? "chevron-up" : "chevron-down"} size={16} color="#6366F1" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Días de la semana y Grilla (solo si showCalendarGrid === true) */}
+                  {showCalendarGrid && (
+                    <>
+                      <View style={styles.weekDaysRow}>
+                        {DIAS_SEMANA.map((d, idx) => (
+                          <Text key={idx} style={styles.weekDayText}>{d}</Text>
+                        ))}
+                      </View>
+
+                      <View style={styles.daysGrid}>
+                        {daysGrid.map((item, index) => {
+                          if (!item) {
+                            return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
+                          }
+
+                          const { day, dateStr } = item;
+                          const isSelected = dateStr === selectedDateStr;
+                          const isToday = dateStr === todayStr;
+                          const hasAppt = fechasConCita.has(dateStr);
+
+                          return (
+                            <TouchableOpacity
+                              key={dateStr}
+                              style={[
+                                styles.dayCell,
+                                isSelected && styles.dayCellSelected,
+                                isToday && !isSelected && styles.dayCellToday,
+                              ]}
+                              onPress={() => setSelectedDateStr(dateStr)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[
+                                styles.dayNum,
+                                isSelected && styles.dayNumSelected,
+                                isToday && !isSelected && styles.dayNumToday,
+                              ]}>
+                                {day}
+                              </Text>
+                              
+                              {hasAppt && (
+                                <View style={[styles.apptDot, isSelected && styles.apptDotSelected]} />
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+
+                  {/* Banner indicador del día seleccionado */}
+                  <View style={styles.selectedDayBanner}>
+                    <Ionicons name="calendar-outline" size={14} color="#6366F1" />
+                    <Text style={styles.selectedDayBannerText}>
+                      Citas del {textoDiaSeleccionado}: <Text style={{ color: '#6366F1', fontWeight: '800' }}>{citasFiltradas.length}</Text>
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </>
           }
           renderItem={({ item }) => (
             <CitaCard
@@ -360,15 +363,15 @@ const styles = StyleSheet.create({
   filtroText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
   filtroTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
-  empFiltroScroll: { flexGrow: 0, marginVertical: 6 },
-  empFiltroContainer: { paddingHorizontal: 16, gap: 8, alignItems: 'center', paddingVertical: 2 },
+  empFiltroScroll: { height: 42, marginBottom: 8, marginTop: 4 },
+  empFiltroContainer: { paddingHorizontal: 16, gap: 8, alignItems: 'center', height: 42 },
   empFiltroChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 32,
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     backgroundColor: '#161E2E',
     borderWidth: 1,
     borderColor: '#1F2937',

@@ -238,12 +238,11 @@ export default function DetalleCitaScreen() {
 
           {/* Servicio */}
           <View style={styles.infoFull}>
-            <View style={styles.infoLabelRow}>
-              <Ionicons name="medical-outline" size={12} color="#6B7280" />
-              <Text style={styles.infoLabel}>SERVICIO</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={styles.infoValueLg}>{servicioNombre}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View style={[styles.infoLabelRow, { marginBottom: 0 }]}>
+                <Ionicons name="medical-outline" size={12} color="#6B7280" />
+                <Text style={styles.infoLabel}>SERVICIO</Text>
+              </View>
               <TouchableOpacity
                 style={styles.editServicioChip}
                 onPress={handleOpenModalEditar}
@@ -253,6 +252,7 @@ export default function DetalleCitaScreen() {
                 <Text style={styles.editServicioChipText}>Editar</Text>
               </TouchableOpacity>
             </View>
+            <Text style={styles.infoValueLg}>{servicioNombre}</Text>
           </View>
 
           {empleado ? (
