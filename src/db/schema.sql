@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS config_negocio (
 CREATE TABLE IF NOT EXISTS usuarios (
   id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
   nombre              VARCHAR(100)    NOT NULL,
-  email               VARCHAR(150)    NOT NULL UNIQUE,
+  email               VARCHAR(150)    NULL,
   password            VARCHAR(255)    NOT NULL,
   telefono            VARCHAR(20)     NULL,
   rol                 ENUM('admin', 'encargado', 'empleado', 'doctor') NOT NULL DEFAULT 'empleado',

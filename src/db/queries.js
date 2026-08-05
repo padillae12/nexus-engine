@@ -665,6 +665,8 @@ async function setConfig(clave, valor) {
  */
 async function ensureRemindersSchema() {
   try {
+    await pool.query('ALTER TABLE usuarios MODIFY COLUMN email VARCHAR(150) NULL').catch(() => {});
+    await pool.query('ALTER TABLE usuarios DROP INDEX email').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(20) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_inicio_comida VARCHAR(10) NULL').catch(() => {});
     await pool.query('ALTER TABLE usuarios ADD COLUMN hora_fin_comida VARCHAR(10) NULL').catch(() => {});
@@ -808,10 +810,11 @@ async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'e
   const bcrypt = require('bcrypt');
   const hInicio = horaInicioComida && horaInicioComida.trim() ? horaInicioComida.trim() : null;
   const hFin = horaFinComida && horaFinComida.trim() ? horaFinComida.trim() : null;
+  const cleanEmail = (email && String(email).trim() !== '') ? String(email).trim() : null;
 
   if (id) {
     let sql = 'UPDATE usuarios SET nombre = ?, email = ?, telefono = ?, rol = ?, activo = ?, hora_inicio_comida = ?, hora_fin_comida = ?';
-    const params = [nombre, email, telefono || null, rol, activo, hInicio, hFin];
+    const params = [nombre, cleanEmail, telefono || null, rol, activo, hInicio, hFin];
     if (password) {
       const hash = await bcrypt.hash(password, 10);
       sql += ', password = ?';
@@ -825,7 +828,7 @@ async function guardarEmpleado({ id, nombre, email, password, telefono, rol = 'e
     const hash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('123456', 10);
     const [res] = await pool.execute(
       `INSERT INTO usuarios (nombre, email, password, telefono, rol, activo, hora_inicio_comida, hora_fin_comida) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nombre, email, hash, telefono || null, rol, activo, hInicio, hFin]
+      [nombre, cleanEmail, hash, telefono || null, rol, activo, hInicio, hFin]
     );
     return res.insertId;
   }
