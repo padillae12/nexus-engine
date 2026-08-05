@@ -602,22 +602,24 @@ export default function ConfiguracionScreen() {
             {editingSrvId ? "Editar Servicio / Tratamiento" : "Nuevo Servicio / Tratamiento"}
           </Text>
 
+          <Text style={styles.inputLabel}>NOMBRE DEL SERVICIO (ESPAÑOL) *</Text>
           <View style={styles.inputWrap}>
             <Ionicons name="pricetag-outline" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="Nombre del servicio (Ej. Limpieza Dental) *"
+              placeholder="Ej. Limpieza y Diagnóstico General *"
               placeholderTextColor="#6B7280"
               value={srvNombre}
               onChangeText={setSrvNombre}
             />
           </View>
 
+          <Text style={styles.inputLabel}>NOMBRE EN INGLÉS (ENGLISH NAME) - OPIONAL</Text>
           <View style={styles.inputWrap}>
             <Ionicons name="language-outline" size={16} color="#6366F1" />
             <TextInput
               style={styles.textInput}
-              placeholder="Nombre en Inglés (Ej. Dental Cleaning) (Opcional)"
+              placeholder="Ej. Deep Dental Cleaning & Exam"
               placeholderTextColor="#6B7280"
               value={srvNombreEn}
               onChangeText={setSrvNombreEn}
@@ -625,35 +627,43 @@ export default function ConfiguracionScreen() {
           </View>
 
           <View style={styles.timeRowContainer}>
-            <View style={[styles.inputWrap, { flex: 1 }]}>
-              <Ionicons name="cash-outline" size={16} color="#6B7280" />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Precio $ MXN (Ej. 600)"
-                placeholderTextColor="#6B7280"
-                keyboardType="numeric"
-                value={srvPrecio}
-                onChangeText={setSrvPrecio}
-              />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>PRECIO MXN ($)</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="cash-outline" size={16} color="#6B7280" />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 600"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="numeric"
+                  value={srvPrecio}
+                  onChangeText={setSrvPrecio}
+                />
+              </View>
             </View>
-            <View style={[styles.inputWrap, { flex: 1 }]}>
-              <Ionicons name="logo-usd" size={16} color="#10B981" />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Precio USD $ (Ej. 35)"
-                placeholderTextColor="#6B7280"
-                keyboardType="numeric"
-                value={srvPrecioUsd}
-                onChangeText={setSrvPrecioUsd}
-              />
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>PRECIO USD ($)</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="logo-usd" size={16} color="#10B981" />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 35"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="numeric"
+                  value={srvPrecioUsd}
+                  onChangeText={setSrvPrecioUsd}
+                />
+              </View>
             </View>
           </View>
 
+          <Text style={styles.inputLabel}>DURACIÓN (MINUTOS)</Text>
           <View style={styles.inputWrap}>
             <Ionicons name="time-outline" size={16} color="#6B7280" />
             <TextInput
               style={styles.textInput}
-              placeholder="Duración Minutos (Ej. 45)"
+              placeholder="Ej. 45"
               placeholderTextColor="#6B7280"
               keyboardType="numeric"
               value={srvDuracionMin}
@@ -661,49 +671,49 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
-          <View style={[styles.inputWrap, { height: 50, alignItems: 'flex-start', paddingTop: 6 }]}>
-            <Ionicons name="document-text-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+          <Text style={styles.inputLabel}>DESCRIPCIÓN EN ESPAÑOL (OPCIONAL)</Text>
+          <View style={[styles.inputWrap, { minHeight: 48, alignItems: 'center' }]}>
+            <Ionicons name="document-text-outline" size={16} color="#6B7280" />
             <TextInput
-              style={[styles.textInput, { height: 38, textAlignVertical: 'top' }]}
-              placeholder="Descripción en Español (Opcional)"
+              style={[styles.textInput, { flex: 1 }]}
+              placeholder="Ej. Limpieza ultrasonido y valoración integral"
               placeholderTextColor="#6B7280"
-              multiline
               value={srvDescripcion}
               onChangeText={setSrvDescripcion}
             />
           </View>
 
-          <View style={[styles.inputWrap, { height: 50, alignItems: 'flex-start', paddingTop: 6 }]}>
-            <Ionicons name="language-outline" size={16} color="#6366F1" style={{ marginTop: 4 }} />
+          <Text style={styles.inputLabel}>DESCRIPCIÓN EN INGLÉS (ENGLISH DESCRIPTION)</Text>
+          <View style={[styles.inputWrap, { minHeight: 48, alignItems: 'center' }]}>
+            <Ionicons name="language-outline" size={16} color="#6366F1" />
             <TextInput
-              style={[styles.textInput, { height: 38, textAlignVertical: 'top' }]}
-              placeholder="Descripción en Inglés / English Description (Opcional)"
+              style={[styles.textInput, { flex: 1 }]}
+              placeholder="Ej. Ultrasonic cleaning and comprehensive exam"
               placeholderTextColor="#6B7280"
-              multiline
               value={srvDescripcionEn}
               onChangeText={setSrvDescripcionEn}
             />
           </View>
 
-          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
-            <Ionicons name="clipboard-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+          <Text style={styles.inputLabel}>REQUISITOS PRE-CITA (ANTES DE ASISTIR)</Text>
+          <View style={[styles.inputWrap, { minHeight: 48, alignItems: 'center' }]}>
+            <Ionicons name="clipboard-outline" size={16} color="#6B7280" />
             <TextInput
-              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
-              placeholder="Indicaciones Pre-Cita / Requisitos (Ej. Ayuno 8h)"
+              style={[styles.textInput, { flex: 1 }]}
+              placeholder="Ej. Ayuno de 4h, Traer radiografía (o Ninguna)"
               placeholderTextColor="#6B7280"
-              multiline
               value={srvIndicacionesPrecita}
               onChangeText={setSrvIndicacionesPrecita}
             />
           </View>
 
-          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
-            <Ionicons name="medkit-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
+          <Text style={styles.inputLabel}>CUIDADOS POST-CITA (INDICACIONES POSTERIORES)</Text>
+          <View style={[styles.inputWrap, { minHeight: 48, alignItems: 'center' }]}>
+            <Ionicons name="medkit-outline" size={16} color="#10B981" />
             <TextInput
-              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
-              placeholder="Indicaciones Post-Cita / Cuidados (Ej. Reposo 24h)"
+              style={[styles.textInput, { flex: 1 }]}
+              placeholder="Ej. Reposo 24h, Evitar fríos/calientes 2 horas"
               placeholderTextColor="#6B7280"
-              multiline
               value={srvIndicacionesPostcita}
               onChangeText={setSrvIndicacionesPostcita}
             />
