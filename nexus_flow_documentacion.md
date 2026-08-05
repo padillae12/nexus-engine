@@ -172,14 +172,15 @@ El bot implementa una **Máquina de Estados Finitos (FSM)** que rastrea paso a p
     │  No → menú directo       │ → MAIN_MENU
     └──────────────────────────┘
            ↓
-       MAIN_MENU (6 Opciones)
+       MAIN_MENU (7 Opciones)
     ┌─────────────────────────────────────────┐
     │ 1️⃣ 📅 Agendar una cita                  │
     │ 2️⃣ 📋 Ver mis citas                     │
     │ 3️⃣ ❌ Cancelar una cita                 │
-    │ 4️⃣ ℹ️ Información y Horarios            │
-    │ 5️⃣ ✏️ Cambiar mi nombre                 │
-    │ 6️⃣ 🌐 English / Español                 │
+    │ 4️⃣ 🩺 Catálogo de Servicios y Precios   │
+    │ 5️⃣ ℹ️ Información y Horarios            │
+    │ 6️⃣ ✏️ Cambiar mi nombre                 │
+    │ 7️⃣ 🌐 English / Español                 │
     └─────────────────────────────────────────┘
            ↓ (Elige 1)
     SERVICE_SELECT
