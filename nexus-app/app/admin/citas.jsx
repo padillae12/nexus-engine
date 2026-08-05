@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   empFiltroText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
   empFiltroTextActive: { color: '#6366F1', fontWeight: '700' },
-  lista: { paddingHorizontal: 16, paddingBottom: 24 },
+  lista: { paddingHorizontal: 16, paddingBottom: 110 },
   empty: { alignItems: 'center', marginTop: 60 },
   emptyText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
 });

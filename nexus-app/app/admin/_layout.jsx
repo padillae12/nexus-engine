@@ -1,20 +1,22 @@
-// app/admin/_layout.jsx
-// Layout del área de Admin con estilo ejecutivo e íconos vectoriales limpios (Ionicons)
-
 import React from 'react';
 import { Tabs, useRouter } from 'expo-router';
-import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdmin } from '../_layout';
 
 export default function AdminLayout() {
   const router = useRouter();
   const { exitAdmin } = useAdmin();
+  const insets = useSafeAreaInsets();
 
   const handleExit = () => {
     exitAdmin();
     router.replace('/');
   };
+
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 10);
+  const tabBarHeight = 65 + bottomInset;
 
   return (
     <Tabs
@@ -43,15 +45,16 @@ export default function AdminLayout() {
           backgroundColor: '#0B0F17',
           borderTopWidth: 1,
           borderTopColor: '#1F2937',
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: tabBarHeight,
+          paddingBottom: bottomInset,
+          paddingTop: 8,
+          elevation: 12,
         },
         tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '700',
           letterSpacing: 0.3,
         },
       }}

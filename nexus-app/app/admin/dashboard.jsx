@@ -246,7 +246,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B0F17' },
-  content:   { padding: 20, paddingBottom: 40 },
+  content:   { padding: 20, paddingBottom: 110 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0F17', padding: 24 },
   errorText: { color: '#EF4444', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryBtn:  { backgroundColor: 'rgba(99, 102, 241, 0.15)', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.3)' },

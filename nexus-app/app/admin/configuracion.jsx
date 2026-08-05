@@ -742,7 +742,7 @@ export default function ConfiguracionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B0F17' },
-  content: { padding: 20 },
+  content: { padding: 20, paddingBottom: 120 },
   sectionTitle: {
     fontSize: 10,
     fontWeight: '700',

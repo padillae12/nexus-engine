@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  lista: { paddingHorizontal: 16, paddingBottom: 24 },
+  lista: { paddingHorizontal: 16, paddingBottom: 110 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
