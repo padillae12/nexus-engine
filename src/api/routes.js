@@ -151,10 +151,19 @@ router.get('/servicios/admin', async (req, res) => {
 // POST /api/servicios — Crear o editar un servicio
 router.post('/servicios', async (req, res) => {
   try {
-    const { id, nombre, precio, duracionMin, duracion_min, descripcion, indicacionesPrecita, indicaciones_precita, indicacionesPostcita, indicaciones_postcita, activo } = req.body;
+    const {
+      id, nombre, nombreEn, nombre_en, precio, precioUsd, precio_usd,
+      duracionMin, duracion_min, descripcion, descripcionEn, descripcion_en,
+      indicacionesPrecita, indicaciones_precita, indicacionesPostcita, indicaciones_postcita, activo
+    } = req.body;
+
     if (!nombre || !nombre.trim()) {
       return res.status(400).json({ message: 'El nombre del servicio es requerido' });
     }
+
+    const nEn = nombreEn !== undefined ? nombreEn : nombre_en;
+    const dEn = descripcionEn !== undefined ? descripcionEn : descripcion_en;
+    const pUsd = precioUsd !== undefined ? precioUsd : precio_usd;
     const pre = indicacionesPrecita !== undefined ? indicacionesPrecita : indicaciones_precita;
     const post = indicacionesPostcita !== undefined ? indicacionesPostcita : indicaciones_postcita;
     const dur = duracionMin !== undefined ? duracionMin : duracion_min;
@@ -162,9 +171,12 @@ router.post('/servicios', async (req, res) => {
     const serviceId = await db.guardarServicio({
       id,
       nombre,
+      nombreEn: nEn,
       precio,
+      precioUsd: pUsd,
       duracionMin: dur,
       descripcion,
+      descripcionEn: dEn,
       indicacionesPrecita: pre,
       indicacionesPostcita: post,
       activo
