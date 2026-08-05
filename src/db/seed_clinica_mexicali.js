@@ -19,6 +19,12 @@ async function seed() {
   });
 
   try {
+    // 0. Asegurar columnas nuevas (nombre_en, descripcion_en, precio_usd, etc.)
+    await connection.query('ALTER TABLE servicios ADD COLUMN nombre_en VARCHAR(150) NULL').catch(() => {});
+    await connection.query('ALTER TABLE servicios ADD COLUMN descripcion_en TEXT NULL').catch(() => {});
+    await connection.query('ALTER TABLE servicios ADD COLUMN precio_usd DECIMAL(10,2) NULL').catch(() => {});
+    await connection.query('ALTER TABLE usuarios MODIFY COLUMN email VARCHAR(150) NULL').catch(() => {});
+
     // 1. Limpiar tablas de prueba existentes (Respetando llaves foráneas)
     await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
     await connection.query('TRUNCATE TABLE citas;');
