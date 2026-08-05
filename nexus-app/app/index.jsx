@@ -31,7 +31,12 @@ export default function AgendaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [logoTaps, setLogoTaps] = useState(0);
   const [showPin, setShowPin] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
   const [showNuevaCita, setShowNuevaCita] = useState(false);
+
+  // Estado del calendario plegable
+  const [showCalendarGrid, setShowCalendarGrid] = useState(true);
 
   // Estados del Calendario Interactivo
   const hoyObj = new Date();
@@ -218,94 +223,106 @@ export default function AgendaScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* COMPONENTE CALENDARIO INTERACTIVO (Visible solo si activeTab === 'calendario') */}
-      {activeTab === 'calendario' && (
-        <View style={styles.calendarCard}>
-          {/* Header Mes y Navegación */}
-          <View style={styles.calendarMonthHeader}>
-            <TouchableOpacity onPress={handlePrevMonth} style={styles.navMonthBtn}>
-              <Ionicons name="chevron-back" size={18} color="#9CA3AF" />
-            </TouchableOpacity>
-            <Text style={styles.monthTitle}>{nombreMes.toUpperCase()}</Text>
-            <TouchableOpacity onPress={handleNextMonth} style={styles.navMonthBtn}>
-              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Días de la semana */}
-          <View style={styles.weekDaysRow}>
-            {DIAS_SEMANA.map((d, idx) => (
-              <Text key={idx} style={styles.weekDayText}>{d}</Text>
-            ))}
-          </View>
-
-          {/* Grilla de Días del Mes */}
-          <View style={styles.daysGrid}>
-            {daysGrid.map((item, index) => {
-              if (!item) {
-                return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
-              }
-
-              const { day, dateStr } = item;
-              const isSelected = dateStr === selectedDateStr;
-              const isToday = dateStr === todayStr;
-              const hasAppt = fechasConCita.has(dateStr);
-
-              return (
-                <TouchableOpacity
-                  key={dateStr}
-                  style={[
-                    styles.dayCell,
-                    isSelected && styles.dayCellSelected,
-                    isToday && !isSelected && styles.dayCellToday,
-                  ]}
-                  onPress={() => setSelectedDateStr(dateStr)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.dayNum,
-                    isSelected && styles.dayNumSelected,
-                    isToday && !isSelected && styles.dayNumToday,
-                  ]}>
-                    {day}
-                  </Text>
-                  
-                  {/* Punto marcador de día con cita */}
-                  {hasAppt && (
-                    <View style={[styles.apptDot, isSelected && styles.apptDotSelected]} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Banner indicador del día seleccionado */}
-          <View style={styles.selectedDayBanner}>
-            <Ionicons name="calendar-outline" size={14} color="#6366F1" />
-            <Text style={styles.selectedDayBannerText}>
-              Citas del {textoDiaSeleccionado}: <Text style={{ color: '#6366F1', fontWeight: '800' }}>{citasCalendario.length}</Text>
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* Banner de Próxima Cita (solo en pestaña hoy) */}
-      {activeTab === 'hoy' && proxima && (
-        <View style={styles.proximaCard}>
-          <View style={styles.proximaHeaderRow}>
-            <View style={styles.proximaDot} />
-            <Text style={styles.proximaLabel}>PRÓXIMA CITA EN AGENDA</Text>
-          </View>
-          <Text style={styles.proximaInfo}>
-            {proxima.hora} · {proxima.cliente ?? 'Sin nombre'} · {proxima.servicio}
-          </Text>
-        </View>
-      )}
-
-      {/* Lista de citas */}
+      {/* Lista de citas con Calendario como ListHeaderComponent para scroll continuo en móviles */}
       <FlatList
         data={listData}
         keyExtractor={item => String(item.id)}
+        ListHeaderComponent={
+          <>
+            {/* COMPONENTE CALENDARIO INTERACTIVO (Visible solo si activeTab === 'calendario') */}
+            {activeTab === 'calendario' && (
+              <View style={styles.calendarCard}>
+                {/* Header Mes y Navegación */}
+                <View style={styles.calendarMonthHeader}>
+                  <TouchableOpacity onPress={handlePrevMonth} style={styles.navMonthBtn}>
+                    <Ionicons name="chevron-back" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                  <Text style={styles.monthTitle}>{nombreMes.toUpperCase()}</Text>
+                  <TouchableOpacity onPress={handleNextMonth} style={styles.navMonthBtn}>
+                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowCalendarGrid(!showCalendarGrid)}
+                    style={[styles.navMonthBtn, { marginLeft: 'auto' }]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name={showCalendarGrid ? "chevron-up" : "chevron-down"} size={16} color="#6366F1" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Días de la semana y Grilla (solo si showCalendarGrid === true) */}
+                {showCalendarGrid && (
+                  <>
+                    <View style={styles.weekDaysRow}>
+                      {DIAS_SEMANA.map((d, idx) => (
+                        <Text key={idx} style={styles.weekDayText}>{d}</Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.daysGrid}>
+                      {daysGrid.map((item, index) => {
+                        if (!item) {
+                          return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
+                        }
+
+                        const { day, dateStr } = item;
+                        const isSelected = dateStr === selectedDateStr;
+                        const isToday = dateStr === todayStr;
+                        const hasAppt = fechasConCita.has(dateStr);
+
+                        return (
+                          <TouchableOpacity
+                            key={dateStr}
+                            style={[
+                              styles.dayCell,
+                              isSelected && styles.dayCellSelected,
+                              isToday && !isSelected && styles.dayCellToday,
+                            ]}
+                            onPress={() => setSelectedDateStr(dateStr)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[
+                              styles.dayNum,
+                              isSelected && styles.dayNumSelected,
+                              isToday && !isSelected && styles.dayNumToday,
+                            ]}>
+                              {day}
+                            </Text>
+                            
+                            {hasAppt && (
+                              <View style={[styles.apptDot, isSelected && styles.apptDotSelected]} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+
+                {/* Banner indicador del día seleccionado */}
+                <View style={styles.selectedDayBanner}>
+                  <Ionicons name="calendar-outline" size={14} color="#6366F1" />
+                  <Text style={styles.selectedDayBannerText}>
+                    Citas del {textoDiaSeleccionado}: <Text style={{ color: '#6366F1', fontWeight: '800' }}>{citasCalendario.length}</Text>
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Banner de Próxima Cita (solo en pestaña hoy) */}
+            {activeTab === 'hoy' && proxima && (
+              <View style={styles.proximaCard}>
+                <View style={styles.proximaHeaderRow}>
+                  <View style={styles.proximaDot} />
+                  <Text style={styles.proximaLabel}>PRÓXIMA CITA EN AGENDA</Text>
+                </View>
+                <Text style={styles.proximaInfo}>
+                  {proxima.hora} · {proxima.cliente ?? 'Sin nombre'} · {proxima.servicio}
+                </Text>
+              </View>
+            )}
+          </>
+        }
         renderItem={({ item }) => (
           <CitaCard
             cita={item}
