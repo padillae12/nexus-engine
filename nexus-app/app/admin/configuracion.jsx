@@ -167,6 +167,15 @@ export default function ConfiguracionScreen() {
       Alert.alert('Campo Requerido', 'Ingrese el nombre del empleado');
       return;
     }
+
+    if (!empServicioIds || empServicioIds.length === 0) {
+      Alert.alert(
+        'Especialidades Requeridas',
+        'Por favor seleccione los servicios o especialidades que este empleado está capacitado y autorizado para atender.'
+      );
+      return;
+    }
+
     setSavingEmp(true);
     try {
       await guardarEmpleado({
