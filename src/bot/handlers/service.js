@@ -50,12 +50,28 @@ async function handleServiceMenu(sesion, msg) {
 
   const lista = servicios
     .map((s, i) => {
-      const precio = s.precio != null
-        ? ` — *$${Number(s.precio).toLocaleString('es-MX')}*`
-        : '';
-      return `*${i + 1}.* ${s.nombre}${precio}`;
+      const sNombre = (isEn && s.nombre_en) ? s.nombre_en : s.nombre;
+      const sDesc = (isEn && s.descripcion_en) ? s.descripcion_en : s.descripcion;
+
+      let sPrecio = '';
+      if (isEn) {
+        if (s.precio_usd != null) {
+          sPrecio = ` — *$${Number(s.precio_usd).toLocaleString()} USD*` + (s.precio != null ? ` _($${Number(s.precio).toLocaleString('es-MX')} MXN)_` : '');
+        } else if (s.precio != null) {
+          sPrecio = ` — *$${Number(s.precio).toLocaleString('es-MX')} MXN*`;
+        }
+      } else {
+        if (s.precio != null) {
+          sPrecio = ` — *$${Number(s.precio).toLocaleString('es-MX')} MXN*` + (s.precio_usd != null ? ` _($${Number(s.precio_usd).toLocaleString()} USD)_` : '');
+        } else if (s.precio_usd != null) {
+          sPrecio = ` — *$${Number(s.precio_usd).toLocaleString()} USD*`;
+        }
+      }
+
+      const descLine = sDesc ? `\n   _${sDesc}_` : '';
+      return `*${i + 1}.* ${sNombre}${sPrecio}${descLine}`;
     })
-    .join('\n');
+    .join('\n\n');
 
   if (isEn) {
     return {

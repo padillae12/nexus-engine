@@ -72,58 +72,76 @@ async function seed() {
     }
     console.log('✅ 4 Doctores y Especialistas creados.');
 
-    // 4. Crear Catálogo de Tratamientos Clínicos
+    // 4. Crear Catálogo de Tratamientos Clínicos (Bilingüe Español / Inglés y MXN / USD)
     const servicios = [
       {
         nombre: 'Limpieza y Diagnóstico General',
+        nombreEn: 'Deep Dental Cleaning & Exam',
         duracion: 45,
         precio: 600,
+        precioUsd: 35,
         desc: 'Limpieza ultrasonido y valoración integral',
+        descEn: 'Ultrasonic cleaning and comprehensive oral exam',
         precita: 'Ninguna',
         postcita: 'Evitar alimentos o bebidas frías por 2 horas',
         esp: 'Odontología General',
       },
       {
         nombre: 'Resina Fotocurable',
+        nombreEn: 'Composite Dental Filling',
         duracion: 60,
         precio: 800,
+        precioUsd: 45,
         desc: 'Restauración estética de diente',
+        descEn: 'Tooth-colored aesthetic restoration',
         precita: 'Ninguna',
         postcita: 'No morder alimentos duros durante las primeras 4 horas',
         esp: 'Odontología General',
       },
       {
         nombre: 'Ortodoncia (Valoración / Alineadores)',
+        nombreEn: 'Clear Aligners & Brackets Consult',
         duracion: 45,
         precio: 1200,
+        precioUsd: 70,
         desc: 'Evaluación para brackets o alineadores invisibles',
+        descEn: 'Consultation for clear aligners or traditional braces',
         precita: 'Traer radiografía panorámica si cuenta con ella',
         postcita: 'Usar retenedores e higiene meticulosa',
         esp: 'Ortodoncia',
       },
       {
         nombre: 'Implante Dental (Valoración / Cirugía)',
+        nombreEn: 'Premium Dental Implant',
         duracion: 90,
         precio: 15000,
+        precioUsd: 850,
         desc: 'Reemplazo quirúrgico con implante de titanio',
+        descEn: 'Surgical titanium dental implant placement',
         precita: 'Ayuno de 4 horas y acudir acompañado',
         postcita: 'Tomar analgésico cada 8h, aplicar hielo y reposo 24h',
         esp: 'Implantología',
       },
       {
         nombre: 'Blanqueamiento Dental Láser',
+        nombreEn: 'Laser Teeth Whitening',
         duracion: 60,
         precio: 3500,
+        precioUsd: 200,
         desc: 'Aclaramiento dental en 1 sola sesión',
+        descEn: 'In-office laser whitening in a single 60-min session',
         precita: 'Tener realizada limpieza dental previa',
         postcita: 'Dieta blanca estricta durante 72 horas (sin café ni refresco)',
         esp: 'Odontología Estética',
       },
       {
         nombre: 'Diseño de Sonrisa (Carillas)',
+        nombreEn: 'Porcelain Veneers / Smile Design',
         duracion: 120,
         precio: 18000,
+        precioUsd: 1000,
         desc: 'Transformación estética dental personalizada',
+        descEn: 'Custom aesthetic smile transformation',
         precita: 'Cita previa de valoración y escaneo',
         postcita: 'Evitar morder objetos duros o alimentos pigmentantes',
         esp: 'Odontología Estética',
@@ -132,8 +150,8 @@ async function seed() {
 
     for (const srv of servicios) {
       const [resSrv] = await connection.query(
-        `INSERT INTO servicios (nombre, duracion_min, precio, descripcion, indicaciones_precita, indicaciones_postcita, activo) VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [srv.nombre, srv.duracion, srv.precio, srv.desc, srv.precita, srv.postcita]
+        `INSERT INTO servicios (nombre, nombre_en, duracion_min, precio, precio_usd, descripcion, descripcion_en, indicaciones_precita, indicaciones_postcita, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        [srv.nombre, srv.nombreEn, srv.duracion, srv.precio, srv.precioUsd, srv.desc, srv.descEn, srv.precita, srv.postcita]
       );
       const servicioId = resSrv.insertId;
 

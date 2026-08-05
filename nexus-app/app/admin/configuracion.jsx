@@ -62,9 +62,12 @@ export default function ConfiguracionScreen() {
   const [showAddSrv, setShowAddSrv] = useState(false);
   const [editingSrvId, setEditingSrvId] = useState(null);
   const [srvNombre, setSrvNombre] = useState('');
+  const [srvNombreEn, setSrvNombreEn] = useState('');
   const [srvPrecio, setSrvPrecio] = useState('');
+  const [srvPrecioUsd, setSrvPrecioUsd] = useState('');
   const [srvDuracionMin, setSrvDuracionMin] = useState('60');
   const [srvDescripcion, setSrvDescripcion] = useState('');
+  const [srvDescripcionEn, setSrvDescripcionEn] = useState('');
   const [srvIndicacionesPrecita, setSrvIndicacionesPrecita] = useState('');
   const [srvIndicacionesPostcita, setSrvIndicacionesPostcita] = useState('');
   const [srvActivo, setSrvActivo] = useState(true);
@@ -206,9 +209,12 @@ export default function ConfiguracionScreen() {
   const limpiarFormServicio = () => {
     setEditingSrvId(null);
     setSrvNombre('');
+    setSrvNombreEn('');
     setSrvPrecio('');
+    setSrvPrecioUsd('');
     setSrvDuracionMin('60');
     setSrvDescripcion('');
+    setSrvDescripcionEn('');
     setSrvIndicacionesPrecita('');
     setSrvIndicacionesPostcita('');
     setSrvActivo(true);
@@ -218,9 +224,12 @@ export default function ConfiguracionScreen() {
   const handleEditarServicio = (srv) => {
     setEditingSrvId(srv.id);
     setSrvNombre(srv.nombre || '');
+    setSrvNombreEn(srv.nombre_en || '');
     setSrvPrecio(srv.precio != null ? String(srv.precio) : '');
+    setSrvPrecioUsd(srv.precio_usd != null ? String(srv.precio_usd) : '');
     setSrvDuracionMin(srv.duracion_min != null ? String(srv.duracion_min) : '60');
     setSrvDescripcion(srv.descripcion || '');
+    setSrvDescripcionEn(srv.descripcion_en || '');
     setSrvIndicacionesPrecita(srv.indicaciones_precita || '');
     setSrvIndicacionesPostcita(srv.indicaciones_postcita || '');
     setSrvActivo(srv.activo !== 0);
@@ -237,9 +246,12 @@ export default function ConfiguracionScreen() {
       await guardarServicio({
         id: editingSrvId || undefined,
         nombre: srvNombre.trim(),
+        nombreEn: srvNombreEn.trim() || null,
         precio: srvPrecio.trim() ? Number(srvPrecio) : null,
+        precioUsd: srvPrecioUsd.trim() ? Number(srvPrecioUsd) : null,
         duracionMin: srvDuracionMin.trim() ? Number(srvDuracionMin) : 60,
         descripcion: srvDescripcion.trim(),
+        descripcionEn: srvDescripcionEn.trim() || null,
         indicacionesPrecita: srvIndicacionesPrecita.trim(),
         indicacionesPostcita: srvIndicacionesPostcita.trim(),
         activo: srvActivo ? 1 : 0,
@@ -601,12 +613,23 @@ export default function ConfiguracionScreen() {
             />
           </View>
 
+          <View style={styles.inputWrap}>
+            <Ionicons name="language-outline" size={16} color="#6366F1" />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Nombre en Inglés (Ej. Dental Cleaning) (Opcional)"
+              placeholderTextColor="#6B7280"
+              value={srvNombreEn}
+              onChangeText={setSrvNombreEn}
+            />
+          </View>
+
           <View style={styles.timeRowContainer}>
             <View style={[styles.inputWrap, { flex: 1 }]}>
               <Ionicons name="cash-outline" size={16} color="#6B7280" />
               <TextInput
                 style={styles.textInput}
-                placeholder="Precio $ (Ej. 600)"
+                placeholder="Precio $ MXN (Ej. 600)"
                 placeholderTextColor="#6B7280"
                 keyboardType="numeric"
                 value={srvPrecio}
@@ -614,27 +637,51 @@ export default function ConfiguracionScreen() {
               />
             </View>
             <View style={[styles.inputWrap, { flex: 1 }]}>
-              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Ionicons name="logo-usd" size={16} color="#10B981" />
               <TextInput
                 style={styles.textInput}
-                placeholder="Duración Min (Ej. 45)"
+                placeholder="Precio USD $ (Ej. 35)"
                 placeholderTextColor="#6B7280"
                 keyboardType="numeric"
-                value={srvDuracionMin}
-                onChangeText={setSrvDuracionMin}
+                value={srvPrecioUsd}
+                onChangeText={setSrvPrecioUsd}
               />
             </View>
           </View>
 
-          <View style={[styles.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 6 }]}>
+          <View style={styles.inputWrap}>
+            <Ionicons name="time-outline" size={16} color="#6B7280" />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Duración Minutos (Ej. 45)"
+              placeholderTextColor="#6B7280"
+              keyboardType="numeric"
+              value={srvDuracionMin}
+              onChangeText={setSrvDuracionMin}
+            />
+          </View>
+
+          <View style={[styles.inputWrap, { height: 50, alignItems: 'flex-start', paddingTop: 6 }]}>
             <Ionicons name="document-text-outline" size={16} color="#6B7280" style={{ marginTop: 4 }} />
             <TextInput
-              style={[styles.textInput, { height: 48, textAlignVertical: 'top' }]}
-              placeholder="Descripción o información corta (Opcional)"
+              style={[styles.textInput, { height: 38, textAlignVertical: 'top' }]}
+              placeholder="Descripción en Español (Opcional)"
               placeholderTextColor="#6B7280"
               multiline
               value={srvDescripcion}
               onChangeText={setSrvDescripcion}
+            />
+          </View>
+
+          <View style={[styles.inputWrap, { height: 50, alignItems: 'flex-start', paddingTop: 6 }]}>
+            <Ionicons name="language-outline" size={16} color="#6366F1" style={{ marginTop: 4 }} />
+            <TextInput
+              style={[styles.textInput, { height: 38, textAlignVertical: 'top' }]}
+              placeholder="Descripción en Inglés / English Description (Opcional)"
+              placeholderTextColor="#6B7280"
+              multiline
+              value={srvDescripcionEn}
+              onChangeText={setSrvDescripcionEn}
             />
           </View>
 

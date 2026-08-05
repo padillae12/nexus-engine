@@ -37,10 +37,13 @@ CREATE TABLE IF NOT EXISTS clientes (
 CREATE TABLE IF NOT EXISTS servicios (
   id                    INT UNSIGNED    NOT NULL AUTO_INCREMENT,
   nombre                VARCHAR(100)    NOT NULL,
+  nombre_en             VARCHAR(150)    NULL,
   descripcion           TEXT            NULL,
+  descripcion_en        TEXT            NULL,
   indicaciones_precita  TEXT            NULL,
   indicaciones_postcita TEXT            NULL,
   precio                DECIMAL(10,2)   NULL,
+  precio_usd            DECIMAL(10,2)   NULL,
   mostrar_precio        TINYINT(1)      NOT NULL DEFAULT 1,
   duracion_min          SMALLINT        NOT NULL DEFAULT 60,
   activo                TINYINT(1)      NOT NULL DEFAULT 1,
