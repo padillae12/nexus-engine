@@ -109,10 +109,11 @@ function buildMenuPrincipal(nombre, idioma = 'es') {
       `1. 📅 *Book* an appointment\n` +
       `2. 📋 *View* my appointments\n` +
       `3. ❌ *Cancel* an appointment\n` +
-      `4. ℹ️ *Info & Business Hours*\n` +
-      `5. ✏️ *Change my name*\n` +
-      `6. 🌐 *Español*\n\n` +
-      `_Reply with the option number (1, 2, 3, 4, 5, 6) or tell me what you need._`
+      `4. 🩺 *Services & Treatments Catalog*\n` +
+      `5. ℹ️ *Info & Business Hours*\n` +
+      `6. ✏️ *Change my name*\n` +
+      `7. 🌐 *Español*\n\n` +
+      `_Reply with the option number (1 to 7) or tell me what you need._`
     );
   }
   return (
@@ -120,10 +121,11 @@ function buildMenuPrincipal(nombre, idioma = 'es') {
     `1. 📅 *Agendar* una cita\n` +
     `2. 📋 *Ver* mis citas\n` +
     `3. ❌ *Cancelar* una cita\n` +
-    `4. ℹ️ *Información y Horarios*\n` +
-    `5. ✏️ *Cambiar mi nombre*\n` +
-    `6. 🌐 *English*\n\n` +
-    `_Solo dime qué necesitas o escribe el número de la opción (1, 2, 3, 4, 5 o 6)._`
+    `4. 🩺 *Catálogo de Servicios y Precios*\n` +
+    `5. ℹ️ *Información y Horarios*\n` +
+    `6. ✏️ *Cambiar mi nombre*\n` +
+    `7. 🌐 *English*\n\n` +
+    `_Solo dime qué necesitas o escribe el número de la opción (1 al 7)._`
   );
 }
 

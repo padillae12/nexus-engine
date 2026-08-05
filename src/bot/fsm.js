@@ -336,7 +336,10 @@ async function handleMessage(telefono, mensaje) {
         pushHistory(sesion);
         sesion.citasCancelables = null;
         result = await handleCancelFlow(sesion, msg);
-      } else if (opcion === '4' || quiereInfo(msg)) {
+      } else if (opcion === '4' || quiereServicios(msg)) {
+        pushHistory(sesion);
+        result = await handleServiceMenu(sesion, msg);
+      } else if (opcion === '5' || quiereInfo(msg)) {
         const { getAllConfig } = require('../db/queries');
         const configNegocio = await getAllConfig().catch(() => ({}));
         const nombreNegocio = configNegocio.BUSINESS_NAME || 'Dental Care';
@@ -351,22 +354,22 @@ async function handleMessage(telefono, mensaje) {
               `⏰ *Business Hours:*\n${horarioAtencion}\n\n` +
               `📍 *Location:*\n${ubicacion}\n` +
               mapsTexto + `\n` +
-              `_Need anything else? Reply with the option number (1, 2, 3) or *"menu"* to return._`
+              `_Need anything else? Reply with the option number (1 to 7) or *"menu"* to return._`
             : `ℹ️ *INFORMACIÓN Y HORARIOS — ${nombreNegocio.toUpperCase()}*\n\n` +
               `⏰ *Horarios de Atención:*\n${horarioAtencion}\n\n` +
               `📍 *Ubicación:*\n${ubicacion}\n` +
               mapsTexto + `\n` +
-              `_¿Necesitas algo más? Escribe el número de la opción (1, 2, 3) o *"menú"* para volver al inicio._`,
+              `_¿Necesitas algo más? Escribe el número de la opción (1 al 7) o *"menú"* para volver al inicio._`,
           nuevoEstado: 'MAIN_MENU'
         };
-      } else if (opcion === '5' || /^(cambiar\s+nombre|cambiar\s+mi\s+nombre|change\s+name|change\s+my\s+name|nombre)$/i.test(msg)) {
+      } else if (opcion === '6' || /^(cambiar\s+nombre|cambiar\s+mi\s+nombre|change\s+name|change\s+my\s+name|nombre)$/i.test(msg)) {
         sesion.state = 'WAITING_NAME_CHANGE';
         const isEn = sesion.idioma === 'en';
         result = {
           respuesta: isEn ? `What is your new name?` : `¿Cuál es tu nuevo nombre?`,
           nuevoEstado: 'WAITING_NAME_CHANGE'
         };
-      } else if (opcion === '6' || /^(english|ingl[eé]s|espa[nñ]ol|spanish|idioma|language)$/i.test(msg)) {
+      } else if (opcion === '7' || /^(english|ingl[eé]s|espa[nñ]ol|spanish|idioma|language)$/i.test(msg)) {
         sesion.idioma = sesion.idioma === 'en' ? 'es' : 'en';
         const msgConfirmacion = sesion.idioma === 'en'
           ? `🌐 Language changed to *English*. 😊\n\n` + buildMenuPrincipal(sesion.nombre || 'friend', 'en')

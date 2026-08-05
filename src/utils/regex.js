@@ -69,6 +69,13 @@ const quiereInfo = (msg) => {
          /info|informaci|horari|atenci|ubicaci|direcci|d[oó]nde|hours|address|location/i.test(msg);
 };
 
+/** El usuario quiere ver el catálogo de servicios y tratamientos */
+const quiereServicios = (msg) => {
+  const norm = normalizarTexto(msg);
+  return /servis|tratamient|catalog|precio|costo|costos|precios|que asen|que hacen|services|treatments|prices/i.test(norm) ||
+         /servici|tratamient|cat[aá]logo|precio|costo|services|treatments|prices/i.test(msg);
+};
+
 // ─────────────────────────────────────────────────────────────────
 //  EXTRACCIÓN DE FECHAS (ESPAÑOL & ENGLISH)
 // ─────────────────────────────────────────────────────────────────
@@ -232,6 +239,7 @@ module.exports = {
   quiereCancelar,
   quiereVerCitas,
   quiereInfo,
+  quiereServicios,
   extraerFecha,
   extraerFechaRelativa,
   extraerFechaExplicita,
