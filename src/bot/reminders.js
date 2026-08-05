@@ -115,7 +115,7 @@ async function notificarNuevaCitaEmpleado(client, citaInfo) {
     }
 
     // Consultar si el paciente tiene notas internas de perfil (ej. "Nervioso con agujas", etc.)
-    const { pool } = require('../db/connection');
+    const pool = require('../db/pool');
     let notasInternas = null;
     if (citaInfo.clienteId) {
       const [clRows] = await pool.execute('SELECT notas_internas FROM clientes WHERE id = ?', [citaInfo.clienteId]).catch(() => [[]]);
