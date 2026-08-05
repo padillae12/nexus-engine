@@ -740,11 +740,15 @@ export default function ConfiguracionScreen() {
                 <Ionicons name="bookmark-outline" size={18} color="#6366F1" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.empNombre}>{srv.nombre}</Text>
+                <Text style={styles.empNombre}>
+                  {srv.nombre}
+                  {srv.nombre_en ? ` (${srv.nombre_en})` : ''}
+                </Text>
                 <View style={styles.empMetaRow}>
                   <Ionicons name="cash-outline" size={12} color="#10B981" />
                   <Text style={[styles.empTel, { color: '#10B981', fontWeight: '700' }]}>
-                    ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : 'Variable'}
+                    ${srv.precio != null ? Number(srv.precio).toLocaleString('es-MX') : '0'} MXN
+                    {srv.precio_usd != null ? ` / $${Number(srv.precio_usd).toLocaleString()} USD` : ''}
                   </Text>
                   <Text style={[styles.empTel, { marginHorizontal: 4 }]}>·</Text>
                   <Ionicons name="time-outline" size={12} color="#9CA3AF" />
@@ -753,6 +757,7 @@ export default function ConfiguracionScreen() {
                   </Text>
                 </View>
                 {srv.descripcion ? <Text style={[styles.empTel, { marginTop: 2 }]}>{srv.descripcion}</Text> : null}
+                {srv.descripcion_en ? <Text style={[styles.empTel, { color: '#818CF8', marginTop: 1 }]}>EN: {srv.descripcion_en}</Text> : null}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <TouchableOpacity

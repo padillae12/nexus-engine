@@ -10,7 +10,7 @@ const { handleServiceMenu, handleServiceSelect, handleForWhomSelect, handlePatie
 const { handleDateSelect }                  = require('./handlers/date');
 const { handleTimeSelect }                  = require('./handlers/time');
 const { handleConfirmation, handleEditMenu, handleCancelFlow, handleCancelSelect, handleReminderSelect } = require('./handlers/confirm');
-const { quiereAgendar, quiereCancelar, quiereVerCitas, quiereInfo } = require('../utils/regex');
+const { quiereAgendar, quiereCancelar, quiereVerCitas, quiereInfo, quiereServicios } = require('../utils/regex');
 const { getSlotsDisponibles, formatSlotsParaWhatsApp, formatFechaEspanol } = require('../utils/slots');
 
 // ─────────────────────────────────────────────────────────────────
