@@ -17,6 +17,17 @@ const pool    = require('../db/pool');
 //  HEALTH
 // ─────────────────────────────────────────────────────────────────
 
+// GET /api — Raíz de la API con estado
+router.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    system: 'PADCA Flow / Nexus-Engine API',
+    version: '2.0.0',
+    message: 'Servidor respondiendo correctamente en vivo.',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // GET /api/health — Healthcheck básico de la API
 router.get('/health', (req, res) => {
   res.json({
